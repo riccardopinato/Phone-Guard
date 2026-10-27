@@ -707,7 +707,10 @@ class ProtectionForegroundService : Service() {
         activeJourneyEndAtElapsedRealtime = null
 
         val protected =
-            accessoryMonitor.start {
+            accessoryMonitor.start(
+                protectedFingerprints =
+                    expectedFingerprints
+            ) {
                 removed ->
                 if (
                     activeMode ==
@@ -774,6 +777,13 @@ class ProtectionForegroundService : Service() {
                     it.stableFingerprint()
                 }
                 .toSet()
+
+        val protectedFingerprints =
+            expectedFingerprints
+                ?.takeIf {
+                    it.isNotEmpty()
+                }
+                ?: currentFingerprints
 
         if (
             expectedFingerprints !=
@@ -842,7 +852,7 @@ class ProtectionForegroundService : Service() {
 
         container.sessionStateRepository
             .saveAccessoryFingerprints(
-                currentFingerprints
+                protectedFingerprints
             )
 
         if (
@@ -1195,9 +1205,15 @@ class ProtectionForegroundService : Service() {
             }
 
             GuardState.OWNER_CHECK -> {
-                beginOwnerCheck(
-                    decision
-                )
+                if (
+                    AlarmStateStore.state
+                        .value.phase !=
+                        AlarmPhase.OWNER_CHECK
+                ) {
+                    beginOwnerCheck(
+                        decision
+                    )
+                }
             }
 
             GuardState.ALARM -> {
