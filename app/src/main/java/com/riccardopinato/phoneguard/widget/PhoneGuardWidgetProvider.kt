@@ -10,16 +10,8 @@ import android.widget.RemoteViews
 import com.riccardopinato.phoneguard.MainActivity
 import com.riccardopinato.phoneguard.PhoneGuardApp
 import com.riccardopinato.phoneguard.R
-import com.riccardopinato.phoneguard.activation.ActivationOutcome
-import com.riccardopinato.phoneguard.activation.ActivationSource
-import com.riccardopinato.phoneguard.activation.ProtectionActivationCoordinator
 import com.riccardopinato.phoneguard.service.AlarmPhase
 import com.riccardopinato.phoneguard.service.AlarmStateStore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 class PhoneGuardWidgetProvider :
     AppWidgetProvider() {
@@ -34,89 +26,14 @@ class PhoneGuardWidgetProvider :
             render(
                 context,
                 appWidgetManager,
-                id,
-                null
+                id
             )
         }
     }
 
-    override fun onReceive(
-        context: Context,
-        intent: Intent
-    ) {
-        super.onReceive(
-            context,
-            intent
-        )
-
-        if (
-            intent.action !=
-            ACTION_ARM_LAST
-        ) {
-            return
-        }
-
-        val pending =
-            goAsync()
-
-        CoroutineScope(
-            SupervisorJob() +
-                Dispatchers.Main
-        ).launch {
-            try {
-                val app =
-                    context.applicationContext
-                        as PhoneGuardApp
-
-                val settings =
-                    app.container
-                        .settingsRepository
-                        .settings
-                        .first()
-
-                val result =
-                    ProtectionActivationCoordinator
-                        .requestArm(
-                            context =
-                                context,
-                            mode =
-                                settings.selectedMode,
-                            source =
-                                ActivationSource.WIDGET
-                        )
-
-                val message =
-                    when (result) {
-                        ActivationOutcome.Started ->
-                            context.getString(
-                                R.string
-                                    .widget_status_started
-                            )
-
-                        is ActivationOutcome.Blocked ->
-                            context.getString(
-                                R.string
-                                    .widget_status_open_app
-                            )
-                    }
-
-                updateAll(
-                    context,
-                    message
-                )
-            } finally {
-                pending.finish()
-            }
-        }
-    }
-
     companion object {
-        private const val ACTION_ARM_LAST =
-            "com.riccardopinato.phoneguard.widget.ARM_LAST"
-
         fun updateAll(
-            context: Context,
-            overrideMessage: String? = null
+            context: Context
         ) {
             val manager =
                 AppWidgetManager
@@ -139,8 +56,7 @@ class PhoneGuardWidgetProvider :
                     render(
                         context,
                         manager,
-                        id,
-                        overrideMessage
+                        id
                     )
                 }
         }
@@ -148,8 +64,7 @@ class PhoneGuardWidgetProvider :
         private fun render(
             context: Context,
             manager: AppWidgetManager,
-            id: Int,
-            overrideMessage: String?
+            id: Int
         ) {
             val app =
                 context.applicationContext
@@ -171,25 +86,27 @@ class PhoneGuardWidgetProvider :
 
             views.setTextViewText(
                 R.id.widget_status,
-                overrideMessage
-                    ?: context.getString(
-                        if (active) {
-                            R.string
-                                .widget_status_active
-                        } else {
-                            R.string
-                                .widget_status_ready
-                        }
-                    )
+                context.getString(
+                    if (active) {
+                        R.string
+                            .widget_status_active
+                    } else {
+                        R.string
+                            .widget_status_ready
+                    }
+                )
             )
 
             val openIntent =
                 Intent(
                     context,
                     MainActivity::class.java
-                ).addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK
                 )
+                    .addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    )
 
             val openPending =
                 PendingIntent.getActivity(
@@ -205,13 +122,20 @@ class PhoneGuardWidgetProvider :
             val armIntent =
                 Intent(
                     context,
-                    PhoneGuardWidgetProvider::class.java
-                ).setAction(
-                    ACTION_ARM_LAST
+                    MainActivity::class.java
                 )
+                    .setAction(
+                        MainActivity
+                            .ACTION_ARM_WIDGET
+                    )
+                    .addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    )
 
             val armPending =
-                PendingIntent.getBroadcast(
+                PendingIntent.getActivity(
                     context,
                     720,
                     armIntent,

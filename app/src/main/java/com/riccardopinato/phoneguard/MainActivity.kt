@@ -74,12 +74,19 @@ class MainActivity : FragmentActivity() {
     private fun processLaunchIntent(
         launchIntent: Intent?
     ) {
-        if (
-            launchIntent?.action !=
-            ACTION_ARM_LAST_SHORTCUT
-        ) {
-            return
-        }
+        val source =
+            when (
+                launchIntent?.action
+            ) {
+                ACTION_ARM_LAST_SHORTCUT ->
+                    ActivationSource.SHORTCUT
+
+                ACTION_ARM_WIDGET ->
+                    ActivationSource.WIDGET
+
+                else ->
+                    return
+            }
 
         launchIntent.action = null
 
@@ -101,7 +108,7 @@ class MainActivity : FragmentActivity() {
                     mode =
                         settings.selectedMode,
                     source =
-                        ActivationSource.SHORTCUT
+                        source
                 )
         }
     }
@@ -109,5 +116,8 @@ class MainActivity : FragmentActivity() {
     private companion object {
         const val ACTION_ARM_LAST_SHORTCUT =
             "com.riccardopinato.phoneguard.action.ARM_LAST_SHORTCUT"
+
+        const val ACTION_ARM_WIDGET =
+            "com.riccardopinato.phoneguard.action.ARM_WIDGET"
     }
 }
