@@ -221,10 +221,6 @@ class ProtectionForegroundService : Service() {
 
                 activeSettings = settings
 
-                outputController.prepare(
-                    settings
-                )
-
                 container.eventRepository.add(
                     AlarmEventType.ARMING_STARTED,
                     "Mode=${mode.name}; countdown=" +
@@ -1087,10 +1083,6 @@ class ProtectionForegroundService : Service() {
                     .settings.first()
 
             activeSettings = settings
-
-            outputController.prepare(
-                settings
-            )
 
             when (
                 SessionRecoveryPolicy

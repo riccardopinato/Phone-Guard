@@ -159,9 +159,9 @@ fun UnlockDialog(
     onDismiss: () -> Unit,
     onPinSubmit: (String) -> Unit,
     onBiometric: () -> Unit,
-    title: String = "Disattiva allarme",
-    message: String = "Inserisci il PIN oppure usa la biometria.",
-    confirmLabel: String = "Sblocca"
+    title: String,
+    message: String,
+    confirmLabel: String
 ) {
     var pin by remember { mutableStateOf("") }
 
@@ -181,7 +181,7 @@ fun UnlockDialog(
                             pin = it
                         }
                     },
-                    label = { Text("PIN") },
+                    label = { Text(stringResource(R.string.common_pin)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
