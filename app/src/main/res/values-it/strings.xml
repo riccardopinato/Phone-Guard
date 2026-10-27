@@ -261,7 +261,7 @@
     <string name="sound_profile_warning">Avviso</string>
     <string name="sound_profile_beep">Beep</string>
     <string name="auto_arm_charge_title">Attiva automaticamente alla ricarica</string>
-    <string name="auto_arm_charge_subtitle">Phone Guard prova ad attivare Charging Guard quando colleghi l’alimentazione. Se Android blocca l’avvio in background, usa una notifica da toccare quando le notifiche sono consentite.</string>
+    <string name="auto_arm_charge_subtitle">Quando Phone Guard è disponibile in memoria, prova ad attivare Charging Guard quando colleghi l’alimentazione. Se Android blocca l’avvio in background, usa una notifica da toccare quando le notifiche sono consentite.</string>
     <string name="svc_security_not_ready">Configura un PIN valido prima di attivare la protezione.</string>
     <string name="svc_charger_required">Collega il telefono all’alimentazione prima di attivare Charging Guard.</string>
     <string name="svc_charging_protected">Cavo di ricarica protetto.</string>

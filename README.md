@@ -85,7 +85,7 @@ The signed INTERNAL lane additionally verifies the APK/AAB signing certificate a
 
 ## Certification boundary
 
-0.9.8 is the pre-1.0 commercial-expansion candidate. It adds Charging Guard, configurable grace before alarm, quick presets, per-mode generated sound profiles, Quick Settings / widget / launcher quick-arm surfaces, guided charging auto-arm and structured trigger evidence.
+0.9.8 is the pre-1.0 commercial-expansion candidate. It adds Charging Guard, configurable grace before alarm, quick presets, per-mode generated sound profiles, Quick Settings / widget / launcher quick-arm surfaces, best-effort charging auto-arm while the app process is available, Android-compliant notification fallback, and structured trigger evidence.
 
 Software can be accepted only when the exact candidate SHA passes all automated gates and the signed INTERNAL lane. Physical Pixel/Samsung/Xiaomi certification remains a separate evidence gate. Google Play Console work is intentionally deferred until the product is otherwise ready.
 

@@ -37,7 +37,8 @@ For every row record: device/model, Android/OEM version, build SHA, PASS/FAIL, n
 | Quick Settings tile while protection active | UNVERIFIED | UNVERIFIED | UNVERIFIED | opens app; does not directly disarm |
 | Home widget quick arm | UNVERIFIED | UNVERIFIED | UNVERIFIED | user tap arms last selected mode or opens app on blocked preconditions |
 | Launcher shortcut quick arm | UNVERIFIED | UNVERIFIED | UNVERIFIED | user action arms last selected mode or opens app on blocked preconditions |
-| Charging auto-arm foreground/background | UNVERIFIED | UNVERIFIED | UNVERIFIED | direct arm when OS permits; truthful tap-to-arm fallback when blocked |
+| Charging auto-arm while app process is alive | UNVERIFIED | UNVERIFIED | UNVERIFIED | runtime power receiver attempts direct arm; truthful tap-to-arm fallback when background FGS start is blocked |
+| Charging connect after app process was killed | UNVERIFIED | UNVERIFIED | UNVERIFIED | no guarantee is claimed; feature resumes after app process is available again |
 | Charging auto-arm with notification denied | UNVERIFIED | UNVERIFIED | UNVERIFIED | no false notification claim; app remains safe and disarmed if OS blocks start |
 | Protection Check | UNVERIFIED | UNVERIFIED | UNVERIFIED | readiness matches actual sensor/power capabilities |
 | Presets | UNVERIFIED | UNVERIFIED | UNVERIFIED | each preset applies intended mode/grace/sensitivity/profile atomically |

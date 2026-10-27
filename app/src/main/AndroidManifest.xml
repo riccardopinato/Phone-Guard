@@ -73,14 +73,6 @@
             android:exported="false" />
 
         <receiver
-            android:name=".quickaccess.PowerConnectionReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
             android:name=".quickaccess.PhoneGuardWidgetProvider"
             android:exported="false">
             <intent-filter>

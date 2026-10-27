@@ -261,7 +261,7 @@
     <string name="sound_profile_warning">Alerte</string>
     <string name="sound_profile_beep">Bip</string>
     <string name="auto_arm_charge_title">Activation à la connexion secteur</string>
-    <string name="auto_arm_charge_subtitle">Phone Guard tente d’activer Charging Guard lorsque l’alimentation est connectée. Si Android bloque le démarrage en arrière-plan, une notification à toucher est utilisée lorsque les notifications sont autorisées.</string>
+    <string name="auto_arm_charge_subtitle">Tant que Phone Guard est disponible en mémoire, il tente d’activer Charging Guard lorsque l’alimentation est connectée. Si Android bloque le démarrage en arrière-plan, une notification à toucher est utilisée lorsque les notifications sont autorisées.</string>
     <string name="svc_security_not_ready">Configurez un code PIN valide avant d’activer la protection.</string>
     <string name="svc_charger_required">Branchez le téléphone avant d’activer Charging Guard.</string>
     <string name="svc_charging_protected">Câble de charge protégé.</string>

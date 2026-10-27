@@ -46,7 +46,7 @@ For the exact release SHA:
 - [x] Charging start requires real power; recovery without power fails closed;
 - [x] configurable pre-alarm grace reuses OWNER_CHECK without treating ACTION_USER_PRESENT as authentication;
 - [x] Quick Settings, widget and shortcut never directly bypass owner authentication for disarm;
-- [x] charging auto-arm has an Android background-start fallback instead of claiming guaranteed background FGS launch;
+- [x] charging auto-arm uses a context-registered power receiver while the app process is alive and has an Android background-start fallback instead of claiming guaranteed process-dead/background launch;
 - [x] trigger history is local and backward-compatible with legacy event records;
 - [x] presets reuse existing settings rather than creating parallel runtime profiles;
 - [x] per-mode alarm sounds are generated locally without adding media assets or dependencies;
