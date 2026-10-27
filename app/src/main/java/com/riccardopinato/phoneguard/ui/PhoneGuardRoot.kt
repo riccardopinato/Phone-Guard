@@ -73,6 +73,7 @@ fun PhoneGuardRoot(
     biometricAuthManager: BiometricAuthManager
 ) {
     val context = LocalContext.current
+    val resources = context.resources
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
 
