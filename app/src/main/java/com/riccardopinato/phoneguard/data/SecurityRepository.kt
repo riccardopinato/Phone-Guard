@@ -410,9 +410,12 @@ class SecurityRepository(
                 .CORRUPTED_VERIFIER
         }
 
+        val key =
+            getExistingKeystoreKey()
+
         return if (
-            getExistingKeystoreKey() !=
-            null
+            key != null &&
+            isKeyUsable(key)
         ) {
             SecurityHealth.READY
         } else {
@@ -492,9 +495,14 @@ class SecurityRepository(
     private fun getOrCreateKeystoreKey():
         SecretKey {
         getExistingKeystoreKey()
+            ?.takeIf(
+                ::isKeyUsable
+            )
             ?.let {
                 return it
             }
+
+        deleteKeystoreKey()
 
         val generator =
             KeyGenerator.getInstance(
@@ -517,6 +525,18 @@ class SecurityRepository(
         return generator
             .generateKey()
     }
+
+    private fun isKeyUsable(
+        key: SecretKey
+    ): Boolean =
+        runCatching {
+            Mac.getInstance(
+                "HmacSHA256"
+            ).apply {
+                init(key)
+            }
+            true
+        }.getOrDefault(false)
 
     private fun deleteKeystoreKey() {
         runCatching {
