@@ -66,6 +66,25 @@ object ProtectionPolicy {
                 .coerceAtLeast(0L)
         }
 
+    fun remainingJourneyMs(
+        endAtElapsedRealtime: Long?,
+        nowElapsedRealtime: Long,
+        endAtWallClock: Long?,
+        nowWallClock: Long
+    ): Long? =
+        endAtElapsedRealtime
+            ?.let {
+                (
+                    it -
+                        nowElapsedRealtime
+                    )
+                    .coerceAtLeast(0L)
+            }
+            ?: remainingJourneyMs(
+                endAtWallClock,
+                nowWallClock
+            )
+
     fun isJourneyExpired(
         endAt: Long?,
         now: Long

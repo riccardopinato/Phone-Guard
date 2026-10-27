@@ -176,6 +176,24 @@ class ProtectionPolicyTest {
         )
     }
 
+    @Test
+    fun monotonicJourneyDeadlineIgnoresWallClockChanges() {
+        assertEquals(
+            5_000L,
+            ProtectionPolicy
+                .remainingJourneyMs(
+                    endAtElapsedRealtime =
+                        20_000L,
+                    nowElapsedRealtime =
+                        15_000L,
+                    endAtWallClock =
+                        1_000_000L,
+                    nowWallClock =
+                        9_000_000L
+                )
+        )
+    }
+
     private fun caps(
         accelerometer: Boolean = false,
         proximity: Boolean = false,
