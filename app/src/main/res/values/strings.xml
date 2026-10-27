@@ -392,4 +392,5 @@
     <string name="live_test_instruction_charging">Keep power connected, start the test, then unplug the charger.</string>
     <string name="live_test_instruction_accessory">Keep a supported audio accessory connected, start the test, then disconnect it.</string>
 
+    <string name="alarm_custom_sound_access_failed">This audio source cannot grant persistent access. The built-in siren remains selected.</string>
 </resources>
