@@ -100,9 +100,9 @@ fun ProfileScreen(
                 scope.launch {
                     statusMessage =
                         if (diagnostics.testFlash()) {
-                            stringResource(R.string.flash_ok)
+                            context.getString(R.string.flash_ok)
                         } else {
-                            stringResource(R.string.flash_failed)
+                            context.getString(R.string.flash_failed)
                         }
                 }
             } else {
