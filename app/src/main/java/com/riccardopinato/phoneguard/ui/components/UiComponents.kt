@@ -155,18 +155,21 @@ fun UnlockDialog(
     error: String?,
     onDismiss: () -> Unit,
     onPinSubmit: (String) -> Unit,
-    onBiometric: () -> Unit
+    onBiometric: () -> Unit,
+    title: String = "Disattiva allarme",
+    message: String = "Inserisci il PIN oppure usa la biometria.",
+    confirmLabel: String = "Sblocca"
 ) {
     var pin by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Disattiva allarme") },
+        title = { Text(title) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Inserisci il PIN oppure usa la biometria.")
+                Text(message)
 
                 OutlinedTextField(
                     value = pin,
@@ -206,7 +209,7 @@ fun UnlockDialog(
                 enabled = pin.length in 4..6,
                 onClick = { onPinSubmit(pin) }
             ) {
-                Text("Sblocca")
+                Text(confirmLabel)
             }
         },
         dismissButton = {

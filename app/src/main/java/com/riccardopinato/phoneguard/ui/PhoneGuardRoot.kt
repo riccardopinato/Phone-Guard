@@ -1,7 +1,6 @@
 package com.riccardopinato.phoneguard.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -39,14 +39,15 @@ import androidx.navigation.compose.rememberNavController
 import com.riccardopinato.phoneguard.AppContainer
 import com.riccardopinato.phoneguard.auth.BiometricAuthManager
 import com.riccardopinato.phoneguard.model.AppSettings
-import com.riccardopinato.phoneguard.service.AlarmForegroundService
 import com.riccardopinato.phoneguard.service.AlarmPhase
 import com.riccardopinato.phoneguard.service.AlarmStateStore
+import com.riccardopinato.phoneguard.service.ProtectionForegroundService
 import com.riccardopinato.phoneguard.ui.components.UnlockDialog
 import com.riccardopinato.phoneguard.ui.screens.AboutPrivacyScreen
 import com.riccardopinato.phoneguard.ui.screens.AlarmScreen
 import com.riccardopinato.phoneguard.ui.screens.EventsScreen
 import com.riccardopinato.phoneguard.ui.screens.OnboardingScreen
+import com.riccardopinato.phoneguard.ui.screens.OwnerCheckScreen
 import com.riccardopinato.phoneguard.ui.screens.ProfileScreen
 import com.riccardopinato.phoneguard.ui.screens.TriggeredAlarmScreen
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
@@ -56,6 +57,11 @@ private data class BottomDestination(
     val route: String,
     val label: String
 )
+
+private enum class UnlockPurpose {
+    DISARM,
+    OWNER_CHECK
+}
 
 @Composable
 fun PhoneGuardRoot(
@@ -79,18 +85,27 @@ fun PhoneGuardRoot(
             container.hardwareDiagnostics.snapshot()
         }
 
-    var showUnlock by remember {
-        mutableStateOf(false)
+    var showUnlock by remember { mutableStateOf(false) }
+    var unlockPurpose by remember { mutableStateOf(UnlockPurpose.DISARM) }
+    var unlockError by remember { mutableStateOf<String?>(null) }
+
+    fun requestUnlock(purpose: UnlockPurpose) {
+        unlockPurpose = purpose
+        showUnlock = true
+        unlockError = null
     }
 
-    var unlockError by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    fun completeDisarm() {
+    fun completeAuthentication() {
         showUnlock = false
         unlockError = null
-        AlarmForegroundService.disarm(context)
+
+        when (unlockPurpose) {
+            UnlockPurpose.DISARM ->
+                ProtectionForegroundService.disarm(context)
+
+            UnlockPurpose.OWNER_CHECK ->
+                ProtectionForegroundService.ownerVerified(context)
+        }
     }
 
     if (!settings.onboardingCompleted) {
@@ -104,115 +119,131 @@ fun PhoneGuardRoot(
         return
     }
 
-    if (runtime.phase == AlarmPhase.TRIGGERED) {
-        TriggeredAlarmScreen(
-            pulseEnabled = settings.warningScreenEnabled,
-            onUnlock = {
-                showUnlock = true
-                unlockError = null
-            }
-        )
-    } else {
-        val destinations =
-            listOf(
-                BottomDestination(
-                    route = "alarm",
-                    label = "Allarme"
-                ),
-                BottomDestination(
-                    route = "events",
-                    label = "Eventi"
-                ),
-                BottomDestination(
-                    route = "profile",
-                    label = "Profilo"
-                )
+    when (runtime.phase) {
+        AlarmPhase.TRIGGERED -> {
+            TriggeredAlarmScreen(
+                pulseEnabled = settings.warningScreenEnabled,
+                onUnlock = {
+                    requestUnlock(UnlockPurpose.DISARM)
+                }
             )
+        }
 
-        val backStackEntry by
-            navController.currentBackStackEntryAsState()
+        AlarmPhase.OWNER_CHECK -> {
+            OwnerCheckScreen(
+                mode = runtime.mode,
+                onVerifyOwner = {
+                    requestUnlock(UnlockPurpose.OWNER_CHECK)
+                }
+            )
+        }
 
-        val currentDestination =
-            backStackEntry?.destination
+        else -> {
+            val destinations =
+                listOf(
+                    BottomDestination(
+                        route = "protection",
+                        label = "Protezione"
+                    ),
+                    BottomDestination(
+                        route = "events",
+                        label = "Eventi"
+                    ),
+                    BottomDestination(
+                        route = "profile",
+                        label = "Profilo"
+                    )
+                )
 
-        val showBottomBar =
-            destinations.any { item ->
-                currentDestination.isOn(item.route)
-            }
+            val backStackEntry by
+                navController.currentBackStackEntryAsState()
 
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            bottomBar = {
-                if (showBottomBar) {
-                    UtilityBottomBar(
-                        destinations = destinations,
-                        currentDestination = currentDestination,
-                        onNavigate = { route ->
-                            navController.navigate(route) {
-                                popUpTo(
-                                    navController.graph.startDestinationId
-                                ) {
-                                    saveState = true
+            val currentDestination =
+                backStackEntry?.destination
+
+            val showBottomBar =
+                destinations.any { item ->
+                    currentDestination.isOn(item.route)
+                }
+
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                bottomBar = {
+                    if (showBottomBar) {
+                        UtilityBottomBar(
+                            destinations = destinations,
+                            currentDestination = currentDestination,
+                            onNavigate = { route ->
+                                navController.navigate(route) {
+                                    popUpTo(
+                                        navController.graph.startDestinationId
+                                    ) {
+                                        saveState = true
+                                    }
+
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
-            }
-        ) { paddingValues ->
-            NavHost(
-                navController = navController,
-                startDestination = "alarm",
-                modifier = Modifier.padding(paddingValues)
-            ) {
-                composable("alarm") {
-                    AlarmScreen(
-                        settingsRepository = container.settingsRepository,
-                        securityRepository = container.securityRepository,
-                        hardware = hardware,
-                        runtime = runtime,
-                        onRequestDisarm = {
-                            showUnlock = true
-                            unlockError = null
-                        }
-                    )
-                }
+            ) { paddingValues ->
+                NavHost(
+                    navController = navController,
+                    startDestination = "protection",
+                    modifier = Modifier.padding(paddingValues)
+                ) {
+                    composable("protection") {
+                        AlarmScreen(
+                            settingsRepository = container.settingsRepository,
+                            securityRepository = container.securityRepository,
+                            hardware = hardware,
+                            runtime = runtime,
+                            onRequestDisarm = {
+                                requestUnlock(UnlockPurpose.DISARM)
+                            }
+                        )
+                    }
 
-                composable("events") {
-                    EventsScreen(
-                        eventRepository = container.eventRepository
-                    )
-                }
+                    composable("events") {
+                        EventsScreen(
+                            eventRepository = container.eventRepository
+                        )
+                    }
 
-                composable("profile") {
-                    ProfileScreen(
-                        settingsRepository = container.settingsRepository,
-                        securityRepository = container.securityRepository,
-                        biometricAuthManager = biometricAuthManager,
-                        batteryDiagnostics = container.batteryDiagnostics,
-                        onOpenAboutPrivacy = {
-                            navController.navigate("about_privacy")
-                        },
-                        diagnostics = container.hardwareDiagnostics,
-                        hardware = hardware,
-                        alarmRunning =
-                            runtime.phase != AlarmPhase.DISARMED
-                    )
-                }
+                    composable("profile") {
+                        ProfileScreen(
+                            settingsRepository = container.settingsRepository,
+                            securityRepository = container.securityRepository,
+                            biometricAuthManager = biometricAuthManager,
+                            batteryDiagnostics = container.batteryDiagnostics,
+                            onOpenAboutPrivacy = {
+                                navController.navigate("about_privacy")
+                            },
+                            diagnostics = container.hardwareDiagnostics,
+                            hardware = hardware,
+                            alarmRunning =
+                                runtime.phase != AlarmPhase.DISARMED
+                        )
+                    }
 
-                composable("about_privacy") {
-                    AboutPrivacyScreen(
-                        onBack = { navController.popBackStack() }
-                    )
+                    composable("about_privacy") {
+                        AboutPrivacyScreen(
+                            onBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 
     if (showUnlock) {
+        val ownerCheck =
+            unlockPurpose == UnlockPurpose.OWNER_CHECK
+
         UnlockDialog(
             biometricAvailable = biometricAuthManager.isAvailable(),
             biometricEnabled = settings.biometricEnabled,
@@ -224,7 +255,7 @@ fun PhoneGuardRoot(
             onPinSubmit = { pin ->
                 scope.launch {
                     if (container.securityRepository.verifyPin(pin)) {
-                        completeDisarm()
+                        completeAuthentication()
                     } else {
                         unlockError = "PIN non corretto."
                     }
@@ -233,13 +264,31 @@ fun PhoneGuardRoot(
             onBiometric = {
                 biometricAuthManager.authenticate { success ->
                     if (success) {
-                        completeDisarm()
+                        completeAuthentication()
                     } else {
                         unlockError =
                             "Autenticazione biometrica non riuscita."
                     }
                 }
-            }
+            },
+            title =
+                if (ownerCheck) {
+                    "Verifica proprietario"
+                } else {
+                    "Disattiva protezione"
+                },
+            message =
+                if (ownerCheck) {
+                    "Conferma che sei il proprietario. La protezione resterà attiva."
+                } else {
+                    "Inserisci il PIN oppure usa la biometria."
+                },
+            confirmLabel =
+                if (ownerCheck) {
+                    "Conferma"
+                } else {
+                    "Disattiva"
+                }
         )
     }
 }
