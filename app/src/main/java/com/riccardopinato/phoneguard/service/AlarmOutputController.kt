@@ -88,7 +88,9 @@ class AlarmOutputController(
 
         if (
             profile.soundEnabled &&
-            !soundActive
+            !soundActive &&
+            profile.customSoundUri
+                .isNullOrBlank()
         ) {
             volumeLease.restoreIfOwned()
         }
@@ -264,7 +266,22 @@ class AlarmOutputController(
         val token =
             ++customRequestToken
 
-        customAudioHandler.post {
+        mainHandler.postDelayed(
+            {
+                if (
+                    token ==
+                        customRequestToken &&
+                    mediaPlayer ==
+                        null
+                ) {
+                    customRequestToken +=
+                        1L
+                }
+            },
+            CUSTOM_PREPARE_TIMEOUT_MS
+        )
+
+        customAudioHandler.post audioTask@{
             var candidate:
                 MediaPlayer? = null
 
@@ -273,7 +290,7 @@ class AlarmOutputController(
                     token !=
                     customRequestToken
                 ) {
-                    return@post
+                    return@audioTask
                 }
 
                 val player =
@@ -294,9 +311,19 @@ class AlarmOutputController(
                 player.isLooping =
                     true
 
+                if (
+                    token !=
+                    customRequestToken
+                ) {
+                    releaseMediaPlayerNow(
+                        player
+                    )
+                    return@audioTask
+                }
+
                 player.setOnPreparedListener {
                     prepared ->
-                    mainHandler.post {
+                    mainHandler.post mainPost@{
                         if (
                             token !=
                             customRequestToken
@@ -304,7 +331,7 @@ class AlarmOutputController(
                             releaseMediaPlayerAsync(
                                 prepared
                             )
-                            return@post
+                            return@mainPost
                         }
 
                         val started =
@@ -371,32 +398,12 @@ class AlarmOutputController(
                 }
 
                 player.prepareAsync()
-
-                mainHandler.postDelayed(
-                    {
-                        if (
-                            token ==
-                                customRequestToken &&
-                            mediaPlayer ==
-                                null
-                        ) {
-                            customRequestToken +=
-                                1L
-
-                            candidate
-                                ?.let(
-                                    ::releaseMediaPlayerAsync
-                                )
-                        }
-                    },
-                    CUSTOM_PREPARE_TIMEOUT_MS
-                )
             } catch (
                 _: Exception
             ) {
                 candidate
                     ?.let(
-                        ::releaseMediaPlayerAsync
+                        ::releaseMediaPlayerNow
                     )
             }
         }
@@ -406,15 +413,23 @@ class AlarmOutputController(
         player: MediaPlayer
     ) {
         customAudioHandler.post {
-            runCatching {
-                player.stop()
-            }
-            runCatching {
-                player.reset()
-            }
-            runCatching {
-                player.release()
-            }
+            releaseMediaPlayerNow(
+                player
+            )
+        }
+    }
+
+    private fun releaseMediaPlayerNow(
+        player: MediaPlayer
+    ) {
+        runCatching {
+            player.stop()
+        }
+        runCatching {
+            player.reset()
+        }
+        runCatching {
+            player.release()
         }
     }
 
