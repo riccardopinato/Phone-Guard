@@ -2288,31 +2288,65 @@ class ProtectionForegroundService : Service() {
                                 ) >=
                                 durationMs
 
-                    if (
-                        outputsAlreadyExpired
-                    ) {
-                        outputController.stop()
+                    val restoredOutputHealth =
+                        if (
+                            outputsAlreadyExpired
+                        ) {
+                            outputController.stop()
 
-                        updateNotification(
-                            AlarmPhase.TRIGGERED,
-                            getString(
-                                R.string
-                                    .svc_alarm_title,
-                                activeMode.label
-                            ),
-                            getString(
-                                R.string
-                                    .svc_alarm_outputs_stopped
+                            updateNotification(
+                                AlarmPhase.TRIGGERED,
+                                getString(
+                                    R.string
+                                        .svc_alarm_title,
+                                    activeMode.label
+                                ),
+                                getString(
+                                    R.string
+                                        .svc_alarm_outputs_stopped
+                                )
                             )
-                        )
-                    } else {
-                        outputController.start(
-                            profile
-                        )
 
-                        scheduleAlarmOutputTimeout(
-                            durationMs,
-                            originalTriggeredAt
+                            null
+                        } else {
+                            outputController.start(
+                                profile
+                            ).also {
+                                scheduleAlarmOutputTimeout(
+                                    durationMs,
+                                    originalTriggeredAt
+                                )
+                            }
+                        }
+
+                    if (
+                        persisted.phase ==
+                        AlarmPhase.OWNER_CHECK
+                    ) {
+                        container.eventRepository.add(
+                            AlarmEventType.TRIGGERED,
+                            "Mode=" +
+                                persisted.mode.name +
+                                "; owner-check session recovered fail-closed into alarm.",
+                            evidence =
+                                AlarmEventEvidence(
+                                    mode =
+                                        persisted.mode,
+                                    source =
+                                        "RECOVERY",
+                                    reason =
+                                        "Owner-check session recovered fail-closed into alarm.",
+                                    confidenceScore =
+                                        100,
+                                    detectorState =
+                                        "OWNER_CHECK_RECOVERY_ALARM",
+                                    outputSummary =
+                                        restoredOutputHealth
+                                            ?.eventSummary(),
+                                    graceSeconds =
+                                        settings
+                                            .gracePeriodSeconds
+                                )
                         )
                     }
                 }
