@@ -691,7 +691,9 @@ class ProtectionForegroundService : Service() {
 
     private fun startAccessoryMonitoring(
         settings: AppSettings,
-        recordArmedEvent: Boolean
+        recordArmedEvent: Boolean,
+        expectedFingerprints:
+            Set<String>? = null
     ) {
         tableDetector?.stop()
         tableDetector = null
@@ -766,6 +768,45 @@ class ProtectionForegroundService : Service() {
             return
         }
 
+        val currentFingerprints =
+            protected
+                .map {
+                    it.stableFingerprint()
+                }
+                .toSet()
+
+        if (
+            expectedFingerprints !=
+                null &&
+            expectedFingerprints
+                .isNotEmpty() &&
+            !currentFingerprints
+                .containsAll(
+                    expectedFingerprints
+                )
+        ) {
+            accessoryMonitor.stop()
+
+            triggerAlarm(
+                detail =
+                    "Mode=ACCESSORY; original protected accessory set is no longer present during recovery.",
+                lastMotionDelta = 0f,
+                confidence = 100,
+                detectorState =
+                    "ACCESSORY_IDENTITY_MISMATCH_RECOVERY",
+                sensorSummary =
+                    "expected=" +
+                        expectedFingerprints
+                            .sorted()
+                            .joinToString() +
+                        "; current=" +
+                        currentFingerprints
+                            .sorted()
+                            .joinToString()
+            )
+            return
+        }
+
         val summary =
             protected
                 .joinToString(
@@ -797,6 +838,11 @@ class ProtectionForegroundService : Service() {
                     ProtectionMode.ACCESSORY,
                 phase =
                     AlarmPhase.ARMED
+            )
+
+        container.sessionStateRepository
+            .saveAccessoryFingerprints(
+                currentFingerprints
             )
 
         if (
@@ -2219,7 +2265,10 @@ class ProtectionForegroundService : Service() {
                     startAccessoryMonitoring(
                         settings = settings,
                         recordArmedEvent =
-                            false
+                            false,
+                        expectedFingerprints =
+                            persisted
+                                .accessoryFingerprints
                     )
                 }
 
