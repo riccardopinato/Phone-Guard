@@ -404,7 +404,11 @@ class ProtectionForegroundService : Service() {
                         adaptivePocketEnabled = prefs.adaptiveAutoGuardPocket
                         adaptiveTableEnabled = prefs.adaptiveAutoGuardTable
                         if (AlarmStateStore.state.value.phase == AlarmPhase.DISARMED) {
-                            enterAutoArmStandby()
+                            if (container.sessionStateRepository.read() != null) {
+                                restorePersistedSession()
+                            } else {
+                                enterAutoArmStandby()
+                            }
                         }
                     }
                 }
@@ -429,7 +433,9 @@ class ProtectionForegroundService : Service() {
                     adaptivePocketEnabled = current.adaptiveAutoGuardPocket
                     adaptiveTableEnabled = current.adaptiveAutoGuardTable
                     if (AlarmStateStore.state.value.phase == AlarmPhase.DISARMED) {
-                        if (adaptiveAutoGuardEnabled || autoArmStandbyEnabled) {
+                        if (container.sessionStateRepository.read() != null) {
+                            restorePersistedSession()
+                        } else if (adaptiveAutoGuardEnabled || autoArmStandbyEnabled) {
                             enterAutoArmStandby()
                         } else {
                             ServiceCompat.stopForeground(
