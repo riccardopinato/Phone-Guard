@@ -1,6 +1,6 @@
 # PLAY_CONSOLE_CHECKLIST.md — Phone Guard
 
-**Version truth: 0.9.3 / versionCode 5**
+**Version truth: 0.9.4 / versionCode 6**
 
 Status: **DEFERRED BY PRODUCT DECISION**. This file preserves the final publication work but it is not a substitute for current provider-policy verification at release time.
 
@@ -10,7 +10,7 @@ Status: **DEFERRED BY PRODUCT DECISION**. This file preserves the final publicat
 - [x] `FOREGROUND_SERVICE`;
 - [x] `FOREGROUND_SERVICE_SPECIAL_USE`;
 - [x] `android:foregroundServiceType="specialUse"`;
-- [x] special-use subtype property describes sensor/power anti-theft monitoring and opt-in charging standby;
+- [x] special-use subtype property describes sensor/power/audio-accessory-state anti-theft monitoring, short user-initiated Smart Arm sampling and opt-in charging standby;
 - [x] normal protection is user initiated;
 - [x] charging auto-arm is explicit user opt-in with a persistent visible foreground notification;
 - [x] CAMERA used only for torch/flash;
@@ -22,16 +22,18 @@ Status: **DEFERRED BY PRODUCT DECISION**. This file preserves the final publicat
 - [x] RECEIVE_BOOT_COMPLETED for stale side-effect reconciliation and explicit charging-auto-arm preference restoration;
 - [x] Quick Settings tile uses system `BIND_QUICK_SETTINGS_TILE`;
 - [x] widget/shortcut add no new sensitive runtime permission;
+- [x] Accessory Guard observes audio-output connection state only and does not request RECORD_AUDIO;
+- [x] custom alarm sound uses a user-selected Android document URI and does not upload media;
 - [x] no account/backend/analytics/ads/location/audio-recording/photo/video capture;
 - [x] sensitive/runtime/event/lease data excluded from backup.
 
 ## Publication checks to re-verify immediately before submission
 - [ ] special-use foreground-service declaration remains allowed for this exact anti-theft use case;
 - [ ] reviewer video demonstrates normal protection and charging auto-arm standby;
-- [ ] foreground-service description exactly matches the production manifest and UX;
+- [ ] foreground-service description exactly matches the production manifest and UX, including Accessory state and Smart Arm sampling;
 - [ ] Data Safety matches the exact production source tree;
 - [ ] public privacy-policy URL;
-- [ ] screenshots include Charging Guard, Protection Check and quick activation surfaces;
+- [ ] screenshots include Charging Guard, Accessory Guard, Smart Arm, Protection Center and quick activation surfaces;
 - [ ] content rating and target audience;
 - [ ] Play App Signing;
 - [ ] controlled upload certificate;
