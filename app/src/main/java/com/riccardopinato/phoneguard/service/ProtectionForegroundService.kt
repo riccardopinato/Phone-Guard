@@ -2229,10 +2229,13 @@ class ProtectionForegroundService : Service() {
 
                 RecoveryAction.RESTORE_ALARM -> {
                     val originalTriggeredAt =
-                        persisted
-                            .triggeredAtWallClock
-                            ?: persisted
-                                .updatedAtWallClock
+                        SessionRecoveryPolicy
+                            .recoveryTriggeredAt(
+                                session =
+                                    persisted,
+                                now =
+                                    System.currentTimeMillis()
+                            )
 
                     container.sessionStateRepository.saveState(
                         mode = persisted.mode,
