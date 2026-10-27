@@ -52,6 +52,7 @@ class SettingsRepository(private val context: Context) {
         val adaptiveIdleMinutes = intPreferencesKey("adaptive_auto_guard_idle_minutes")
         val adaptivePocket = booleanPreferencesKey("adaptive_auto_guard_pocket")
         val adaptiveTable = booleanPreferencesKey("adaptive_auto_guard_table")
+        val adaptiveMobility = booleanPreferencesKey("adaptive_auto_guard_mobility")
 
         fun alarmProfile(
             mode: ProtectionMode
@@ -148,6 +149,7 @@ class SettingsRepository(private val context: Context) {
                     } ?: 3,
                 adaptiveAutoGuardPocket = prefs[Keys.adaptivePocket] ?: true,
                 adaptiveAutoGuardTable = prefs[Keys.adaptiveTable] ?: true,
+                adaptiveAutoGuardMobility = prefs[Keys.adaptiveMobility] ?: false,
                 alarmProfiles =
                     profiles
             )
@@ -228,6 +230,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setAdaptiveAutoGuardTable(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.adaptiveTable] = enabled }
+    }
+
+    suspend fun setAdaptiveAutoGuardMobility(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.adaptiveMobility] = enabled }
     }
 
     suspend fun setSoundEnabled(enabled: Boolean) {
