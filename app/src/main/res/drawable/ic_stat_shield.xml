@@ -1,0 +1,10 @@
+<!-- TARGET: app/src/main/res/drawable/ic_stat_shield.xml -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2 L20,5 V11 C20,16.05 16.59,20.74 12,22 C7.41,20.74 4,16.05 4,11 V5 Z M12,4.18 L6,6.43 V11 C6,14.82 8.42,18.55 12,19.74 C15.58,18.55 18,14.82 18,11 V6.43 Z" />
+</vector>

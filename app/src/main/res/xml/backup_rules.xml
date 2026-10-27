@@ -1,0 +1,8 @@
+<!-- Phone Guard backup policy: non-sensitive preferences only. -->
+<full-backup-content>
+    <include domain="file" path="datastore/phone_guard_settings.preferences_pb" />
+
+    <exclude domain="file" path="datastore/phone_guard_security.preferences_pb" />
+    <exclude domain="file" path="events.json" />
+    <exclude domain="sharedpref" path="protection_runtime_session.xml" />
+</full-backup-content>
