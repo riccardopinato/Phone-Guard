@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="arm_last_mode"
+        android:enabled="true"
+        android:icon="@drawable/ic_stat_shield"
+        android:shortcutShortLabel="@string/shortcut_arm_last_short"
+        android:shortcutLongLabel="@string/shortcut_arm_last_long">
+        <intent
+            android:action="com.riccardopinato.phoneguard.action.ARM_LAST_SHORTCUT"
+            android:targetClass="com.riccardopinato.phoneguard.MainActivity"
+            android:targetPackage="com.riccardopinato.phoneguard" />
+    </shortcut>
+</shortcuts>

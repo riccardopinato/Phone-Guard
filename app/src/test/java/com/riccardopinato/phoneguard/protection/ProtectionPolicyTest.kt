@@ -103,6 +103,20 @@ class ProtectionPolicyTest {
     }
 
     @Test
+    fun chargingDoesNotRequireMotionSensors() {
+        assertTrue(
+            ProtectionPolicy.isSupported(
+                mode =
+                    ProtectionMode.CHARGING,
+                journeyGuardMode =
+                    GuardMode.POCKET,
+                capabilities =
+                    caps()
+            )
+        )
+    }
+
+    @Test
     fun journeyUsesSelectedStorageProfileCapabilities() {
         assertFalse(
             ProtectionPolicy.isSupported(
@@ -210,4 +224,27 @@ class ProtectionPolicyTest {
             hasGyroscope =
                 gyroscope
         )
+
+
+    @Test
+    fun ownerVerifiedPendingTableRestartsDetector() {
+        assertEquals(
+            PendingTriggerOwnerAction.RESTART_TABLE,
+            ProtectionPolicy
+                .pendingTriggerOwnerAction(
+                    ProtectionMode.TABLE
+                )
+        )
+    }
+
+    @Test
+    fun ownerVerifiedPendingChargingEndsSession() {
+        assertEquals(
+            PendingTriggerOwnerAction.END_CHARGING_SESSION,
+            ProtectionPolicy
+                .pendingTriggerOwnerAction(
+                    ProtectionMode.CHARGING
+                )
+        )
+    }
 }

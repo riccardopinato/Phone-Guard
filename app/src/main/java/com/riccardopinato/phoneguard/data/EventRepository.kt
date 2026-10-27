@@ -3,7 +3,11 @@ package com.riccardopinato.phoneguard.data
 import android.content.Context
 import android.util.AtomicFile
 import com.riccardopinato.phoneguard.model.AlarmEvent
+import com.riccardopinato.phoneguard.model.AlarmEventEvidence
 import com.riccardopinato.phoneguard.model.AlarmEventType
+import com.riccardopinato.phoneguard.model.ProtectionMode
+import java.io.File
+import kotlin.math.max
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,8 +19,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
-import kotlin.math.max
 
 class EventRepository(context: Context) {
 
@@ -49,7 +51,8 @@ class EventRepository(context: Context) {
 
     fun add(
         type: AlarmEventType,
-        detail: String = ""
+        detail: String = "",
+        evidence: AlarmEventEvidence? = null
     ) {
         scope.launch {
             mutex.withLock {
@@ -67,7 +70,9 @@ class EventRepository(context: Context) {
                         type =
                             type,
                         detail =
-                            detail
+                            detail,
+                        evidence =
+                            evidence
                     )
 
                 val updated =
@@ -182,7 +187,13 @@ class EventRepository(context: Context) {
                                 item
                                     .optString(
                                         "detail"
+                                    ),
+                            evidence =
+                                decodeEvidence(
+                                    item.optJSONObject(
+                                        "evidence"
                                     )
+                                )
                         )
                     )
                 }
@@ -202,7 +213,7 @@ class EventRepository(context: Context) {
         events.forEach {
             event ->
 
-            array.put(
+            val json =
                 JSONObject()
                     .put(
                         "id",
@@ -220,7 +231,16 @@ class EventRepository(context: Context) {
                         "detail",
                         event.detail
                     )
-            )
+
+            event.evidence
+                ?.let {
+                    json.put(
+                        "evidence",
+                        encodeEvidence(it)
+                    )
+                }
+
+            array.put(json)
         }
 
         val output =
@@ -251,6 +271,157 @@ class EventRepository(context: Context) {
 
             throw throwable
         }
+    }
+
+    private fun encodeEvidence(
+        evidence: AlarmEventEvidence
+    ): JSONObject =
+        JSONObject()
+            .apply {
+                evidence.mode?.let {
+                    put(
+                        "mode",
+                        it.name
+                    )
+                }
+                evidence.source?.let {
+                    put(
+                        "source",
+                        it
+                    )
+                }
+                evidence.reason?.let {
+                    put(
+                        "reason",
+                        it
+                    )
+                }
+                evidence.confidenceScore
+                    ?.let {
+                        put(
+                            "confidence",
+                            it
+                        )
+                    }
+                evidence.detectorState
+                    ?.let {
+                        put(
+                            "detectorState",
+                            it
+                        )
+                    }
+                evidence.sensorSummary
+                    ?.let {
+                        put(
+                            "sensorSummary",
+                            it
+                        )
+                    }
+                evidence.outputSummary
+                    ?.let {
+                        put(
+                            "outputSummary",
+                            it
+                        )
+                    }
+                evidence.graceSeconds
+                    ?.let {
+                        put(
+                            "graceSeconds",
+                            it
+                        )
+                    }
+            }
+
+    private fun decodeEvidence(
+        json: JSONObject?
+    ): AlarmEventEvidence? {
+        if (json == null) {
+            return null
+        }
+
+        val mode =
+            json
+                .optString(
+                    "mode"
+                )
+                .takeIf {
+                    it.isNotBlank()
+                }
+                ?.let {
+                    runCatching {
+                        ProtectionMode
+                            .valueOf(it)
+                    }.getOrNull()
+                }
+
+        return AlarmEventEvidence(
+            mode = mode,
+            source =
+                json
+                    .optString(
+                        "source"
+                    )
+                    .takeIf {
+                        it.isNotBlank()
+                    },
+            reason =
+                json
+                    .optString(
+                        "reason"
+                    )
+                    .takeIf {
+                        it.isNotBlank()
+                    },
+            confidenceScore =
+                if (
+                    json.has(
+                        "confidence"
+                    )
+                ) {
+                    json.optInt(
+                        "confidence"
+                    )
+                } else {
+                    null
+                },
+            detectorState =
+                json
+                    .optString(
+                        "detectorState"
+                    )
+                    .takeIf {
+                        it.isNotBlank()
+                    },
+            sensorSummary =
+                json
+                    .optString(
+                        "sensorSummary"
+                    )
+                    .takeIf {
+                        it.isNotBlank()
+                    },
+            outputSummary =
+                json
+                    .optString(
+                        "outputSummary"
+                    )
+                    .takeIf {
+                        it.isNotBlank()
+                    },
+            graceSeconds =
+                if (
+                    json.has(
+                        "graceSeconds"
+                    )
+                ) {
+                    json.optInt(
+                        "graceSeconds"
+                    )
+                } else {
+                    null
+                }
+        )
     }
 
     private companion object {

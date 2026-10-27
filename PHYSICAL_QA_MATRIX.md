@@ -1,6 +1,6 @@
 # PHYSICAL_QA_MATRIX.md — Phone Guard
 
-Candidate software line: **0.9.2 / versionCode 4**
+Candidate software line: **0.9.3 / versionCode 5**
 
 
 Status: **UNVERIFIED** until measurements from real devices are recorded.
@@ -51,3 +51,36 @@ Certification rule:
 - any P0 reliability/security failure blocks RC certification;
 - false negatives in the advertised supported Pocket/Bag matrix block certification;
 - OEM-specific limitations may be accepted only when surfaced truthfully in UI/docs and not represented as guaranteed capability.
+
+
+## Charging Guard / quick surfaces — 0.9.3
+
+Run on the same signed artifact used for release evidence.
+
+| Scenario | Pixel | Samsung | Xiaomi/Redmi | Expected |
+|---|---|---|---|---|
+| Manual Charging arm while unplugged | ⬜ | ⬜ | ⬜ | blocked truthfully |
+| Manual Charging arm while plugged | ⬜ | ⬜ | ⬜ | reaches ARMED |
+| Cable removal + 0s grace | ⬜ | ⬜ | ⬜ | immediate alarm |
+| Cable removal + 2/5/8s grace | ⬜ | ⬜ | ⬜ | OWNER_CHECK then alarm |
+| Owner verifies intentional unplug | ⬜ | ⬜ | ⬜ | Charging session ends cleanly |
+| Auto-arm enabled while unplugged | ⬜ | ⬜ | ⬜ | visible standby, next plug arms |
+| Auto-arm enabled while already plugged | ⬜ | ⬜ | ⬜ | requires fresh unplug/replug |
+| Auto-arm after screen-off/Doze | ⬜ | ⬜ | ⬜ | fresh plug still handled or limitation surfaced |
+| Auto-arm after reboot | ⬜ | ⬜ | ⬜ | explicit preference restores visible standby |
+| Quick Tile from unlocked device | ⬜ | ⬜ | ⬜ | arms last mode if all gates pass |
+| Quick Tile while protection active | ⬜ | ⬜ | ⬜ | opens app, never direct-disarms |
+| Quick Tile from lock screen | ⬜ | ⬜ | ⬜ | secure behavior, no auth bypass |
+| Widget arm | ⬜ | ⬜ | ⬜ | same activation gates as app |
+| Static shortcut arm | ⬜ | ⬜ | ⬜ | same activation gates as app |
+| Per-mode output profile | ⬜ | ⬜ | ⬜ | selected mode uses its own profile |
+| Protection Check | ⬜ | ⬜ | ⬜ | report matches real device state |
+| Event evidence after trigger | ⬜ | ⬜ | ⬜ | mode/source/detector/output truth recorded |
+
+### False-positive / recovery additions
+- [ ] unplug/replug bounce does not generate duplicate alarms;
+- [ ] quick repeated power broadcasts do not create duplicate arming sessions;
+- [ ] service/process interruption while Charging and still plugged restores monitor;
+- [ ] service/process interruption while Charging and unplugged fails closed to alarm;
+- [ ] disabling charging auto-arm stops standby when no active protection exists;
+- [ ] disabling auto-arm never disarms an already active protection session.

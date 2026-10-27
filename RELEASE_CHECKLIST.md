@@ -1,6 +1,6 @@
 # RELEASE_CHECKLIST.md — Phone Guard
 
-Version truth: 0.9.2 / versionCode 4
+Version truth: 0.9.3 / versionCode 5
 
 ## Exact-SHA automated gate
 The release SHA must show all of the following green:
@@ -62,3 +62,15 @@ For the exact release SHA:
 - [ ] production release notes.
 
 Phone Guard must not be labelled fully CERTIFIED until the physical gate is complete. Play publication is a subsequent final phase.
+
+
+## 0.9.3 Market Value Pack gates
+- [ ] Charging Guard cable removal verified on physical device.
+- [ ] Charging owner-grace cancel and alarm paths verified.
+- [ ] Charging auto-arm standby verified across unplug/replug, screen-off and reboot.
+- [ ] Quick Settings tile arm path verified; active tile never bypasses authentication.
+- [ ] Home widget and static shortcut verified.
+- [ ] Protection Check reports real capability/permission state.
+- [ ] Per-mode alarm profiles verified independently.
+- [ ] Structured event evidence verified after real triggers.
+- [ ] EN/IT/ES/FR/PT UI sanity checked.

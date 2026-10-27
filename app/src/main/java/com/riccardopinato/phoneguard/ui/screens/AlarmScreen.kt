@@ -33,12 +33,17 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riccardopinato.phoneguard.R
+import com.riccardopinato.phoneguard.activation.ActivationBlockReason
+import com.riccardopinato.phoneguard.activation.ActivationOutcome
+import com.riccardopinato.phoneguard.activation.ActivationSource
+import com.riccardopinato.phoneguard.activation.ProtectionActivationCoordinator
 import com.riccardopinato.phoneguard.data.SecurityHealth
 import com.riccardopinato.phoneguard.data.SecurityRepository
 import com.riccardopinato.phoneguard.data.SettingsRepository
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
 import com.riccardopinato.phoneguard.model.AppSettings
 import com.riccardopinato.phoneguard.model.ProtectionMode
+import com.riccardopinato.phoneguard.model.ProtectionPreset
 import com.riccardopinato.phoneguard.model.Sensitivity
 import com.riccardopinato.phoneguard.pocket.model.GuardMode
 import com.riccardopinato.phoneguard.pocket.model.JourneyDuration
@@ -76,6 +81,80 @@ fun AlarmScreen(
             initialValue = AppSettings()
         )
 
+    val permissionRequiredMessage =
+        stringResource(
+            R.string
+                .permission_required_message
+        )
+
+    val securityNotReadyMessage =
+        stringResource(
+            R.string
+                .security_not_ready
+        )
+
+    val modeNotSupportedMessage =
+        stringResource(
+            R.string
+                .mode_not_supported_message
+        )
+
+    val activationAlreadyActiveMessage =
+        stringResource(
+            R.string
+                .activation_block_active
+        )
+
+    val activationRecoveryMessage =
+        stringResource(
+            R.string
+                .activation_block_recovery
+        )
+
+    val activationNotificationsMessage =
+        stringResource(
+            R.string
+                .activation_block_notifications
+        )
+
+    val activationCameraMessage =
+        stringResource(
+            R.string
+                .activation_block_camera
+        )
+
+    val chargingConnectFirstMessage =
+        stringResource(
+            R.string
+                .charging_connect_first
+        )
+
+    fun activationMessage(
+        reason: ActivationBlockReason
+    ): String =
+        when (reason) {
+            ActivationBlockReason.ALREADY_ACTIVE ->
+                activationAlreadyActiveMessage
+
+            ActivationBlockReason.RECOVERY_PENDING ->
+                activationRecoveryMessage
+
+            ActivationBlockReason.SECURITY_NOT_READY ->
+                securityNotReadyMessage
+
+            ActivationBlockReason.MODE_UNSUPPORTED ->
+                modeNotSupportedMessage
+
+            ActivationBlockReason.CHARGER_NOT_CONNECTED ->
+                chargingConnectFirstMessage
+
+            ActivationBlockReason.NOTIFICATION_PERMISSION ->
+                activationNotificationsMessage
+
+            ActivationBlockReason.CAMERA_PERMISSION ->
+                activationCameraMessage
+        }
+
     val hasPin by
         securityRepository.hasPin.collectAsStateWithLifecycle(
             initialValue = false
@@ -89,24 +168,43 @@ fun AlarmScreen(
 
     var showSetPin by remember { mutableStateOf(false) }
     var showPermissionInfo by remember { mutableStateOf(false) }
-
-    var volumeDraft by
-        remember(settings.alarmVolumePercent) {
-            mutableFloatStateOf(
-                settings.alarmVolumePercent.toFloat()
-            )
-        }
-
-    var flashFrequencyDraft by
-        remember(settings.flashFrequencyHz) {
-            mutableFloatStateOf(settings.flashFrequencyHz)
-        }
+    var armMessage by remember { mutableStateOf<String?>(null) }
 
     val selectedMode =
         if (runtime.phase == AlarmPhase.DISARMED) {
             settings.selectedMode
         } else {
             runtime.mode
+        }
+
+    val selectedProfile =
+        settings.alarmProfile(
+            selectedMode
+        )
+
+    var volumeDraft by
+        remember(
+            selectedMode,
+            selectedProfile
+                .alarmVolumePercent
+        ) {
+            mutableFloatStateOf(
+                selectedProfile
+                    .alarmVolumePercent
+                    .toFloat()
+            )
+        }
+
+    var flashFrequencyDraft by
+        remember(
+            selectedMode,
+            selectedProfile
+                .flashFrequencyHz
+        ) {
+            mutableFloatStateOf(
+                selectedProfile
+                    .flashFrequencyHz
+            )
         }
 
     val modeSupported =
@@ -127,22 +225,59 @@ fun AlarmScreen(
                 )
         )
 
+    fun startSelectedMode() {
+        scope.launch {
+            when (
+                val outcome =
+                    ProtectionActivationCoordinator
+                        .requestArm(
+                            context = context,
+                            mode =
+                                settings
+                                    .selectedMode,
+                            source =
+                                ActivationSource.APP
+                        )
+            ) {
+                ActivationOutcome.Started -> {
+                    armMessage = null
+                }
+
+                is ActivationOutcome.Blocked -> {
+                    armMessage =
+                        activationMessage(
+                            outcome.reason
+                        )
+                }
+            }
+        }
+    }
+
     val permissionLauncher =
         rememberLauncherForActivityResult(
             contract =
                 ActivityResultContracts
                     .RequestMultiplePermissions()
         ) {
-            ProtectionForegroundService.arm(
-                context,
-                settings.selectedMode
-            )
+            grants ->
+            if (
+                grants.values.all {
+                    it
+                }
+            ) {
+                startSelectedMode()
+            } else {
+                armMessage =
+                    permissionRequiredMessage
+            }
         }
 
     fun missingPermissions(): List<String> =
         buildList {
             if (
-                settings.flashEnabled &&
+                selectedProfile
+                    .flashEnabled &&
+                hardware.hasFlash &&
                 ContextCompat.checkSelfPermission(
                     context,
                     Manifest.permission.CAMERA
@@ -179,10 +314,14 @@ fun AlarmScreen(
             securityHealth !=
             SecurityHealth.READY
         ) {
+            armMessage =
+                securityNotReadyMessage
             return
         }
 
         if (!modeSupported) {
+            armMessage =
+                modeNotSupportedMessage
             return
         }
 
@@ -190,10 +329,7 @@ fun AlarmScreen(
             missingPermissions()
 
         if (missing.isEmpty()) {
-            ProtectionForegroundService.arm(
-                context,
-                settings.selectedMode
-            )
+            startSelectedMode()
         } else {
             showPermissionInfo = true
         }
@@ -236,6 +372,21 @@ fun AlarmScreen(
             )
         }
 
+        PresetOptions(
+            enabled =
+                runtime.phase ==
+                    AlarmPhase.DISARMED,
+            onApply = {
+                preset ->
+                scope.launch {
+                    settingsRepository
+                        .applyPreset(
+                            preset
+                        )
+                }
+            }
+        )
+
         UtilitySectionHeader(
             title = stringResource(R.string.home_modes),
             trailing = selectedMode.label
@@ -275,7 +426,7 @@ fun AlarmScreen(
         ) {
             listOf(
                 ProtectionMode.BAG,
-                ProtectionMode.JOURNEY
+                ProtectionMode.CHARGING
             ).forEach { mode ->
                 ModeChoice(
                     mode = mode,
@@ -294,6 +445,26 @@ fun AlarmScreen(
                 )
             }
         }
+
+        ModeChoice(
+            mode = ProtectionMode.JOURNEY,
+            selected =
+                settings.selectedMode ==
+                    ProtectionMode.JOURNEY,
+            enabled =
+                runtime.phase ==
+                    AlarmPhase.DISARMED,
+            onClick = {
+                scope.launch {
+                    settingsRepository
+                        .setSelectedMode(
+                            ProtectionMode.JOURNEY
+                        )
+                }
+            },
+            modifier =
+                Modifier.fillMaxWidth()
+        )
 
         Text(
             text = modeDescription(selectedMode),
@@ -500,6 +671,24 @@ fun AlarmScreen(
             }
         )
 
+        GracePeriodOptions(
+            seconds =
+                settings
+                    .gracePeriodSeconds,
+            enabled =
+                runtime.phase ==
+                    AlarmPhase.DISARMED,
+            onChange = {
+                value ->
+                scope.launch {
+                    settingsRepository
+                        .setGracePeriodSeconds(
+                            value
+                        )
+                }
+            }
+        )
+
         if (
             selectedMode ==
             ProtectionMode.JOURNEY
@@ -564,39 +753,77 @@ fun AlarmScreen(
             }
         }
 
-        if (
-            selectedMode ==
-            ProtectionMode.TABLE
-        ) {
-            TableSensitivity(
-                settings = settings,
-                enabled =
-                    runtime.phase ==
-                        AlarmPhase.DISARMED,
-                onChange = {
-                    scope.launch {
-                        settingsRepository
-                            .setSensitivity(it)
+        when (selectedMode) {
+            ProtectionMode.TABLE -> {
+                TableSensitivity(
+                    settings = settings,
+                    enabled =
+                        runtime.phase ==
+                            AlarmPhase.DISARMED,
+                    onChange = {
+                        scope.launch {
+                            settingsRepository
+                                .setSensitivity(
+                                    it
+                                )
+                        }
                     }
-                }
-            )
-        } else {
-            PocketSensitivityOptions(
-                settings = settings,
-                enabled =
-                    runtime.phase ==
-                        AlarmPhase.DISARMED,
-                onChange = {
-                    scope.launch {
-                        settingsRepository
-                            .setPocketSensitivity(it)
+                )
+            }
+
+            ProtectionMode.POCKET,
+            ProtectionMode.BAG,
+            ProtectionMode.JOURNEY -> {
+                PocketSensitivityOptions(
+                    settings = settings,
+                    enabled =
+                        runtime.phase ==
+                            AlarmPhase.DISARMED,
+                    onChange = {
+                        scope.launch {
+                            settingsRepository
+                                .setPocketSensitivity(
+                                    it
+                                )
+                        }
                     }
-                }
-            )
+                )
+            }
+
+            ProtectionMode.CHARGING -> {
+                ChargingOptions(
+                    autoArm =
+                        settings
+                            .autoArmCharging,
+                    enabled =
+                        runtime.phase ==
+                            AlarmPhase.DISARMED &&
+                            securityHealth ==
+                                SecurityHealth.READY &&
+                            missingPermissions()
+                                .isEmpty(),
+                    onAutoArm = {
+                        enabled ->
+                        scope.launch {
+                            settingsRepository
+                                .setChargingAutoArm(
+                                    enabled
+                                )
+
+                            ProtectionForegroundService
+                                .setChargingAutoArm(
+                                    context,
+                                    enabled
+                                )
+                        }
+                    }
+                )
+            }
         }
 
         AlarmOutputOptions(
             settings = settings,
+            mode = selectedMode,
             hardware = hardware,
             runtime = runtime,
             volumeDraft = volumeDraft,
@@ -607,6 +834,7 @@ fun AlarmScreen(
                 scope.launch {
                     settingsRepository
                         .setAlarmVolumePercent(
+                            selectedMode,
                             volumeDraft
                                 .roundToInt()
                         )
@@ -621,6 +849,7 @@ fun AlarmScreen(
                 scope.launch {
                     settingsRepository
                         .setFlashFrequencyHz(
+                            selectedMode,
                             flashFrequencyDraft
                         )
                 }
@@ -628,28 +857,66 @@ fun AlarmScreen(
             setSound = {
                 scope.launch {
                     settingsRepository
-                        .setSoundEnabled(it)
+                        .setSoundEnabled(
+                            selectedMode,
+                            it
+                        )
                 }
             },
             setVibration = {
                 scope.launch {
                     settingsRepository
-                        .setVibrationEnabled(it)
+                        .setVibrationEnabled(
+                            selectedMode,
+                            it
+                        )
                 }
             },
             setFlash = {
                 scope.launch {
                     settingsRepository
-                        .setFlashEnabled(it)
+                        .setFlashEnabled(
+                            selectedMode,
+                            it
+                        )
                 }
             },
             setWarningScreen = {
                 scope.launch {
                     settingsRepository
-                        .setWarningScreenEnabled(it)
+                        .setWarningScreenEnabled(
+                            selectedMode,
+                            it
+                        )
                 }
             }
         )
+
+        armMessage?.let {
+            message ->
+            UtilityPanel(
+                containerColor =
+                    MaterialTheme
+                        .colorScheme
+                        .errorContainer
+            ) {
+                Text(
+                    text = message,
+                    modifier =
+                        Modifier.padding(
+                            14.dp
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onErrorContainer
+                )
+            }
+        }
 
         Spacer(
             Modifier.height(76.dp)
@@ -700,6 +967,240 @@ fun AlarmScreen(
         )
     }
 }
+
+@Composable
+private fun PresetOptions(
+    enabled: Boolean,
+    onApply: (ProtectionPreset) -> Unit
+) {
+    UtilitySectionHeader(
+        title =
+            stringResource(
+                R.string.presets_title
+            ),
+        trailing =
+            stringResource(
+                R.string.presets_trailing
+            )
+    )
+
+    Row(
+        modifier =
+            Modifier.fillMaxWidth(),
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                8.dp
+            )
+    ) {
+        listOf(
+            ProtectionPreset.CAFE,
+            ProtectionPreset.TRANSIT,
+            ProtectionPreset.BACKPACK
+        ).forEach {
+            preset ->
+            UtilityChoice(
+                label =
+                    presetLabel(
+                        preset
+                    ),
+                selected = false,
+                enabled = enabled,
+                onClick = {
+                    onApply(
+                        preset
+                    )
+                },
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            )
+        }
+    }
+
+    Row(
+        modifier =
+            Modifier.fillMaxWidth(),
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                8.dp
+            )
+    ) {
+        listOf(
+            ProtectionPreset.PUBLIC_CHARGE,
+            ProtectionPreset.TRAVEL
+        ).forEach {
+            preset ->
+            UtilityChoice(
+                label =
+                    presetLabel(
+                        preset
+                    ),
+                selected = false,
+                enabled = enabled,
+                onClick = {
+                    onApply(
+                        preset
+                    )
+                },
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            )
+        }
+    }
+}
+
+@Composable
+private fun GracePeriodOptions(
+    seconds: Int,
+    enabled: Boolean,
+    onChange: (Int) -> Unit
+) {
+    UtilitySectionHeader(
+        title =
+            stringResource(
+                R.string.grace_title
+            ),
+        trailing =
+            if (seconds == 0) {
+                stringResource(
+                    R.string.grace_off
+                )
+            } else {
+                stringResource(
+                    R.string.seconds_format,
+                    seconds
+                )
+            }
+    )
+
+    Row(
+        modifier =
+            Modifier.fillMaxWidth(),
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                8.dp
+            )
+    ) {
+        listOf(
+            0,
+            2,
+            5,
+            8
+        ).forEach {
+            value ->
+            UtilityChoice(
+                label =
+                    if (value == 0) {
+                        stringResource(
+                            R.string.grace_off
+                        )
+                    } else {
+                        stringResource(
+                            R.string.seconds_format,
+                            value
+                        )
+                    },
+                selected =
+                    seconds == value,
+                enabled = enabled,
+                onClick = {
+                    onChange(
+                        value
+                    )
+                },
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            )
+        }
+    }
+
+    Text(
+        text =
+            stringResource(
+                R.string.grace_body
+            ),
+        style =
+            MaterialTheme
+                .typography
+                .bodySmall,
+        color =
+            MaterialTheme
+                .colorScheme
+                .onSurfaceVariant
+    )
+}
+
+@Composable
+private fun ChargingOptions(
+    autoArm: Boolean,
+    enabled: Boolean,
+    onAutoArm: (Boolean) -> Unit
+) {
+    UtilitySectionHeader(
+        title =
+            stringResource(
+                R.string.charging_options_title
+            )
+    )
+
+    UtilityPanel {
+        Column(
+            modifier =
+                Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 12.dp
+                )
+        ) {
+            SettingSwitchRow(
+                title =
+                    stringResource(
+                        R.string
+                            .charging_auto_arm_title
+                    ),
+                subtitle =
+                    stringResource(
+                        R.string
+                            .charging_auto_arm_subtitle
+                    ),
+                checked =
+                    autoArm,
+                enabled =
+                    enabled ||
+                        autoArm,
+                onCheckedChange =
+                    onAutoArm
+            )
+        }
+    }
+}
+
+@Composable
+private fun presetLabel(
+    preset: ProtectionPreset
+): String =
+    stringResource(
+        when (preset) {
+            ProtectionPreset.CAFE ->
+                R.string.preset_cafe
+
+            ProtectionPreset.TRANSIT ->
+                R.string.preset_transit
+
+            ProtectionPreset.BACKPACK ->
+                R.string.preset_backpack
+
+            ProtectionPreset.PUBLIC_CHARGE ->
+                R.string.preset_public_charge
+
+            ProtectionPreset.TRAVEL ->
+                R.string.preset_travel
+        }
+    )
 
 @Composable
 private fun ModeChoice(
@@ -877,6 +1378,7 @@ private fun JourneyOptions(
 @Composable
 private fun AlarmOutputOptions(
     settings: AppSettings,
+    mode: ProtectionMode,
     hardware: HardwareSnapshot,
     runtime: AlarmRuntimeState,
     volumeDraft: Float,
@@ -893,6 +1395,11 @@ private fun AlarmOutputOptions(
     val editable =
         runtime.phase ==
             AlarmPhase.DISARMED
+
+    val profile =
+        settings.alarmProfile(
+            mode
+        )
 
     UtilitySectionHeader(
         title = stringResource(R.string.escalation_title),
@@ -914,7 +1421,7 @@ private fun AlarmOutputOptions(
                 subtitle =
                     stringResource(R.string.siren_subtitle),
                 checked =
-                    settings.soundEnabled,
+                    profile.soundEnabled,
                 enabled = editable,
                 onCheckedChange =
                     setSound
@@ -939,7 +1446,7 @@ private fun AlarmOutputOptions(
                 steps = 19,
                 enabled =
                     editable &&
-                        settings.soundEnabled
+                        profile.soundEnabled
             )
 
             SettingSwitchRow(
@@ -947,7 +1454,7 @@ private fun AlarmOutputOptions(
                 subtitle =
                     stringResource(R.string.vibration_subtitle),
                 checked =
-                    settings
+                    profile
                         .vibrationEnabled,
                 enabled =
                     editable &&
@@ -967,7 +1474,7 @@ private fun AlarmOutputOptions(
                         stringResource(R.string.unavailable_device)
                     },
                 checked =
-                    settings.flashEnabled &&
+                    profile.flashEnabled &&
                         hardware.hasFlash,
                 enabled =
                     editable &&
@@ -978,7 +1485,7 @@ private fun AlarmOutputOptions(
 
             if (
                 hardware.hasFlash &&
-                settings.flashEnabled
+                profile.flashEnabled
             ) {
                 Text(
                     text =
@@ -1008,7 +1515,7 @@ private fun AlarmOutputOptions(
                 subtitle =
                     stringResource(R.string.warning_screen_subtitle),
                 checked =
-                    settings
+                    profile
                         .warningScreenEnabled,
                 enabled = editable,
                 onCheckedChange =
@@ -1153,6 +1660,9 @@ private fun modeDescription(
 
             ProtectionMode.BAG ->
                 R.string.mode_bag_description
+
+            ProtectionMode.CHARGING ->
+                R.string.mode_charging_description
 
             ProtectionMode.JOURNEY ->
                 R.string.mode_journey_description

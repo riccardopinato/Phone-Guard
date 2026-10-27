@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.riccardopinato.phoneguard.alarm.AlarmVolumeLeaseManager
-import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.model.AlarmOutputProfile
 import com.riccardopinato.phoneguard.service.AlarmOutputController
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -40,7 +40,7 @@ class AlarmOutputControllerInstrumentedTest {
         try {
             val health =
                 controller.start(
-                    AppSettings(
+                    AlarmOutputProfile(
                         soundEnabled = true,
                         vibrationEnabled = false,
                         flashEnabled = false,
