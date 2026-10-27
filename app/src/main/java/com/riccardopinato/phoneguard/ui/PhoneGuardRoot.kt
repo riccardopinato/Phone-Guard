@@ -106,6 +106,7 @@ fun PhoneGuardRoot(
 
     if (runtime.phase == AlarmPhase.TRIGGERED) {
         TriggeredAlarmScreen(
+            pulseEnabled = settings.warningScreenEnabled,
             onUnlock = {
                 showUnlock = true
                 unlockError = null

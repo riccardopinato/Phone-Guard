@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,6 +49,7 @@ import com.riccardopinato.phoneguard.ui.components.UtilityPrimaryAction
 import com.riccardopinato.phoneguard.ui.components.UtilitySectionHeader
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun AlarmScreen(
@@ -71,6 +74,18 @@ fun AlarmScreen(
 
     var showSetPin by remember { mutableStateOf(false) }
     var showPermissionInfo by remember { mutableStateOf(false) }
+
+    var volumeDraft by
+        remember(settings.alarmVolumePercent) {
+            mutableFloatStateOf(
+                settings.alarmVolumePercent.toFloat()
+            )
+        }
+
+    var flashFrequencyDraft by
+        remember(settings.flashFrequencyHz) {
+            mutableFloatStateOf(settings.flashFrequencyHz)
+        }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -127,14 +142,14 @@ fun AlarmScreen(
             verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
             Text(
-                text = "TABLETOP",
+                text = "TABLE",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = OmniAccent
             )
 
             Text(
-                text = "Motion Alarm",
+                text = "Phone Guard",
                 style = MaterialTheme.typography.headlineLarge
             )
         }
@@ -161,7 +176,7 @@ fun AlarmScreen(
                     )
 
                     Text(
-                        text = "Imposta un PIN prima di armare l'allarme.",
+                        text = "Imposta un PIN prima di armare la protezione.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -245,7 +260,11 @@ fun AlarmScreen(
 
         UtilityPanel {
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                modifier = Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 12.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SettingSwitchRow(
                     title = "Sirena",
@@ -257,6 +276,30 @@ fun AlarmScreen(
                             settingsRepository.setSoundEnabled(it)
                         }
                     }
+                )
+
+                Text(
+                    text =
+                        "Volume forzato all'attivazione: " +
+                            "${volumeDraft.roundToInt()}%",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Slider(
+                    value = volumeDraft,
+                    onValueChange = { volumeDraft = it },
+                    onValueChangeFinished = {
+                        scope.launch {
+                            settingsRepository.setAlarmVolumePercent(
+                                volumeDraft.roundToInt()
+                            )
+                        }
+                    },
+                    valueRange = 0f..100f,
+                    steps = 19,
+                    enabled =
+                        runtime.phase == AlarmPhase.DISARMED &&
+                            settings.soundEnabled
                 )
 
                 SettingSwitchRow(
@@ -277,17 +320,62 @@ fun AlarmScreen(
                     title = "Flash LED",
                     subtitle =
                         if (hardware.hasFlash) {
-                            "Lampeggio rapido durante l'allarme"
+                            "Strobo configurabile durante l'allarme"
                         } else {
                             "Non disponibile su questo dispositivo"
                         },
-                    checked = settings.flashEnabled && hardware.hasFlash,
+                    checked =
+                        settings.flashEnabled &&
+                            hardware.hasFlash,
                     enabled =
                         runtime.phase == AlarmPhase.DISARMED &&
                             hardware.hasFlash,
                     onCheckedChange = {
                         scope.launch {
                             settingsRepository.setFlashEnabled(it)
+                        }
+                    }
+                )
+
+                if (hardware.hasFlash && settings.flashEnabled) {
+                    Text(
+                        text =
+                            "Frequenza flash: " +
+                                String.format(
+                                    "%.1f Hz",
+                                    flashFrequencyDraft
+                                ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Slider(
+                        value = flashFrequencyDraft,
+                        onValueChange = {
+                            flashFrequencyDraft = it
+                        },
+                        onValueChangeFinished = {
+                            scope.launch {
+                                settingsRepository.setFlashFrequencyHz(
+                                    flashFrequencyDraft
+                                )
+                            }
+                        },
+                        valueRange = 0.5f..10f,
+                        steps = 18,
+                        enabled =
+                            runtime.phase == AlarmPhase.DISARMED
+                    )
+                }
+
+                SettingSwitchRow(
+                    title = "Warning screen",
+                    subtitle =
+                        "Schermata rossa lampeggiante quando scatta l'allarme",
+                    checked = settings.warningScreenEnabled,
+                    enabled = runtime.phase == AlarmPhase.DISARMED,
+                    onCheckedChange = {
+                        scope.launch {
+                            settingsRepository.setWarningScreenEnabled(it)
                         }
                     }
                 )
@@ -313,15 +401,23 @@ fun AlarmScreen(
         val missing = missingPermissions()
 
         PermissionInfoDialog(
-            needsCamera = missing.contains(Manifest.permission.CAMERA),
+            needsCamera =
+                missing.contains(Manifest.permission.CAMERA),
             needsNotifications =
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                    missing.contains(Manifest.permission.POST_NOTIFICATIONS),
+                Build.VERSION.SDK_INT >=
+                    Build.VERSION_CODES.TIRAMISU &&
+                    missing.contains(
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ),
             onContinue = {
                 showPermissionInfo = false
-                permissionLauncher.launch(missing.toTypedArray())
+                permissionLauncher.launch(
+                    missing.toTypedArray()
+                )
             },
-            onDismiss = { showPermissionInfo = false }
+            onDismiss = {
+                showPermissionInfo = false
+            }
         )
     }
 }
@@ -330,10 +426,13 @@ private fun actionLabel(
     runtime: AlarmRuntimeState
 ): String =
     when (runtime.phase) {
-        AlarmPhase.DISARMED -> "ATTIVA ALLARME"
-        AlarmPhase.ARMING -> "ANNULLA · ${runtime.countdownSeconds}s"
-        AlarmPhase.CALIBRATING -> "ANNULLA CALIBRAZIONE"
+        AlarmPhase.DISARMED -> "ATTIVA PROTEZIONE"
+        AlarmPhase.ARMING ->
+            "ANNULLA · ${runtime.countdownSeconds}s"
+        AlarmPhase.CALIBRATING ->
+            "ANNULLA CALIBRAZIONE"
         AlarmPhase.ARMED -> "DISATTIVA"
-        AlarmPhase.TRIGGERED -> "SBLOCCA E DISATTIVA"
+        AlarmPhase.TRIGGERED ->
+            "SBLOCCA E DISATTIVA"
         AlarmPhase.ERROR -> "CHIUDI"
     }
