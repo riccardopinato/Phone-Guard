@@ -7,8 +7,7 @@ import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.pocket.model.SensorSnapshot
 import com.riccardopinato.phoneguard.pocket.sensor.SamplingMode
 import com.riccardopinato.phoneguard.pocket.sensor.SensorController
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.delay
 
 data class SmartArmObservation(
     val lux: Float? = null,
@@ -170,11 +169,6 @@ class SmartArmContextResolver(
 
     private suspend fun sampleObservation():
         SmartArmObservation? {
-        val completed =
-            CompletableDeferred<
-                SensorSnapshot
-                >()
-
         var latest:
             SensorSnapshot? = null
 
@@ -185,20 +179,6 @@ class SmartArmContextResolver(
                 snapshot ->
                 latest =
                     snapshot
-
-                if (
-                    snapshot.accelerometerObserved &&
-                    (
-                        snapshot.proximityObserved ||
-                            snapshot.lightObserved ||
-                            snapshot.gyroscopeObserved
-                        ) &&
-                    !completed.isCompleted
-                ) {
-                    completed.complete(
-                        snapshot
-                    )
-                }
             }
 
         return try {
@@ -206,14 +186,12 @@ class SmartArmContextResolver(
                 SamplingMode.ALERT
             )
 
-            val snapshot =
-                withTimeoutOrNull(
-                    SAMPLE_WINDOW_MS
-                ) {
-                    completed.await()
-                } ?: latest
+            delay(
+                SAMPLE_WINDOW_MS
+            )
 
-            snapshot?.toObservation()
+            latest
+                ?.toObservation()
         } finally {
             controller.stop()
         }
