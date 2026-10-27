@@ -385,4 +385,11 @@
     <string name="event_pre_alarm">Pre-allarme avviato</string>
     <string name="event_alarm_outputs_timeout">Output allarme terminati</string>
 
+
+    <string name="live_test_instruction_table">Solleva o muovi il telefono durante il test.</string>
+    <string name="live_test_instruction_pocket">Copri il sensore di prossimità, poi scoprilo come se estraessi il telefono dalla tasca.</string>
+    <string name="live_test_instruction_bag">Metti il telefono in una posizione buia/chiusa, poi estrailo o muovilo.</string>
+    <string name="live_test_instruction_charging">Lascia collegata l’alimentazione, avvia il test e poi scollega il caricatore.</string>
+    <string name="live_test_instruction_accessory">Lascia collegato un accessorio audio supportato, avvia il test e poi scollegalo.</string>
+
 </resources>
