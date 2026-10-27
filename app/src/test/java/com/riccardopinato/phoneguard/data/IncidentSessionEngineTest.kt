@@ -71,7 +71,7 @@ class IncidentSessionEngineTest {
             session.eventCount
         )
         assertEquals(
-            4_000,
+            4_000L,
             session.endedAt
         )
         assertEquals(
