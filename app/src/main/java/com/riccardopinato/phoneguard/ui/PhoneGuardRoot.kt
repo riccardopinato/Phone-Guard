@@ -38,6 +38,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.riccardopinato.phoneguard.AppContainer
 import com.riccardopinato.phoneguard.auth.BiometricAuthManager
+import com.riccardopinato.phoneguard.data.PinVerificationResult
 import com.riccardopinato.phoneguard.model.AppSettings
 import com.riccardopinato.phoneguard.service.AlarmPhase
 import com.riccardopinato.phoneguard.service.AlarmStateStore
@@ -254,10 +255,34 @@ fun PhoneGuardRoot(
             },
             onPinSubmit = { pin ->
                 scope.launch {
-                    if (container.securityRepository.verifyPin(pin)) {
-                        completeAuthentication()
-                    } else {
-                        unlockError = "PIN non corretto."
+                    when (
+                        val result =
+                            container
+                                .securityRepository
+                                .verifyPin(pin)
+                    ) {
+                        PinVerificationResult.Success ->
+                            completeAuthentication()
+
+                        is PinVerificationResult.Invalid ->
+                            unlockError =
+                                "PIN non corretto. Tentativi prima del blocco: ${result.attemptsBeforeLockout}."
+
+                        is PinVerificationResult.LockedOut -> {
+                            val seconds =
+                                (
+                                    result.remainingMs +
+                                        999L
+                                    ) /
+                                    1_000L
+
+                            unlockError =
+                                "Troppi tentativi. Riprova tra $seconds s."
+                        }
+
+                        is PinVerificationResult.Unavailable ->
+                            unlockError =
+                                "Sicurezza locale non disponibile. Usa la biometria forte oppure ripristina il PIN dal profilo."
                     }
                 }
             },

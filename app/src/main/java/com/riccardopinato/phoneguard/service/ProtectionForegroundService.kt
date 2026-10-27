@@ -98,9 +98,7 @@ class ProtectionForegroundService : Service() {
                     intent?.action ==
                     Intent.ACTION_USER_PRESENT
                 ) {
-                    ownerVerified(
-                        "Android ACTION_USER_PRESENT"
-                    )
+                    ownerPresenceObserved()
                 }
             }
         }
@@ -666,6 +664,58 @@ class ProtectionForegroundService : Service() {
             text =
                 "Autenticati per evitare l'allarme."
         )
+
+        scheduleOwnerCheckExpiry()
+    }
+
+    private fun ownerPresenceObserved() {
+        if (
+            AlarmStateStore.state
+                .value.phase !=
+            AlarmPhase.OWNER_CHECK
+        ) {
+            return
+        }
+
+        val current =
+            AlarmStateStore.state
+                .value
+
+        AlarmStateStore.update(
+            current.copy(
+                message =
+                    "Telefono sbloccato. Conferma PIN o biometria per evitare l'allarme.",
+                ownerCheckDeadline =
+                    System.currentTimeMillis() +
+                        OWNER_GRACE_MS
+            )
+        )
+
+        scheduleOwnerCheckExpiry()
+    }
+
+    private fun scheduleOwnerCheckExpiry() {
+        ownerCheckJob?.cancel()
+
+        val deadline =
+            System.currentTimeMillis() +
+                OWNER_GRACE_MS
+
+        val current =
+            AlarmStateStore.state
+                .value
+
+        if (
+            current.phase ==
+            AlarmPhase.OWNER_CHECK
+        ) {
+            AlarmStateStore.update(
+                current.copy(
+                    ownerCheckDeadline =
+                        deadline
+                )
+            )
+        }
 
         ownerCheckJob =
             serviceScope.launch {
@@ -1463,7 +1513,7 @@ class ProtectionForegroundService : Service() {
             "protection_mode"
 
         private const val OWNER_GRACE_MS =
-            2_500L
+            8_000L
 
         private const val NOTIFICATION_ID =
             4101

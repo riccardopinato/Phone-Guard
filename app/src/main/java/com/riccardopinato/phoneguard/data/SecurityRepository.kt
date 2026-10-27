@@ -4,12 +4,12 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -18,99 +18,416 @@ import javax.crypto.Mac
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
-private val Context.securityDataStore by preferencesDataStore(
-    name = "phone_guard_security"
-)
+private val Context.securityDataStore by
+    preferencesDataStore(
+        name = "phone_guard_security"
+    )
 
-class SecurityRepository(private val context: Context) {
+enum class SecurityHealth {
+    NO_PIN,
+    READY,
+    KEY_UNAVAILABLE,
+    CORRUPTED_VERIFIER
+}
 
-    private object Keys {
-        val pinSalt = stringPreferencesKey("pin_salt")
-        val pinHash = stringPreferencesKey("pin_hash")
-    }
+sealed interface PinVerificationResult {
+    data object Success :
+        PinVerificationResult
 
-    val hasPin: Flow<Boolean> =
-        context.securityDataStore.data.map { prefs ->
-            !prefs[Keys.pinSalt].isNullOrBlank() &&
-                !prefs[Keys.pinHash].isNullOrBlank()
+    data class Invalid(
+        val attemptsBeforeLockout: Int
+    ) : PinVerificationResult
+
+    data class LockedOut(
+        val remainingMs: Long
+    ) : PinVerificationResult
+
+    data class Unavailable(
+        val health: SecurityHealth
+    ) : PinVerificationResult
+}
+
+internal object PinRateLimitPolicy {
+    const val FREE_FAILURES = 4
+
+    fun lockoutDurationMs(
+        failedAttempts: Int
+    ): Long =
+        when {
+            failedAttempts <=
+                FREE_FAILURES ->
+                0L
+
+            failedAttempts == 5 ->
+                15_000L
+
+            failedAttempts == 6 ->
+                30_000L
+
+            failedAttempts == 7 ->
+                60_000L
+
+            else ->
+                300_000L
         }
 
-    suspend fun setPin(pin: String) {
-        require(pin.matches(PIN_REGEX)) {
+    fun attemptsBeforeLockout(
+        failedAttempts: Int
+    ): Int =
+        (
+            FREE_FAILURES +
+                1 -
+                failedAttempts
+            ).coerceAtLeast(0)
+}
+
+class SecurityRepository(
+    private val context: Context
+) {
+
+    private object Keys {
+        val pinSalt =
+            stringPreferencesKey(
+                "pin_salt"
+            )
+
+        val pinHash =
+            stringPreferencesKey(
+                "pin_hash"
+            )
+
+        val failedAttempts =
+            intPreferencesKey(
+                "failed_attempts"
+            )
+
+        val lockoutUntil =
+            longPreferencesKey(
+                "lockout_until"
+            )
+    }
+
+    val securityHealth:
+        Flow<SecurityHealth> =
+        context.securityDataStore.data
+            .map(::healthFrom)
+
+    val hasPin:
+        Flow<Boolean> =
+        securityHealth.map {
+            it !=
+                SecurityHealth.NO_PIN
+        }
+
+    suspend fun setPin(
+        pin: String
+    ) {
+        require(
+            pin.matches(PIN_REGEX)
+        ) {
             "Il PIN deve contenere da 4 a 6 cifre."
         }
 
         val salt =
-            ByteArray(SALT_BYTES).also {
-                SecureRandom().nextBytes(it)
+            ByteArray(
+                SALT_BYTES
+            ).also {
+                SecureRandom()
+                    .nextBytes(it)
             }
 
-        val hash = deriveVerifier(pin, salt)
+        val key =
+            getOrCreateKeystoreKey()
 
-        context.securityDataStore.edit { prefs ->
-            prefs[Keys.pinSalt] =
-                Base64.encodeToString(
-                    salt,
-                    Base64.NO_WRAP
-                )
-            prefs[Keys.pinHash] =
-                Base64.encodeToString(
-                    hash,
-                    Base64.NO_WRAP
-                )
-        }
+        val hash =
+            deriveVerifier(
+                pin = pin,
+                salt = salt,
+                key = key
+            )
+
+        context.securityDataStore
+            .edit { prefs ->
+                prefs[Keys.pinSalt] =
+                    Base64.encodeToString(
+                        salt,
+                        Base64.NO_WRAP
+                    )
+
+                prefs[Keys.pinHash] =
+                    Base64.encodeToString(
+                        hash,
+                        Base64.NO_WRAP
+                    )
+
+                prefs[Keys.failedAttempts] =
+                    0
+
+                prefs[Keys.lockoutUntil] =
+                    0L
+            }
     }
 
-    suspend fun verifyPin(pin: String): Boolean {
-        if (!pin.matches(PIN_REGEX)) return false
+    suspend fun verifyPin(
+        pin: String
+    ): PinVerificationResult {
+        if (
+            !pin.matches(
+                PIN_REGEX
+            )
+        ) {
+            return PinVerificationResult
+                .Invalid(
+                    attemptsBeforeLockout =
+                        PinRateLimitPolicy
+                            .FREE_FAILURES
+                )
+        }
 
         val prefs =
-            context.securityDataStore.data.first()
+            context.securityDataStore
+                .data
+                .first()
 
-        val saltEncoded =
-            prefs[Keys.pinSalt] ?: return false
-        val hashEncoded =
-            prefs[Keys.pinHash] ?: return false
+        val health =
+            healthFrom(prefs)
 
-        return runCatching {
-            val salt =
+        if (
+            health !=
+            SecurityHealth.READY
+        ) {
+            return PinVerificationResult
+                .Unavailable(
+                    health
+                )
+        }
+
+        val now =
+            System.currentTimeMillis()
+
+        val lockoutUntil =
+            prefs[
+                Keys.lockoutUntil
+            ] ?: 0L
+
+        if (
+            lockoutUntil >
+            now
+        ) {
+            return PinVerificationResult
+                .LockedOut(
+                    remainingMs =
+                        lockoutUntil -
+                            now
+                )
+        }
+
+        val salt =
+            runCatching {
                 Base64.decode(
-                    saltEncoded,
+                    prefs[Keys.pinSalt],
                     Base64.NO_WRAP
                 )
+            }.getOrNull()
+                ?: return PinVerificationResult
+                    .Unavailable(
+                        SecurityHealth
+                            .CORRUPTED_VERIFIER
+                    )
 
-            val expected =
+        val expected =
+            runCatching {
                 Base64.decode(
-                    hashEncoded,
+                    prefs[Keys.pinHash],
                     Base64.NO_WRAP
                 )
+            }.getOrNull()
+                ?: return PinVerificationResult
+                    .Unavailable(
+                        SecurityHealth
+                            .CORRUPTED_VERIFIER
+                    )
 
-            val actual =
+        val key =
+            getExistingKeystoreKey()
+                ?: return PinVerificationResult
+                    .Unavailable(
+                        SecurityHealth
+                            .KEY_UNAVAILABLE
+                    )
+
+        val actual =
+            runCatching {
                 deriveVerifier(
-                    pin,
-                    salt
+                    pin = pin,
+                    salt = salt,
+                    key = key
                 )
+            }.getOrNull()
+                ?: return PinVerificationResult
+                    .Unavailable(
+                        SecurityHealth
+                            .KEY_UNAVAILABLE
+                    )
 
+        if (
             MessageDigest.isEqual(
                 expected,
                 actual
             )
-        }.getOrDefault(false)
+        ) {
+            resetRateLimit()
+
+            return PinVerificationResult
+                .Success
+        }
+
+        val failures =
+            (
+                prefs[
+                    Keys.failedAttempts
+                ] ?: 0
+            ) + 1
+
+        val lockoutMs =
+            PinRateLimitPolicy
+                .lockoutDurationMs(
+                    failures
+                )
+
+        context.securityDataStore
+            .edit { mutable ->
+                mutable[
+                    Keys.failedAttempts
+                ] = failures
+
+                mutable[
+                    Keys.lockoutUntil
+                ] =
+                    if (
+                        lockoutMs >
+                        0L
+                    ) {
+                        now +
+                            lockoutMs
+                    } else {
+                        0L
+                    }
+            }
+
+        return if (
+            lockoutMs >
+            0L
+        ) {
+            PinVerificationResult
+                .LockedOut(
+                    lockoutMs
+                )
+        } else {
+            PinVerificationResult
+                .Invalid(
+                    attemptsBeforeLockout =
+                        PinRateLimitPolicy
+                            .attemptsBeforeLockout(
+                                failures
+                            )
+                )
+        }
     }
 
     suspend fun clearPin() {
-        context.securityDataStore.edit { prefs ->
-            prefs.remove(Keys.pinSalt)
-            prefs.remove(Keys.pinHash)
+        context.securityDataStore
+            .edit { prefs ->
+                prefs.clear()
+            }
+
+        deleteKeystoreKey()
+    }
+
+    private suspend fun resetRateLimit() {
+        context.securityDataStore
+            .edit { prefs ->
+                prefs[
+                    Keys.failedAttempts
+                ] = 0
+
+                prefs[
+                    Keys.lockoutUntil
+                ] = 0L
+            }
+    }
+
+    private fun healthFrom(
+        prefs: Preferences
+    ): SecurityHealth {
+        val saltEncoded =
+            prefs[Keys.pinSalt]
+
+        val hashEncoded =
+            prefs[Keys.pinHash]
+
+        if (
+            saltEncoded.isNullOrBlank() &&
+            hashEncoded.isNullOrBlank()
+        ) {
+            return SecurityHealth.NO_PIN
+        }
+
+        if (
+            saltEncoded.isNullOrBlank() ||
+            hashEncoded.isNullOrBlank()
+        ) {
+            return SecurityHealth
+                .CORRUPTED_VERIFIER
+        }
+
+        val validEncoding =
+            runCatching {
+                val salt =
+                    Base64.decode(
+                        saltEncoded,
+                        Base64.NO_WRAP
+                    )
+
+                val hash =
+                    Base64.decode(
+                        hashEncoded,
+                        Base64.NO_WRAP
+                    )
+
+                salt.size ==
+                    SALT_BYTES &&
+                    hash.size ==
+                    HMAC_BYTES
+            }.getOrDefault(false)
+
+        if (!validEncoding) {
+            return SecurityHealth
+                .CORRUPTED_VERIFIER
+        }
+
+        return if (
+            getExistingKeystoreKey() !=
+            null
+        ) {
+            SecurityHealth.READY
+        } else {
+            SecurityHealth
+                .KEY_UNAVAILABLE
         }
     }
 
     private fun deriveVerifier(
         pin: String,
-        salt: ByteArray
+        salt: ByteArray,
+        key: SecretKey
     ): ByteArray {
-        val chars = pin.toCharArray()
+        val chars =
+            pin.toCharArray()
 
         val derived =
             try {
@@ -127,64 +444,104 @@ class SecurityRepository(private val context: Context) {
                         .getInstance(
                             "PBKDF2WithHmacSHA256"
                         )
-                        .generateSecret(spec)
+                        .generateSecret(
+                            spec
+                        )
                         .encoded
                 } finally {
                     spec.clearPassword()
                 }
             } finally {
-                chars.fill('\u0000')
+                chars.fill(
+                    ' '
+                )
             }
 
         val mac =
-            Mac.getInstance("HmacSHA256")
-        mac.init(getOrCreateKeystoreKey())
+            Mac.getInstance(
+                "HmacSHA256"
+            )
+
+        mac.init(key)
 
         return try {
-            mac.doFinal(derived)
+            mac.doFinal(
+                derived
+            )
         } finally {
             derived.fill(0)
         }
     }
 
-    private fun getOrCreateKeystoreKey(): SecretKey {
-        val keyStore =
-            KeyStore.getInstance(
-                "AndroidKeyStore"
-            ).apply {
-                load(null)
-            }
+    private fun getExistingKeystoreKey():
+        SecretKey? =
+        runCatching {
+            val keyStore =
+                KeyStore.getInstance(
+                    "AndroidKeyStore"
+                ).apply {
+                    load(null)
+                }
 
-        val existing =
             keyStore.getKey(
                 KEY_ALIAS,
                 null
             ) as? SecretKey
+        }.getOrNull()
 
-        if (existing != null) {
-            return existing
-        }
+    private fun getOrCreateKeystoreKey():
+        SecretKey {
+        getExistingKeystoreKey()
+            ?.let {
+                return it
+            }
 
         val generator =
             KeyGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_HMAC_SHA256,
+                KeyProperties
+                    .KEY_ALGORITHM_HMAC_SHA256,
                 "AndroidKeyStore"
             )
 
         generator.init(
-            KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
-                KeyProperties.PURPOSE_SIGN or
-                    KeyProperties.PURPOSE_VERIFY
-            ).build()
+            KeyGenParameterSpec
+                .Builder(
+                    KEY_ALIAS,
+                    KeyProperties.PURPOSE_SIGN or
+                        KeyProperties
+                            .PURPOSE_VERIFY
+                )
+                .build()
         )
 
-        return generator.generateKey()
+        return generator
+            .generateKey()
     }
 
-    private companion object {
+    private fun deleteKeystoreKey() {
+        runCatching {
+            val keyStore =
+                KeyStore.getInstance(
+                    "AndroidKeyStore"
+                ).apply {
+                    load(null)
+                }
+
+            if (
+                keyStore.containsAlias(
+                    KEY_ALIAS
+                )
+            ) {
+                keyStore.deleteEntry(
+                    KEY_ALIAS
+                )
+            }
+        }
+    }
+
+    companion object {
         val PIN_REGEX =
-            Regex("\\d{4,6}")
+            Regex("\d{4,6}")
 
         const val PBKDF2_ITERATIONS =
             210_000
@@ -194,6 +551,9 @@ class SecurityRepository(private val context: Context) {
 
         const val SALT_BYTES =
             16
+
+        const val HMAC_BYTES =
+            32
 
         const val KEY_ALIAS =
             "phone_guard_pin_hmac"

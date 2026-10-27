@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.riccardopinato.phoneguard.data.SecurityHealth
 import com.riccardopinato.phoneguard.data.SecurityRepository
 import com.riccardopinato.phoneguard.data.SettingsRepository
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
@@ -76,6 +77,12 @@ fun AlarmScreen(
     val hasPin by
         securityRepository.hasPin.collectAsStateWithLifecycle(
             initialValue = false
+        )
+
+    val securityHealth by
+        securityRepository.securityHealth.collectAsStateWithLifecycle(
+            initialValue =
+                SecurityHealth.NO_PIN
         )
 
     var showSetPin by remember { mutableStateOf(false) }
@@ -163,6 +170,13 @@ fun AlarmScreen(
     fun requestArm() {
         if (!hasPin) {
             showSetPin = true
+            return
+        }
+
+        if (
+            securityHealth !=
+            SecurityHealth.READY
+        ) {
             return
         }
 
@@ -332,6 +346,63 @@ fun AlarmScreen(
             }
         }
 
+        if (
+            hasPin &&
+            securityHealth !=
+                SecurityHealth.READY
+        ) {
+            UtilityPanel(
+                containerColor =
+                    MaterialTheme
+                        .colorScheme
+                        .errorContainer
+            ) {
+                Column(
+                    modifier =
+                        Modifier.padding(16.dp),
+                    verticalArrangement =
+                        Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text =
+                            "Sicurezza locale non pronta",
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleMedium,
+                        fontWeight =
+                            FontWeight.Bold,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onErrorContainer
+                    )
+
+                    Text(
+                        text =
+                            when (securityHealth) {
+                                SecurityHealth.KEY_UNAVAILABLE ->
+                                    "La chiave Android Keystore del PIN non è disponibile. Reimposta il PIN dal Profilo prima di armare."
+
+                                SecurityHealth.CORRUPTED_VERIFIER ->
+                                    "I dati locali del PIN non sono validi. Reimposta il PIN dal Profilo prima di armare."
+
+                                else ->
+                                    "Configura un PIN valido prima di armare."
+                            },
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onErrorContainer
+                    )
+                }
+            }
+        }
+
         if (!hasPin) {
             UtilityPanel(
                 containerColor =
@@ -395,7 +466,13 @@ fun AlarmScreen(
                     runtime.phase ==
                     AlarmPhase.DISARMED
                 ) {
-                    modeSupported
+                    modeSupported &&
+                        (
+                            securityHealth ==
+                                SecurityHealth.READY ||
+                                securityHealth ==
+                                SecurityHealth.NO_PIN
+                            )
                 } else {
                     true
                 },
