@@ -1011,7 +1011,7 @@ class ProtectionForegroundService : Service() {
                 confidenceScore =
                     decision.confidenceScore,
                 detectorState =
-                    detectorState,
+                    decision.state.name,
                 ownerCheckDeadline =
                     deadline,
                 journeyEndsAt =
