@@ -1253,7 +1253,9 @@ class ProtectionForegroundService : Service() {
             pocketGuardMode = activeGuardMode,
             journeyEndsAt = activeJourneyEndAt,
             journeyEndsAtElapsedRealtime =
-                activeJourneyEndAtElapsedRealtime
+                activeJourneyEndAtElapsedRealtime,
+            triggeredAtWallClock =
+                triggeredAt
         )
 
         startAsForeground(
@@ -1741,6 +1743,9 @@ class ProtectionForegroundService : Service() {
         journeyJob?.cancel()
         journeyJob = null
 
+        val triggeredAt =
+            System.currentTimeMillis()
+
         AlarmStateStore.update(
             AlarmRuntimeState(
                 phase = AlarmPhase.TRIGGERED,
@@ -1756,7 +1761,7 @@ class ProtectionForegroundService : Service() {
                 journeyEndsAt =
                     activeJourneyEndAt,
                 triggeredAt =
-                    System.currentTimeMillis()
+                    triggeredAt
             )
         )
 
@@ -1790,9 +1795,7 @@ class ProtectionForegroundService : Service() {
 
         scheduleAlarmOutputTimeout(
             profile.alarmDuration.durationMs,
-            AlarmStateStore.state
-                .value.triggeredAt
-                ?: System.currentTimeMillis()
+            triggeredAt
         )
 
         container
@@ -2201,6 +2204,12 @@ class ProtectionForegroundService : Service() {
                 }
 
                 RecoveryAction.RESTORE_ALARM -> {
+                    val originalTriggeredAt =
+                        persisted
+                            .triggeredAtWallClock
+                            ?: persisted
+                                .updatedAtWallClock
+
                     container.sessionStateRepository.saveState(
                         mode = persisted.mode,
                         phase = AlarmPhase.TRIGGERED,
@@ -2210,7 +2219,9 @@ class ProtectionForegroundService : Service() {
                             persisted.journeyEndsAt,
                         journeyEndsAtElapsedRealtime =
                             persisted
-                                .journeyEndsAtElapsedRealtime
+                                .journeyEndsAtElapsedRealtime,
+                        triggeredAtWallClock =
+                            originalTriggeredAt
                     )
 
                     AlarmStateStore.update(
@@ -2223,7 +2234,7 @@ class ProtectionForegroundService : Service() {
                             journeyEndsAt =
                                 persisted.journeyEndsAt,
                             triggeredAt =
-                                persisted.updatedAtWallClock
+                                originalTriggeredAt
                         )
                     )
 
@@ -2234,17 +2245,49 @@ class ProtectionForegroundService : Service() {
                             persisted.mode
                         )
 
-                    outputController.start(
-                        profile
-                    )
-
-                    scheduleAlarmOutputTimeout(
+                    val durationMs =
                         profile
                             .alarmDuration
-                            .durationMs,
-                        persisted
-                            .updatedAtWallClock
-                    )
+                            .durationMs
+
+                    val outputsAlreadyExpired =
+                        durationMs != null &&
+                            (
+                                System.currentTimeMillis() -
+                                    originalTriggeredAt
+                                )
+                                .coerceAtLeast(
+                                    0L
+                                ) >=
+                                durationMs
+
+                    if (
+                        outputsAlreadyExpired
+                    ) {
+                        outputController.stop()
+
+                        updateNotification(
+                            AlarmPhase.TRIGGERED,
+                            getString(
+                                R.string
+                                    .svc_alarm_title,
+                                activeMode.label
+                            ),
+                            getString(
+                                R.string
+                                    .svc_alarm_outputs_stopped
+                            )
+                        )
+                    } else {
+                        outputController.start(
+                            profile
+                        )
+
+                        scheduleAlarmOutputTimeout(
+                            durationMs,
+                            originalTriggeredAt
+                        )
+                    }
                 }
 
                 RecoveryAction.RESTORE_TABLE -> {
