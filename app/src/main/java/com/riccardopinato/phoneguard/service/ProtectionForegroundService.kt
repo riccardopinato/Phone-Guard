@@ -1253,9 +1253,7 @@ class ProtectionForegroundService : Service() {
             pocketGuardMode = activeGuardMode,
             journeyEndsAt = activeJourneyEndAt,
             journeyEndsAtElapsedRealtime =
-                activeJourneyEndAtElapsedRealtime,
-            triggeredAtWallClock =
-                triggeredAt
+                activeJourneyEndAtElapsedRealtime
         )
 
         startAsForeground(
@@ -1773,7 +1771,9 @@ class ProtectionForegroundService : Service() {
             pocketGuardMode = activeGuardMode,
             journeyEndsAt = activeJourneyEndAt,
             journeyEndsAtElapsedRealtime =
-                activeJourneyEndAtElapsedRealtime
+                activeJourneyEndAtElapsedRealtime,
+            triggeredAtWallClock =
+                triggeredAt
         )
 
         startAsForeground(
