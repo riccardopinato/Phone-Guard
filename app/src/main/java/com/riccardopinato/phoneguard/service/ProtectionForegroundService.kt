@@ -35,6 +35,7 @@ import com.riccardopinato.phoneguard.power.ProtectionWakeLock
 import com.riccardopinato.phoneguard.power.ProtectionWakePolicy
 import com.riccardopinato.phoneguard.protection.PocketProtectionController
 import com.riccardopinato.phoneguard.protection.ProtectionPolicy
+import com.riccardopinato.phoneguard.quickaccess.PhoneGuardTileService
 import com.riccardopinato.phoneguard.sensor.MotionCalibration
 import com.riccardopinato.phoneguard.sensor.MotionDetector
 import com.riccardopinato.phoneguard.sensor.MotionTrigger
@@ -1526,6 +1527,11 @@ class ProtectionForegroundService : Service() {
         pendingTrigger = null
         AlarmStateStore.reset()
 
+        PhoneGuardTileService
+            .requestRefresh(
+                applicationContext
+            )
+
         ServiceCompat.stopForeground(
             this,
             ServiceCompat
@@ -1768,6 +1774,11 @@ class ProtectionForegroundService : Service() {
             notification,
             serviceType
         )
+
+        PhoneGuardTileService
+            .requestRefresh(
+                applicationContext
+            )
     }
 
     private fun updateNotification(
@@ -1783,6 +1794,11 @@ class ProtectionForegroundService : Service() {
                 text
             )
         )
+
+        PhoneGuardTileService
+            .requestRefresh(
+                applicationContext
+            )
     }
 
     private fun buildNotification(
@@ -2010,6 +2026,11 @@ class ProtectionForegroundService : Service() {
             AlarmStateStore.reset()
         }
 
+        PhoneGuardTileService
+            .requestRefresh(
+                applicationContext
+            )
+
         super.onDestroy()
     }
 
@@ -2097,6 +2118,12 @@ class ProtectionForegroundService : Service() {
         fun restore(
             context: Context
         ) {
+            tryRestore(context)
+        }
+
+        fun tryRestore(
+            context: Context
+        ): Boolean {
             val intent =
                 Intent(
                     context,
@@ -2105,11 +2132,15 @@ class ProtectionForegroundService : Service() {
                     ACTION_RESTORE
                 )
 
-            ContextCompat
-                .startForegroundService(
-                    context,
-                    intent
-                )
+            return runCatching {
+                ContextCompat
+                    .startForegroundService(
+                        context,
+                        intent
+                    )
+
+                true
+            }.getOrDefault(false)
         }
 
         fun ownerVerified(

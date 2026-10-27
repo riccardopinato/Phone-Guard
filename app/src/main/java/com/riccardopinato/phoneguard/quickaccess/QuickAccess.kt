@@ -26,24 +26,51 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+enum class QuickArmResult {
+    ARMED,
+    ACTIVE_OR_RESTORED,
+    BLOCKED
+}
+
 object QuickArmCoordinator {
 
     suspend fun arm(
         context: Context,
         modeOverride: ProtectionMode? = null
-    ): Boolean {
-        if (
-            AlarmStateStore.state
-                .value.phase !=
-            AlarmPhase.DISARMED
-        ) {
-            return false
-        }
-
+    ): QuickArmResult {
         val app =
             context.applicationContext
                 as? PhoneGuardApp
-                ?: return false
+                ?: return QuickArmResult.BLOCKED
+
+        val runtimePhase =
+            AlarmStateStore.state
+                .value.phase
+
+        if (
+            runtimePhase !=
+            AlarmPhase.DISARMED
+        ) {
+            return QuickArmResult
+                .ACTIVE_OR_RESTORED
+        }
+
+        val persisted =
+            app.container
+                .sessionStateRepository
+                .read()
+
+        if (persisted != null) {
+            return if (
+                ProtectionForegroundService
+                    .tryRestore(context)
+            ) {
+                QuickArmResult
+                    .ACTIVE_OR_RESTORED
+            } else {
+                QuickArmResult.BLOCKED
+            }
+        }
 
         val health =
             app.container
@@ -52,10 +79,16 @@ object QuickArmCoordinator {
                 .first()
 
         if (
-            health !=
-            SecurityHealth.READY
+            !QuickArmPolicy.canStartFresh(
+                runtimePhase =
+                    runtimePhase,
+                hasPersistedSession =
+                    false,
+                securityHealth =
+                    health
+            )
         ) {
-            return false
+            return QuickArmResult.BLOCKED
         }
 
         val settings =
@@ -64,13 +97,19 @@ object QuickArmCoordinator {
                 .settings
                 .first()
 
-        return ProtectionForegroundService
-            .tryArm(
-                context = context,
-                mode =
-                    modeOverride
-                        ?: settings.selectedMode
-            )
+        return if (
+            ProtectionForegroundService
+                .tryArm(
+                    context = context,
+                    mode =
+                        modeOverride
+                            ?: settings.selectedMode
+                )
+        ) {
+            QuickArmResult.ARMED
+        } else {
+            QuickArmResult.BLOCKED
+        }
     }
 
     fun openApp(
@@ -120,14 +159,17 @@ class QuickArmReceiver :
                             }.getOrNull()
                         }
 
-                val armed =
+                val result =
                     QuickArmCoordinator
                         .arm(
                             context,
                             mode
                         )
 
-                if (!armed) {
+                if (
+                    result !=
+                    QuickArmResult.ARMED
+                ) {
                     QuickArmCoordinator
                         .openApp(context)
                 }
@@ -189,14 +231,17 @@ class PowerConnectionReceiver :
                     return@launch
                 }
 
-                val armed =
+                val result =
                     QuickArmCoordinator
                         .arm(
                             context,
                             ProtectionMode.CHARGING
                         )
 
-                if (!armed) {
+                if (
+                    result ==
+                    QuickArmResult.BLOCKED
+                ) {
                     showTapToArm(
                         context
                     )

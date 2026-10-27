@@ -35,6 +35,8 @@ For every row record: device/model, Android/OEM version, build SHA, PASS/FAIL, n
 | Pre-alarm 2/5/8 s | UNVERIFIED | UNVERIFIED | UNVERIFIED | owner verification cancels before alarm; timeout escalates |
 | Quick Settings tile from unlocked device | UNVERIFIED | UNVERIFIED | UNVERIFIED | arms last selected mode without bypassing PIN readiness |
 | Quick Settings tile while protection active | UNVERIFIED | UNVERIFIED | UNVERIFIED | opens app; does not directly disarm |
+| Quick Settings tile after app disarm/Journey expiry | UNVERIFIED | UNVERIFIED | UNVERIFIED | active tile refreshes to inactive; no stale Protected claim |
+| Quick-arm from fresh process with persisted OWNER_CHECK/TRIGGERED | UNVERIFIED | UNVERIFIED | UNVERIFIED | persisted protection is restored; fresh ARM request cannot overwrite it |
 | Home widget quick arm | UNVERIFIED | UNVERIFIED | UNVERIFIED | user tap arms last selected mode or opens app on blocked preconditions |
 | Launcher shortcut quick arm | UNVERIFIED | UNVERIFIED | UNVERIFIED | user action arms last selected mode or opens app on blocked preconditions |
 | Charging auto-arm while app process is alive | UNVERIFIED | UNVERIFIED | UNVERIFIED | runtime power receiver attempts direct arm; truthful tap-to-arm fallback when background FGS start is blocked |

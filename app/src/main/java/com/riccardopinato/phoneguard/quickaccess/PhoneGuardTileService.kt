@@ -1,6 +1,8 @@
 package com.riccardopinato.phoneguard.quickaccess
 
 import android.app.PendingIntent
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.service.quicksettings.Tile
@@ -43,13 +45,16 @@ class PhoneGuardTileService :
 
         unlockAndRun {
             scope.launch {
-                val armed =
+                val result =
                     QuickArmCoordinator
                         .arm(
                             this@PhoneGuardTileService
                         )
 
-                if (!armed) {
+                if (
+                    result !=
+                    QuickArmResult.ARMED
+                ) {
                     openApp()
                 }
 
@@ -60,9 +65,21 @@ class PhoneGuardTileService :
 
     private fun updateTile() {
         val active =
-            AlarmStateStore.state
-                .value.phase !=
-            AlarmPhase.DISARMED
+            when (
+                AlarmStateStore.state
+                    .value.phase
+            ) {
+                AlarmPhase.ARMING,
+                AlarmPhase.CALIBRATING,
+                AlarmPhase.ARMED,
+                AlarmPhase.OWNER_CHECK,
+                AlarmPhase.TRIGGERED ->
+                    true
+
+                AlarmPhase.DISARMED,
+                AlarmPhase.ERROR ->
+                    false
+            }
 
         qsTile?.apply {
             label =
@@ -138,5 +155,21 @@ class PhoneGuardTileService :
     override fun onDestroy() {
         scope.cancel()
         super.onDestroy()
+    }
+
+    companion object {
+        fun requestRefresh(
+            context: Context
+        ) {
+            runCatching {
+                requestListeningState(
+                    context,
+                    ComponentName(
+                        context,
+                        PhoneGuardTileService::class.java
+                    )
+                )
+            }
+        }
     }
 }
