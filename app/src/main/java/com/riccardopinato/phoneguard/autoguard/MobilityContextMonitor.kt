@@ -133,7 +133,9 @@ class MobilityContextMonitor(context: Context) {
         val token = ++generation
         MobilityContextStore.enabled = true
         requestAttempted = true
-        return runCatching {
+        return try {
+            // Runtime permissions can be revoked between checking and invocation.
+            // Lint requires an explicit SecurityException handler at this call site.
             ActivityRecognition.getClient(appContext)
                 .requestActivityTransitionUpdates(
                     ActivityTransitionRequest(transitions), callback
@@ -158,7 +160,12 @@ class MobilityContextMonitor(context: Context) {
                     }
                 }
             true
-        }.getOrElse {
+        } catch (_: SecurityException) {
+            requestAttempted = false
+            MobilityContextStore.clear()
+            false
+        } catch (_: RuntimeException) {
+            // Play services can be missing/disabled while the device is in use.
             requestAttempted = false
             MobilityContextStore.clear()
             false
