@@ -66,6 +66,56 @@ class SessionStateRepositoryInstrumentedTest {
     }
 
     @Test
+    fun triggeredTimestampSurvivesRepeatedRecoverySave() {
+        val context =
+            ApplicationProvider
+                .getApplicationContext<Context>()
+
+        val repository =
+            SessionStateRepository(
+                context
+            )
+
+        repository.clear()
+
+        val originalTriggeredAt =
+            System.currentTimeMillis() -
+                30_000L
+
+        try {
+            repository.saveState(
+                mode =
+                    ProtectionMode.TABLE,
+                phase =
+                    AlarmPhase.TRIGGERED,
+                triggeredAtWallClock =
+                    originalTriggeredAt
+            )
+
+            repository.saveState(
+                mode =
+                    ProtectionMode.TABLE,
+                phase =
+                    AlarmPhase.TRIGGERED
+            )
+
+            val restored =
+                repository.read()
+
+            assertNotNull(
+                restored
+            )
+            assertEquals(
+                originalTriggeredAt,
+                restored
+                    ?.triggeredAtWallClock
+            )
+        } finally {
+            repository.clear()
+        }
+    }
+
+    @Test
     fun journeyPersistsWallAndMonotonicDeadlinesWithinBoot() {
         val context =
             ApplicationProvider
