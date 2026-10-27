@@ -15,6 +15,7 @@ enum class ProtectionMode {
     POCKET,
     BAG,
     CHARGING,
+    ACCESSORY,
     JOURNEY;
 
     val label: String
@@ -23,8 +24,24 @@ enum class ProtectionMode {
             POCKET -> "Pocket"
             BAG -> "Bag"
             CHARGING -> "Charging"
+            ACCESSORY -> "Accessory"
             JOURNEY -> "Journey"
         }
+}
+
+enum class PreAlarmStyle {
+    SILENT,
+    VIBRATION,
+    BEEP
+}
+
+enum class AlarmDuration(
+    val durationMs: Long?
+) {
+    SECONDS_30(30_000L),
+    MINUTE_1(60_000L),
+    MINUTES_3(180_000L),
+    UNTIL_DISARMED(null)
 }
 
 data class AlarmOutputProfile(
@@ -33,7 +50,10 @@ data class AlarmOutputProfile(
     val flashEnabled: Boolean = true,
     val flashFrequencyHz: Float = 2.5f,
     val alarmVolumePercent: Int = 100,
-    val warningScreenEnabled: Boolean = true
+    val warningScreenEnabled: Boolean = true,
+    val customSoundUri: String? = null,
+    val preAlarmStyle: PreAlarmStyle = PreAlarmStyle.VIBRATION,
+    val alarmDuration: AlarmDuration = AlarmDuration.UNTIL_DISARMED
 )
 
 data class AppSettings(
@@ -76,6 +96,8 @@ enum class AlarmEventType {
     ARMED,
     OWNER_VERIFIED,
     TRIGGERED,
+    PRE_ALARM_STARTED,
+    ALARM_OUTPUTS_TIMED_OUT,
     JOURNEY_ENDED,
     DISARMED,
     CANCELED,
