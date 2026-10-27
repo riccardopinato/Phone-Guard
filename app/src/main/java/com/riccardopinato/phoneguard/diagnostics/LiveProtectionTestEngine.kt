@@ -164,17 +164,16 @@ class LiveProtectionTestEngine(
                     moved ||
                     becameBright
                 ) {
-                    return@sensorTest
-                        LiveGuardTestResult(
-                            success = true,
-                            detail =
-                                "Bag removal transition detected.",
-                            observedScore =
-                                maxOf(
-                                    snapshot.motionScore,
-                                    snapshot.rotationScore
-                                )
-                        )
+                    return@sensorTest LiveGuardTestResult(
+                        success = true,
+                        detail =
+                            "Bag removal transition detected.",
+                        observedScore =
+                            maxOf(
+                                snapshot.motionScore,
+                                snapshot.rotationScore
+                            )
+                    )
                 }
             }
 
