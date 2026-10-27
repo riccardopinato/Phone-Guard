@@ -30,6 +30,8 @@ import com.riccardopinato.phoneguard.autoguard.AutoGuardDecisionEngine
 import com.riccardopinato.phoneguard.autoguard.AutoGuardSampler
 import com.riccardopinato.phoneguard.autoguard.AutoGuardStability
 import com.riccardopinato.phoneguard.autoguard.AutoGuardTiming
+import com.riccardopinato.phoneguard.autoguard.AutoGuardRuntimePhase
+import com.riccardopinato.phoneguard.autoguard.AutoGuardRuntimeStore
 import com.riccardopinato.phoneguard.autoguard.MobilityContextMonitor
 import com.riccardopinato.phoneguard.charging.ChargingStateMonitor
 import com.riccardopinato.phoneguard.R
@@ -145,6 +147,9 @@ class ProtectionForegroundService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_ON -> {
+                    if (adaptiveAutoGuardEnabled) {
+                        AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.WAITING)
+                    }
                     mobilityMonitor.stop()
                     adaptiveAutoJob?.cancel()
                     adaptiveAutoJob = null
@@ -512,6 +517,7 @@ class ProtectionForegroundService : Service() {
         adaptiveAutoJob?.cancel()
         adaptiveAutoJob = null
         mobilityMonitor.stop()
+        AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.OFF)
         activeMode = mode
         activeActivationSource =
             source
@@ -2205,6 +2211,7 @@ class ProtectionForegroundService : Service() {
         if (autoArmStandbyEnabled || adaptiveAutoGuardEnabled) {
             enterAutoArmStandby()
         } else {
+            AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.OFF)
             ServiceCompat.stopForeground(
                 this,
                 ServiceCompat
@@ -2223,6 +2230,10 @@ class ProtectionForegroundService : Service() {
             autoArmStandbyEnabled && chargingMonitor.isPowerConnected()
 
         if (adaptiveAutoGuardEnabled) {
+            AutoGuardRuntimeStore.update(
+                if (adaptiveWaitForNewScreenOff) AutoGuardRuntimePhase.PAUSED
+                else AutoGuardRuntimePhase.WAITING
+            )
             if (adaptiveMobilityEnabled && isScreenOff() &&
                 !adaptiveWaitForNewScreenOff
             ) {
@@ -2237,6 +2248,7 @@ class ProtectionForegroundService : Service() {
             )
             startAdaptiveEvaluation()
         } else {
+            AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.OFF)
             mobilityMonitor.stop()
             adaptiveAutoJob?.cancel()
             adaptiveAutoJob = null
@@ -2267,6 +2279,7 @@ class ProtectionForegroundService : Service() {
             while (adaptiveAutoGuardEnabled && !adaptiveWaitForNewScreenOff &&
                 isScreenOff() && AlarmStateStore.state.value.phase == AlarmPhase.DISARMED
             ) {
+                AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.CHECKING)
                 val observation = sampler.sample()
                 if (!adaptiveAutoGuardEnabled || !isScreenOff() ||
                     AlarmStateStore.state.value.phase != AlarmPhase.DISARMED
@@ -2302,6 +2315,7 @@ class ProtectionForegroundService : Service() {
                         break
                     }
                 }
+                AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.WAITING)
                 val idleMs = now - adaptiveScreenOffAt
                 delay(when {
                     idleMs < 60_000L -> 14_000L
@@ -2953,6 +2967,7 @@ class ProtectionForegroundService : Service() {
             )
 
     override fun onDestroy() {
+        AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.OFF)
         mobilityMonitor.stop()
         adaptiveAutoJob?.cancel()
         adaptiveAutoJob = null
