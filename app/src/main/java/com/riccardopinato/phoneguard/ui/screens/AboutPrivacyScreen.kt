@@ -14,9 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.riccardopinato.phoneguard.BuildConfig
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.ui.components.UtilityPanel
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 
@@ -27,87 +29,183 @@ fun AboutPrivacyScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .verticalScroll(
+                rememberScrollState()
+            )
+            .padding(
+                horizontal = 18.dp,
+                vertical = 16.dp
+            ),
+        verticalArrangement =
+            Arrangement.spacedBy(
+                12.dp
+            )
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier =
+                Modifier.fillMaxWidth(),
+            verticalAlignment =
+                Alignment.CenterVertically,
+            horizontalArrangement =
+                Arrangement
+                    .SpaceBetween
         ) {
             Text(
-                text = "‹ Indietro",
+                text =
+                    stringResource(
+                        R.string.common_back
+                    ),
                 modifier = Modifier
-                    .clickable(onClick = onBack)
-                    .padding(vertical = 8.dp, horizontal = 2.dp),
-                style = MaterialTheme.typography.labelLarge,
+                    .clickable(
+                        onClick = onBack
+                    )
+                    .padding(
+                        vertical = 8.dp,
+                        horizontal = 2.dp
+                    ),
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelLarge,
                 color = OmniAccent
             )
 
             Text(
-                text = "v${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text =
+                    stringResource(
+                        R.string.version_format,
+                        BuildConfig
+                            .VERSION_NAME
+                    ),
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelMedium,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
             )
         }
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(1.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    1.dp
+                )
         ) {
             Text(
-                text = "TABLETOP",
-                style = MaterialTheme.typography.labelMedium,
+                text =
+                    stringResource(
+                        R.string.about_brand
+                    ),
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelMedium,
                 color = OmniAccent,
-                fontWeight = FontWeight.Bold
+                fontWeight =
+                    FontWeight.Bold
             )
 
             Text(
-                text = "Info e privacy",
-                style = MaterialTheme.typography.headlineLarge
+                text =
+                    stringResource(
+                        R.string.about_title
+                    ),
+                style =
+                    MaterialTheme
+                        .typography
+                        .headlineLarge
             )
         }
 
         InfoPanel(
-            title = "Come funziona",
+            title =
+                stringResource(
+                    R.string.about_how_title
+                ),
             text =
-                "Quando attivi la protezione, l'app usa i sensori di movimento del dispositivo per rilevare spostamenti o sollevamenti. Se viene rilevato un movimento significativo, può attivare sirena, vibrazione e flash LED in base alle tue impostazioni."
+                stringResource(
+                    R.string.about_how_text
+                )
         )
 
         InfoPanel(
-            title = "Dati e privacy",
+            title =
+                stringResource(
+                    R.string.about_privacy_title
+                ),
             text =
-                "Il rilevamento del movimento viene elaborato sul dispositivo. L'app non registra audio, non usa la posizione e non scatta fotografie. Lo storico degli eventi resta nella memoria locale dell'app."
+                stringResource(
+                    R.string.about_privacy_text
+                )
         )
 
         InfoPanel(
-            title = "Fotocamera",
+            title =
+                stringResource(
+                    R.string.about_camera_title
+                ),
             text =
-                "Il permesso Fotocamera viene utilizzato esclusivamente per consentire il controllo della torcia/flash LED tramite le API Android. Phone Guard non usa la fotocamera per acquisire immagini o video."
+                stringResource(
+                    R.string.about_camera_text
+                )
         )
 
         InfoPanel(
-            title = "Nessun account",
+            title =
+                stringResource(
+                    R.string.about_account_title
+                ),
             text =
-                "Phone Guard non richiede registrazione o login. Le funzioni principali operano localmente sul dispositivo e non dipendono da un account proprietario."
+                stringResource(
+                    R.string.about_account_text
+                )
         )
 
         InfoPanel(
-            title = "Backup Android",
+            title =
+                stringResource(
+                    R.string.about_backup_title
+                ),
             text =
-                "Le impostazioni non sensibili possono essere incluse nei meccanismi Android di backup o trasferimento dispositivo. PIN, hash del PIN e cronologia degli eventi sono esclusi dal backup."
+                stringResource(
+                    R.string.about_backup_text
+                )
         )
 
         InfoPanel(
-            title = "Servizio in primo piano",
+            title =
+                stringResource(
+                    R.string.about_fgs_title
+                ),
             text =
-                "Quando armi l'allarme, viene avviato un servizio in primo piano con una notifica permanente. È necessario per continuare a monitorare i sensori mentre lo schermo è spento o l'app non è visibile. Il servizio termina quando disattivi la protezione."
+                stringResource(
+                    R.string.about_fgs_text
+                )
         )
 
         InfoPanel(
-            title = "Limiti",
+            title =
+                stringResource(
+                    R.string.about_outputs_title
+                ),
             text =
-                "L'app è uno strumento di deterrenza e segnalazione locale. Non può impedire fisicamente un furto, lo spegnimento del dispositivo, il force-stop dell'app o altre azioni effettuate tramite il sistema operativo."
+                stringResource(
+                    R.string.about_outputs_text
+                )
+        )
+
+        InfoPanel(
+            title =
+                stringResource(
+                    R.string.about_limits_title
+                ),
+            text =
+                stringResource(
+                    R.string.about_limits_text
+                )
         )
     }
 }
@@ -119,19 +217,35 @@ private fun InfoPanel(
 ) {
     UtilityPanel {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            modifier =
+                Modifier.padding(
+                    16.dp
+                ),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    5.dp
+                )
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleMedium,
+                fontWeight =
+                    FontWeight.SemiBold
             )
 
             Text(
                 text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodyMedium,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
             )
         }
     }

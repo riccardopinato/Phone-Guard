@@ -22,9 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.EventRepository
 import com.riccardopinato.phoneguard.model.AlarmEvent
 import com.riccardopinato.phoneguard.model.AlarmEventType
@@ -41,45 +43,91 @@ fun EventsScreen(
     eventRepository: EventRepository
 ) {
     val events by
-        eventRepository.events.collectAsStateWithLifecycle()
+        eventRepository.events
+            .collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(
+                horizontal = 18.dp
+            ),
+        verticalArrangement =
+            Arrangement.spacedBy(
+                12.dp
+            )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(
+                    top = 16.dp,
+                    bottom = 2.dp
+                ),
+            verticalAlignment =
+                Alignment.CenterVertically,
+            horizontalArrangement =
+                Arrangement.SpaceBetween
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(1.dp)
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        1.dp
+                    )
             ) {
                 Text(
-                    text = "CRONOLOGIA",
-                    style = MaterialTheme.typography.labelMedium,
+                    text =
+                        stringResource(
+                            R.string
+                                .events_kicker
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelMedium,
                     color = OmniAccent,
-                    fontWeight = FontWeight.Bold
+                    fontWeight =
+                        FontWeight.Bold
                 )
 
                 Text(
-                    text = "Eventi",
-                    style = MaterialTheme.typography.headlineLarge
+                    text =
+                        stringResource(
+                            R.string
+                                .events_title
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .headlineLarge
                 )
             }
 
             if (events.isNotEmpty()) {
                 Text(
-                    text = "Cancella",
+                    text =
+                        stringResource(
+                            R.string
+                                .events_clear
+                        ),
                     modifier = Modifier
-                        .clip(MaterialTheme.shapes.small)
-                        .clickable(onClick = eventRepository::clear)
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.labelLarge,
+                        .clip(
+                            MaterialTheme
+                                .shapes
+                                .small
+                        )
+                        .clickable(
+                            onClick =
+                                eventRepository::clear
+                        )
+                        .padding(
+                            horizontal = 10.dp,
+                            vertical = 8.dp
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelLarge,
                     color = OmniDanger
                 )
             }
@@ -88,32 +136,66 @@ fun EventsScreen(
         if (events.isEmpty()) {
             UtilityPanel {
                 Column(
-                    modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier =
+                        Modifier.padding(
+                            18.dp
+                        ),
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            4.dp
+                        )
                 ) {
                     Text(
-                        text = "Nessun evento",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        text =
+                            stringResource(
+                                R.string
+                                    .events_empty_title
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleMedium,
+                        fontWeight =
+                            FontWeight.Bold
                     )
 
                     Text(
-                        text = "Le attivazioni e i rilevamenti compariranno qui.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text =
+                            stringResource(
+                                R.string
+                                    .events_empty_text
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
                     )
                 }
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(bottom = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(9.dp)
+                contentPadding =
+                    PaddingValues(
+                        bottom = 22.dp
+                    ),
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        9.dp
+                    )
             ) {
                 items(
                     items = events,
-                    key = { it.id }
+                    key = {
+                        it.id
+                    }
                 ) { event ->
-                    EventPanel(event)
+                    EventPanel(
+                        event
+                    )
                 }
             }
         }
@@ -129,38 +211,79 @@ private fun EventPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(15.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            verticalAlignment =
+                Alignment.Top,
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    12.dp
+                )
         ) {
             Box(
                 modifier = Modifier
-                    .padding(top = 5.dp)
+                    .padding(
+                        top = 5.dp
+                    )
                     .size(9.dp)
                     .clip(CircleShape)
-                    .background(eventAccent(event.type))
+                    .background(
+                        eventAccent(
+                            event.type
+                        )
+                    )
             )
 
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                modifier =
+                    Modifier.weight(
+                        1f
+                    ),
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        3.dp
+                    )
             ) {
                 Text(
-                    text = event.type.toItalianLabel(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+                    text =
+                        eventLabel(
+                            event.type
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyMedium,
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
 
                 Text(
-                    text = formatEventTimestamp(event.timestamp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text =
+                        formatEventTimestamp(
+                            event.timestamp
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
                 )
 
-                if (event.detail.isNotBlank()) {
+                if (
+                    event.detail
+                        .isNotBlank()
+                ) {
                     Text(
                         text = event.detail,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
                     )
                 }
             }
@@ -172,27 +295,54 @@ private fun eventAccent(
     type: AlarmEventType
 ): Color =
     when (type) {
-        AlarmEventType.ARMING_STARTED -> OmniWarning
-        AlarmEventType.ARMED -> OmniAccent
-        AlarmEventType.OWNER_VERIFIED -> OmniAccent
-        AlarmEventType.TRIGGERED -> OmniDanger
-        AlarmEventType.JOURNEY_ENDED -> OmniAccent
-        AlarmEventType.DISARMED -> OmniAccent
-        AlarmEventType.CANCELED -> OmniWarning
-        AlarmEventType.ERROR -> OmniDanger
+        AlarmEventType.ARMING_STARTED ->
+            OmniWarning
+
+        AlarmEventType.ARMED,
+        AlarmEventType.OWNER_VERIFIED,
+        AlarmEventType.JOURNEY_ENDED,
+        AlarmEventType.DISARMED ->
+            OmniAccent
+
+        AlarmEventType.TRIGGERED,
+        AlarmEventType.ERROR ->
+            OmniDanger
+
+        AlarmEventType.CANCELED ->
+            OmniWarning
     }
 
-private fun AlarmEventType.toItalianLabel(): String =
-    when (this) {
-        AlarmEventType.ARMING_STARTED -> "Armamento avviato"
-        AlarmEventType.ARMED -> "Protezione armata"
-        AlarmEventType.OWNER_VERIFIED -> "Proprietario verificato"
-        AlarmEventType.TRIGGERED -> "Allarme attivato"
-        AlarmEventType.JOURNEY_ENDED -> "Journey completato"
-        AlarmEventType.DISARMED -> "Allarme disattivato"
-        AlarmEventType.CANCELED -> "Armamento annullato"
-        AlarmEventType.ERROR -> "Errore"
-    }
+@Composable
+private fun eventLabel(
+    type: AlarmEventType
+): String =
+    stringResource(
+        when (type) {
+            AlarmEventType.ARMING_STARTED ->
+                R.string.event_arming
+
+            AlarmEventType.ARMED ->
+                R.string.event_armed
+
+            AlarmEventType.OWNER_VERIFIED ->
+                R.string.event_owner_verified
+
+            AlarmEventType.TRIGGERED ->
+                R.string.event_triggered
+
+            AlarmEventType.JOURNEY_ENDED ->
+                R.string.event_journey_ended
+
+            AlarmEventType.DISARMED ->
+                R.string.event_disarmed
+
+            AlarmEventType.CANCELED ->
+                R.string.event_canceled
+
+            AlarmEventType.ERROR ->
+                R.string.event_error
+        }
+    )
 
 private fun formatEventTimestamp(
     timestamp: Long
@@ -200,4 +350,6 @@ private fun formatEventTimestamp(
     SimpleDateFormat(
         "dd/MM/yyyy HH:mm:ss",
         Locale.getDefault()
-    ).format(Date(timestamp))
+    ).format(
+        Date(timestamp)
+    )

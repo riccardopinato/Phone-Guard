@@ -1,0 +1,79 @@
+<resources>
+    <string name="app_name">Phone Guard</string>
+    <string name="common_back">‹ Retour</string>
+    <string name="common_continue">CONTINUER</string>
+    <string name="common_start">DÉMARRER</string>
+    <string name="common_skip">Passer</string>
+    <string name="common_close">Fermer</string>
+    <string name="common_cancel">Annuler</string>
+    <string name="common_save">Enregistrer</string>
+    <string name="common_pin">PIN</string>
+    <string name="version_format">v%1$s</string>
+
+    <string name="onboarding_1_title">Quatre modes de protection</string>
+    <string name="onboarding_1_text">Use Table for a device left on a surface, Pocket for your pocket, Bag for a bag or backpack, and Journey for a time-limited Pocket or Bag session.</string>
+    <string name="onboarding_2_title">Protection adaptée aux capteurs</string>
+    <string name="onboarding_2_text">Phone Guard combines the sensors actually available on the device and will not claim a mode is supported when the detector cannot reach a reliable alarm decision.</string>
+    <string name="onboarding_3_title">Seul le propriétaire peut l’arrêter</string>
+    <string name="onboarding_3_text">Set a 4–6 digit PIN and optionally enable strong biometrics. Unlocking the phone alone does not authenticate Phone Guard.</string>
+    <string name="onboarding_4_title">Dissuasion locale</string>
+    <string name="onboarding_4_text">Detection runs locally. Siren, vibration, flash and the warning screen are best-effort outputs subject to Android and OEM limits.</string>
+
+    <string name="about_title">Infos et confidentialité</string>
+    <string name="about_brand">PHONE GUARD</string>
+    <string name="about_how_title">Fonctionnement</string>
+    <string name="about_how_text">Table monitors calibrated motion. Pocket and Bag use available proximity, light, motion and rotation evidence. Journey runs a time-limited Pocket or Bag session. Phone Guard only marks a mode available when its required sensor evidence is present.</string>
+    <string name="about_privacy_title">Données et confidentialité</string>
+    <string name="about_privacy_text">Detection is processed on-device. Phone Guard does not record audio, use location, or capture photos or video. Event history stays in local app storage.</string>
+    <string name="about_camera_title">Autorisation caméra</string>
+    <string name="about_camera_text">Camera permission is used only for Android torch/flash APIs. Phone Guard never uses the camera to capture images or video.</string>
+    <string name="about_account_title">Aucun compte</string>
+    <string name="about_account_text">Phone Guard requires no registration or login. Core protection works locally without a proprietary account or backend.</string>
+    <string name="about_backup_title">Sauvegarde Android</string>
+    <string name="about_backup_text">Non-sensitive preferences may use Android backup or device transfer. PIN verifier data, active protection state, alarm-volume lease and event history are excluded.</string>
+    <string name="about_fgs_title">Service au premier plan</string>
+    <string name="about_fgs_text">When you arm protection, one visible foreground service monitors the selected sensors. The service stops when protection is disarmed. Android or the device manufacturer can still restrict background execution in exceptional cases.</string>
+    <string name="about_outputs_title">Limites des sorties d’alarme</string>
+    <string name="about_outputs_text">Siren, vibration, flash, alarm volume and visual warning are best-effort outputs. Do Not Disturb, OEM policy, unavailable hardware, force-stop or system shutdown can limit them. The app reports effective capability instead of guaranteeing an override.</string>
+    <string name="about_limits_title">Limites</string>
+    <string name="about_limits_text">Phone Guard is a local deterrence and alert tool. It cannot physically prevent theft, power-off, force-stop or operating-system actions.</string>
+
+    <string name="owner_check_title">C’EST VOUS ?</string>
+    <string name="owner_check_body">%1$s detected a possible removal. Confirm with the Phone Guard PIN or strong biometrics to avoid the alarm.</string>
+    <string name="owner_check_timeout">If you do not confirm in time, Phone Guard will activate the configured alarm outputs.</string>
+    <string name="owner_check_action">C’EST MOI · VÉRIFIER</string>
+
+    <string name="events_kicker">HISTORIQUE</string>
+    <string name="events_title">Événements</string>
+    <string name="events_clear">Effacer</string>
+    <string name="events_empty_title">Aucun événement</string>
+    <string name="events_empty_text">Protection activations and detections will appear here.</string>
+    <string name="event_arming">Arming started</string>
+    <string name="event_armed">Protection armed</string>
+    <string name="event_owner_verified">Owner verified</string>
+    <string name="event_triggered">Alarm triggered</string>
+    <string name="event_journey_ended">Journey completed</string>
+    <string name="event_disarmed">Protection disarmed</string>
+    <string name="event_canceled">Arming canceled</string>
+    <string name="event_error">Error</string>
+
+    <string name="pin_set_title">Définir le PIN</string>
+    <string name="pin_set_text">Choose a 4–6 digit PIN. It is never stored in plaintext.</string>
+    <string name="pin_confirm">Confirmer le PIN</string>
+    <string name="unlock_default_title">Désactiver la protection</string>
+    <string name="unlock_default_message">Enter the PIN or use strong biometrics.</string>
+    <string name="unlock_default_confirm">Déverrouiller</string>
+    <string name="unlock_use_biometric">Utiliser la biométrie</string>
+
+    <string name="alarm_warning">WARNING!</string>
+    <string name="alarm_active">ALARME ACTIVE</string>
+    <string name="alarm_protected_device">PROTECTED DEVICE</string>
+    <string name="alarm_unlock">DÉVERROUILLER ET DÉSACTIVER</string>
+    <string name="alarm_no_outputs">Open the controls to disable protection.</string>
+    <string name="alarm_sound_active">siren active</string>
+    <string name="alarm_sound_unverified">siren not verified</string>
+    <string name="alarm_vibration_active">vibration active</string>
+    <string name="alarm_vibration_unavailable">vibration unavailable</string>
+    <string name="alarm_flash_active">flash active</string>
+    <string name="alarm_flash_unavailable">flash unavailable</string>
+</resources>

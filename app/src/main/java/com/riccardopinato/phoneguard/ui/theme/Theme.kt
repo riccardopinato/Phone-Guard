@@ -143,7 +143,7 @@ private val AppShapes = Shapes(
 )
 
 @Composable
-fun TabletopAlarmTheme(
+fun PhoneGuardTheme(
     darkTheme: Boolean = androidx.compose.foundation.isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit

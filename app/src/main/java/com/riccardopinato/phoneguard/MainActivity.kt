@@ -1,4 +1,3 @@
-// TARGET: app/src/main/java/com/riccardopinato/tabletopalarm/MainActivity.kt
 package com.riccardopinato.phoneguard
 
 import android.os.Bundle
@@ -8,7 +7,7 @@ import androidx.fragment.app.FragmentActivity
 import com.riccardopinato.phoneguard.auth.BiometricAuthManager
 import com.riccardopinato.phoneguard.service.ProtectionForegroundService
 import com.riccardopinato.phoneguard.ui.PhoneGuardRoot
-import com.riccardopinato.phoneguard.ui.theme.TabletopAlarmTheme
+import com.riccardopinato.phoneguard.ui.theme.PhoneGuardTheme
 
 class MainActivity : FragmentActivity() {
 
@@ -38,7 +37,7 @@ class MainActivity : FragmentActivity() {
         }
 
         setContent {
-            TabletopAlarmTheme {
+            PhoneGuardTheme {
                 PhoneGuardRoot(
                     container = container,
                     biometricAuthManager =
