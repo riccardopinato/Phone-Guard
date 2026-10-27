@@ -20,7 +20,7 @@
 - Tile/widget/shortcut must never bypass PIN/strong-biometric disarm.
 - Charging auto-arm is opt-in foreground standby with a visible notification; do not replace it with an unreliable implicit manifest power receiver.
 
-- Adaptive Auto Guard 0.9.5 is PLANNED, not part of current 0.9.4 software or signed release. It may arm only with explicit user opt-in, visible single-service standby, supported sensor evidence, and a successful \`ProtectionActivationCoordinator\` decision.
+- Adaptive Auto Guard 0.9.5 is PLANNED, not part of current 0.9.4 software or signed release. It may arm only with explicit user opt-in, visible single-service standby, supported sensor evidence, and a successful `ProtectionActivationCoordinator` decision.
 - Automatic inactivity timeout is an evaluation trigger, never unconditional arming. Auto Table/Pocket/Bag must satisfy the same live-calibration and capability requirements as their manual paths. Light+proximity+movement is correlated evidence, not a measured 99% probability.
 - Auto Guard OFF/PAUSED cannot silently restart; owner-authenticated manual disarm must not immediately rearm without a new qualifying context cycle. No context/screen event may authenticate or disarm OWNER_CHECK/TRIGGERED or mode-switch an active protection.
 - Auto Guard and Charging auto-arm must share the existing foreground-service owner, serialized activation policy, and honest runtime/notification state. Foreground sensing and reboot recovery obey Android/OEM limits; force-stop survival is never guaranteed.
