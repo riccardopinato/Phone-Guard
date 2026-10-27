@@ -136,3 +136,49 @@ Run every row on the exact signed INTERNAL candidate used for certification.
 - [ ] owner authentication after output timeout still closes the incident correctly;
 - [ ] custom sound provider revocation cannot crash or silence fallback alarm generation;
 - [ ] Protection Center never presents OEM guidance as a guaranteed fix.
+
+
+## Adaptive Auto Guard 0.9.5 — proposed physical acceptance matrix
+
+Status: **PLANNED / NOT EXECUTED**. These scenarios describe future acceptance tests, not new capabilities of signed 0.9.4.
+
+Per-row evidence: Pixel/Samsung/Xiaomi-Redmi model, OS/OEM version, exact signed build + SHA, sensor capabilities, activity-recognition availability/permission, observed mode, activation latency, reason, event evidence, battery impact, outcome and reproduction media.
+
+| Scenario | Pixel | Samsung | Xiaomi/Redmi | Expected |
+|---|---|---|---|---|
+| Auto Guard off by default | ⬜ | ⬜ | ⬜ | no monitoring/arming without explicit opt-in |
+| Opt-in starts one visible standby | ⬜ | ⬜ | ⬜ | foreground notification; no duplicate service |
+| Auto Guard OFF while idle | ⬜ | ⬜ | ⬜ | no new auto-arm; existing protection unaffected |
+| Pause / manual-disarm cooldown | ⬜ | ⬜ | ⬜ | no immediate accidental rearm |
+| Screen off, idle 1/3/5/10/15 min | ⬜ | ⬜ | ⬜ | evaluate at monotonic deadline; no unconditional arm |
+| Unlocked/actively used during countdown | ⬜ | ⬜ | ⬜ | pending timer invalidated, active alarm state unchanged |
+| Table face-up stable | ⬜ | ⬜ | ⬜ | only arm with real calibrated Table evidence |
+| Table face-down / phone covered by object | ⬜ | ⬜ | ⬜ | no false Pocket classification solely from darkness |
+| Table moved/shaken during idle countdown | ⬜ | ⬜ | ⬜ | no false Table readiness claim |
+| Pocket insertion from visible state | ⬜ | ⬜ | ⬜ | supported insertion transition and stable evidence before armed |
+| Already-covered phone on opt-in | ⬜ | ⬜ | ⬜ | no calibration bypass or false ARMED |
+| Pocket loose jeans / tight pocket | ⬜ | ⬜ | ⬜ | confidence and latency recorded; safe fallback |
+| Bag dark/covered but stationary | ⬜ | ⬜ | ⬜ | no automatic Pocket assertion based only on light+proximity |
+| Walking pocket / walking bag | ⬜ | ⬜ | ⬜ | differentiate where measurable; uncertainty remains waiting |
+| Running / cycling / vehicle passenger | ⬜ | ⬜ | ⬜ | activity evidence supports transport, never guarantees pocket |
+| Train/bus vibration with covered phone on seat | ⬜ | ⬜ | ⬜ | no unwarranted high-confidence pocket assertion |
+| Proximity or light sensor missing/invalid | ⬜ | ⬜ | ⬜ | capability-aware fallback, no unsupported ARMED |
+| Activity Recognition permission denied | ⬜ | ⬜ | ⬜ | usable local-sensor fallback, no crash |
+| Google Play services unavailable | ⬜ | ⬜ | ⬜ | sensor-only operation when possible |
+| Location permission never requested | ⬜ | ⬜ | ⬜ | baseline works without GPS/background location |
+| Competing charging auto-arm standby | ⬜ | ⬜ | ⬜ | one service, serialized activation, consistent priority |
+| Pocket/Bag already in OWNER_CHECK | ⬜ | ⬜ | ⬜ | Auto Guard cannot disarm, silence, or restart alarm |
+| TRIGGERED while screen state changes | ⬜ | ⬜ | ⬜ | PIN/strong-biometric proof still mandatory |
+| Rapid screen-off/on and event bounce | ⬜ | ⬜ | ⬜ | idempotent events; no duplicate arm/session |
+| Process killed / restored | ⬜ | ⬜ | ⬜ | explicit opt-in restored only if allowed, truthful status |
+| Reboot with pending auto-arm timer | ⬜ | ⬜ | ⬜ | stale countdown discarded; no stealth auto-arm |
+| Force-stop and OEM standby suppression | ⬜ | ⬜ | ⬜ | limitations surfaced, no survival guarantee |
+| Doze and 30-min screen off | ⬜ | ⬜ | ⬜ | measured reliability; no false protected claim |
+| Standby battery ON vs OFF (8h) | ⬜ | ⬜ | ⬜ | delta recorded on all 3 OEM families |
+| EN/IT/ES/FR/PT and accessibility | ⬜ | ⬜ | ⬜ | equivalent controls and truthful status strings |
+
+### Quantitative evidence required before a reliability claim
+- Pre-register real scenarios and device profiles, then record correct auto-arms, false auto-arms, missed true insertions, false **alarms**, arm latency and CPU/battery measurements separately.
+- Report precision = correct auto-pocket activations / all auto-pocket activations; recall = detected qualifying pocket insertions / all qualifying insertions. Exclude ambiguous/unavailable cases only with an explicitly stated policy.
+- >=99% precision is a **stretch target**, never a guaranteed or measured claim without sample sizes and confidence intervals. Dark+near+moving indicators can be correlated.
+- Any security bypass, false ARMED assertion or recurring false alarm is a release blocker; physical matrix remains UNVERIFIED until executed.

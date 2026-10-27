@@ -19,6 +19,12 @@
 - All entry surfaces (app, Smart Arm, tile, widget, shortcut, charging auto-arm) must route through one activation policy; none may bypass SecurityHealth, capability or permission gates.
 - Tile/widget/shortcut must never bypass PIN/strong-biometric disarm.
 - Charging auto-arm is opt-in foreground standby with a visible notification; do not replace it with an unreliable implicit manifest power receiver.
+
+- Adaptive Auto Guard 0.9.5 is PLANNED, not part of current 0.9.4 software or signed release. It may arm only with explicit user opt-in, visible single-service standby, supported sensor evidence, and a successful `ProtectionActivationCoordinator` decision.
+- Automatic inactivity timeout is an evaluation trigger, never unconditional arming. Auto Table/Pocket/Bag must satisfy the same live-calibration and capability requirements as their manual paths. Light+proximity+movement is correlated evidence, not a measured 99% probability.
+- Auto Guard OFF/PAUSED cannot silently restart; owner-authenticated manual disarm must not immediately rearm without a new qualifying context cycle. No context/screen event may authenticate or disarm OWNER_CHECK/TRIGGERED or mode-switch an active protection.
+- Auto Guard and Charging auto-arm must share the existing foreground-service owner, serialized activation policy, and honest runtime/notification state. Foreground sensing and reboot recovery obey Android/OEM limits; force-stop survival is never guaranteed.
+- Activity Recognition Transition is optional supporting evidence with explicit permission/fallback. Baseline Auto Guard requests no location permission and does not require GPS, Google Play services, account, microphone or network. All inference is local and power-bounded.
 - OWNER_CHECK and TRIGGERED always outrank Journey expiry.
 - Journey uses elapsed-realtime deadline semantics within a boot; wall clock is display/fallback state only.
 - Alarm outputs are best-effort capabilities; diagnostics must report effective state.
