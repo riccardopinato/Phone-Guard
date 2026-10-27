@@ -56,6 +56,7 @@ import com.riccardopinato.phoneguard.ui.components.UtilityPanel
 import com.riccardopinato.phoneguard.ui.components.UtilitySecondaryAction
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 import com.riccardopinato.phoneguard.ui.theme.OmniDanger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
@@ -443,8 +444,15 @@ fun ProtectionCheckScreen(
 
                                 refresh()
                             } catch (
-                                error: Throwable
+                                error: Exception
                             ) {
+                                if (
+                                    error is
+                                    CancellationException
+                                ) {
+                                    throw error
+                                }
+
                                 statusMessage =
                                     error.message
                                         ?: "Live Guard Test failed."
@@ -518,8 +526,15 @@ fun ProtectionCheckScreen(
                                     sensitivityAdvisor
                                         .analyze()
                             } catch (
-                                error: Throwable
+                                error: Exception
                             ) {
+                                if (
+                                    error is
+                                    CancellationException
+                                ) {
+                                    throw error
+                                }
+
                                 statusMessage =
                                     error.message
                                         ?: "Sensitivity analysis failed."
