@@ -148,7 +148,17 @@ class ProtectionForegroundService : Service() {
                     mobilityMonitor.stop()
                     adaptiveAutoJob?.cancel()
                     adaptiveAutoJob = null
-                    // The next screen-off is a NEW candidate cycle after owner disarm.
+                    // An automatic pending countdown/calibration is not authorization
+                    // to protect a device that the owner has resumed using.
+                    // Already ARMED/OWNER_CHECK/TRIGGERED sessions are never disarmed.
+                    if (activeActivationSource == ActivationSource.AUTO_GUARD &&
+                        AlarmStateStore.state.value.phase in setOf(
+                            AlarmPhase.ARMING, AlarmPhase.CALIBRATING
+                        )
+                    ) {
+                        disarm(addDisarmEvent = false)
+                    }
+                    // Require the next genuine screen-off context cycle.
                     adaptiveWaitForNewScreenOff = false
                 }
                 Intent.ACTION_SCREEN_OFF -> {
