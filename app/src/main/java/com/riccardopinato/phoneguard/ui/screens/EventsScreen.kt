@@ -1,5 +1,6 @@
 package com.riccardopinato.phoneguard.ui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.item
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -18,19 +20,24 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.EventRepository
+import com.riccardopinato.phoneguard.data.IncidentSession
+import com.riccardopinato.phoneguard.data.IncidentSessionEngine
 import com.riccardopinato.phoneguard.model.AlarmEvent
 import com.riccardopinato.phoneguard.model.AlarmEventType
 import com.riccardopinato.phoneguard.ui.components.UtilityPanel
+import com.riccardopinato.phoneguard.ui.components.UtilitySectionHeader
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 import com.riccardopinato.phoneguard.ui.theme.OmniDanger
 import com.riccardopinato.phoneguard.ui.theme.OmniWarning
@@ -42,28 +49,43 @@ import java.util.Locale
 fun EventsScreen(
     eventRepository: EventRepository
 ) {
+    val context =
+        LocalContext.current
+
     val events by
         eventRepository.events
             .collectAsStateWithLifecycle()
 
+    val sessions =
+        remember(
+            events
+        ) {
+            IncidentSessionEngine
+                .build(
+                    events
+                )
+        }
+
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(
-                horizontal = 18.dp
-            ),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(
+                    horizontal = 18.dp
+                ),
         verticalArrangement =
             Arrangement.spacedBy(
                 12.dp
             )
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    top = 16.dp,
-                    bottom = 2.dp
-                ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        top = 16.dp,
+                        bottom = 2.dp
+                    ),
             verticalAlignment =
                 Alignment.CenterVertically,
             horizontalArrangement =
@@ -85,7 +107,8 @@ fun EventsScreen(
                         MaterialTheme
                             .typography
                             .labelMedium,
-                    color = OmniAccent,
+                    color =
+                        OmniAccent,
                     fontWeight =
                         FontWeight.Bold
                 )
@@ -103,7 +126,9 @@ fun EventsScreen(
                 )
             }
 
-            if (events.isNotEmpty()) {
+            if (
+                events.isNotEmpty()
+            ) {
                 TextButton(
                     onClick =
                         eventRepository::clear
@@ -118,13 +143,16 @@ fun EventsScreen(
                             MaterialTheme
                                 .typography
                                 .labelLarge,
-                        color = OmniDanger
+                        color =
+                            OmniDanger
                     )
                 }
             }
         }
 
-        if (events.isEmpty()) {
+        if (
+            events.isEmpty()
+        ) {
             UtilityPanel {
                 Column(
                     modifier =
@@ -178,12 +206,88 @@ fun EventsScreen(
                         9.dp
                     )
             ) {
+                if (
+                    sessions.isNotEmpty()
+                ) {
+                    item {
+                        UtilitySectionHeader(
+                            title =
+                                stringResource(
+                                    R.string
+                                        .incident_sessions_title
+                                ),
+                            trailing =
+                                sessions
+                                    .size
+                                    .toString()
+                        )
+                    }
+
+                    items(
+                        items =
+                            sessions,
+                        key = {
+                            "session_" +
+                                it.id
+                        }
+                    ) {
+                        session ->
+                        IncidentPanel(
+                            session =
+                                session,
+                            onShare = {
+                                val report =
+                                    IncidentSessionEngine
+                                        .shareReport(
+                                            session
+                                        )
+
+                                context.startActivity(
+                                    Intent
+                                        .createChooser(
+                                            Intent(
+                                                Intent.ACTION_SEND
+                                            )
+                                                .setType(
+                                                    "text/plain"
+                                                )
+                                                .putExtra(
+                                                    Intent.EXTRA_TEXT,
+                                                    report
+                                                ),
+                                            context.getString(
+                                                R.string
+                                                    .incident_share_title
+                                            )
+                                        )
+                                )
+                            }
+                        )
+                    }
+                }
+
+                item {
+                    UtilitySectionHeader(
+                        title =
+                            stringResource(
+                                R.string
+                                    .event_evidence_title
+                            ),
+                        trailing =
+                            events
+                                .size
+                                .toString()
+                    )
+                }
+
                 items(
                     items = events,
                     key = {
-                        it.id
+                        "event_" +
+                            it.id
                     }
-                ) { event ->
+                ) {
+                    event ->
                     EventPanel(
                         event
                     )
@@ -194,14 +298,160 @@ fun EventsScreen(
 }
 
 @Composable
+private fun IncidentPanel(
+    session: IncidentSession,
+    onShare: () -> Unit
+) {
+    UtilityPanel {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        15.dp
+                    ),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    5.dp
+                )
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically,
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text =
+                        session.mode
+                            ?.label
+                            ?: stringResource(
+                                R.string
+                                    .incident_unknown_mode
+                            ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                TextButton(
+                    onClick =
+                        onShare
+                ) {
+                    Text(
+                        stringResource(
+                            R.string
+                                .incident_share
+                        )
+                    )
+                }
+            }
+
+            Text(
+                text =
+                    formatIncidentRange(
+                        session
+                    ),
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
+
+            Text(
+                text =
+                    if (
+                        session.triggered
+                    ) {
+                        stringResource(
+                            R.string
+                                .incident_triggered,
+                            session.eventCount
+                        )
+                    } else {
+                        stringResource(
+                            R.string
+                                .incident_not_triggered,
+                            session.eventCount
+                        )
+                    },
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodyMedium,
+                color =
+                    if (
+                        session.triggered
+                    ) {
+                        OmniDanger
+                    } else {
+                        OmniAccent
+                    }
+            )
+
+            session.triggerReason
+                ?.let {
+                    reason ->
+                    Text(
+                        text =
+                            reason,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+                }
+
+            session.outputSummary
+                ?.let {
+                    outputs ->
+                    Text(
+                        text =
+                            stringResource(
+                                R.string
+                                    .events_evidence_outputs,
+                                outputs
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+                }
+        }
+    }
+}
+
+@Composable
 private fun EventPanel(
     event: AlarmEvent
 ) {
     UtilityPanel {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(15.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        15.dp
+                    ),
             verticalAlignment =
                 Alignment.Top,
             horizontalArrangement =
@@ -210,17 +460,22 @@ private fun EventPanel(
                 )
         ) {
             Box(
-                modifier = Modifier
-                    .padding(
-                        top = 5.dp
-                    )
-                    .size(9.dp)
-                    .clip(CircleShape)
-                    .background(
-                        eventAccent(
-                            event.type
+                modifier =
+                    Modifier
+                        .padding(
+                            top = 5.dp
                         )
-                    )
+                        .size(
+                            9.dp
+                        )
+                        .clip(
+                            CircleShape
+                        )
+                        .background(
+                            eventAccent(
+                                event.type
+                            )
+                        )
             )
 
             Column(
@@ -266,7 +521,8 @@ private fun EventPanel(
                         .isNotBlank()
                 ) {
                     Text(
-                        text = event.detail,
+                        text =
+                            event.detail,
                         style =
                             MaterialTheme
                                 .typography
@@ -278,13 +534,16 @@ private fun EventPanel(
                     )
                 }
 
-                event.evidence?.let {
-                    evidence ->
-                    EvidenceDetails(
-                        event = event,
-                        evidence = evidence
-                    )
-                }
+                event.evidence
+                    ?.let {
+                        evidence ->
+                        EvidenceDetails(
+                            event =
+                                event,
+                            evidence =
+                                evidence
+                        )
+                    }
             }
         }
     }
@@ -298,29 +557,34 @@ private fun EvidenceDetails(
 ) {
     val lines =
         buildList {
-            evidence.mode?.let {
-                add(
-                    stringResource(
-                        R.string.events_evidence_mode,
-                        it.label
+            evidence.mode
+                ?.let {
+                    add(
+                        stringResource(
+                            R.string
+                                .events_evidence_mode,
+                            it.label
+                        )
                     )
-                )
-            }
+                }
 
-            evidence.source?.let {
-                add(
-                    stringResource(
-                        R.string.events_evidence_source,
-                        it
+            evidence.source
+                ?.let {
+                    add(
+                        stringResource(
+                            R.string
+                                .events_evidence_source,
+                            it
+                        )
                     )
-                )
-            }
+                }
 
             evidence.confidenceScore
                 ?.let {
                     add(
                         stringResource(
-                            R.string.events_evidence_confidence,
+                            R.string
+                                .events_evidence_confidence,
                             it
                         )
                     )
@@ -330,7 +594,8 @@ private fun EvidenceDetails(
                 ?.let {
                     add(
                         stringResource(
-                            R.string.events_evidence_detector,
+                            R.string
+                                .events_evidence_detector,
                             it
                         )
                     )
@@ -343,7 +608,8 @@ private fun EvidenceDetails(
                 ?.let {
                     add(
                         stringResource(
-                            R.string.events_evidence_sensors,
+                            R.string
+                                .events_evidence_sensors,
                             it
                         )
                     )
@@ -360,7 +626,8 @@ private fun EvidenceDetails(
                     ?.let {
                         add(
                             stringResource(
-                                R.string.events_evidence_outputs,
+                                R.string
+                                    .events_evidence_outputs,
                                 it
                             )
                         )
@@ -371,14 +638,17 @@ private fun EvidenceDetails(
                 ?.let {
                     add(
                         stringResource(
-                            R.string.events_evidence_grace,
+                            R.string
+                                .events_evidence_grace,
                             it
                         )
                     )
                 }
         }
 
-    if (lines.isNotEmpty()) {
+    if (
+        lines.isNotEmpty()
+    ) {
         Text(
             text =
                 lines.joinToString(
@@ -400,7 +670,10 @@ private fun eventAccent(
     type: AlarmEventType
 ): Color =
     when (type) {
-        AlarmEventType.ARMING_STARTED ->
+        AlarmEventType.ARMING_STARTED,
+        AlarmEventType.PRE_ALARM_STARTED,
+        AlarmEventType.ALARM_OUTPUTS_TIMED_OUT,
+        AlarmEventType.CANCELED ->
             OmniWarning
 
         AlarmEventType.ARMED,
@@ -412,9 +685,6 @@ private fun eventAccent(
         AlarmEventType.TRIGGERED,
         AlarmEventType.ERROR ->
             OmniDanger
-
-        AlarmEventType.CANCELED ->
-            OmniWarning
     }
 
 @Composable
@@ -435,6 +705,12 @@ private fun eventLabel(
             AlarmEventType.TRIGGERED ->
                 R.string.event_triggered
 
+            AlarmEventType.PRE_ALARM_STARTED ->
+                R.string.event_pre_alarm
+
+            AlarmEventType.ALARM_OUTPUTS_TIMED_OUT ->
+                R.string.event_alarm_outputs_timeout
+
             AlarmEventType.JOURNEY_ENDED ->
                 R.string.event_journey_ended
 
@@ -449,6 +725,29 @@ private fun eventLabel(
         }
     )
 
+private fun formatIncidentRange(
+    session: IncidentSession
+): String {
+    val start =
+        formatEventTimestamp(
+            session.startedAt
+        )
+
+    val end =
+        session.endedAt
+            ?.let(
+                ::formatEventTimestamp
+            )
+
+    return if (
+        end == null
+    ) {
+        start
+    } else {
+        "$start → $end"
+    }
+}
+
 private fun formatEventTimestamp(
     timestamp: Long
 ): String =
@@ -456,5 +755,7 @@ private fun formatEventTimestamp(
         "dd/MM/yyyy HH:mm:ss",
         Locale.getDefault()
     ).format(
-        Date(timestamp)
+        Date(
+            timestamp
+        )
     )
