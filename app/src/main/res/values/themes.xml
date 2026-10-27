@@ -1,4 +1,3 @@
-<!-- TARGET: app/src/main/res/values/themes.xml -->
 <resources>
     <style name="Theme.PhoneGuard" parent="android:style/Theme.DeviceDefault.NoActionBar">
         <item name="android:windowActionModeOverlay">true</item>

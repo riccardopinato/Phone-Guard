@@ -1,4 +1,3 @@
-// TARGET: app/src/main/java/com/riccardopinato/tabletopalarm/AppContainer.kt
 package com.riccardopinato.phoneguard
 
 import android.content.Context

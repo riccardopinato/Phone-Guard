@@ -1,4 +1,3 @@
-// TARGET: app/src/main/java/com/riccardopinato/tabletopalarm/auth/BiometricAuthManager.kt
 package com.riccardopinato.phoneguard.auth
 
 import androidx.biometric.BiometricManager

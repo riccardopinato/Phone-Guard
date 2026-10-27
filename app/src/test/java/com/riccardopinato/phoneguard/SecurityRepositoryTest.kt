@@ -1,4 +1,3 @@
-// TARGET: app/src/test/java/com/riccardopinato/tabletopalarm/SecurityRepositoryTest.kt
 package com.riccardopinato.phoneguard
 
 import org.junit.Assert.assertFalse
