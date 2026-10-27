@@ -109,6 +109,28 @@ class AutoGuardDecisionEngineTest {
         assertFalse(AutoGuardTiming.idleElapsed(60_100L, 100L, 3))
     }
 
+    @Test fun darkCoveredOrUncoveredBagCannotBeMistakenForTable() {
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                sample(lux = 0f, near = false, motion = 0f), true, true
+            ).candidate)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                sample(lux = 120f, near = false, lightSeen = false, motion = 0f),
+                true, true
+            ).candidate)
+    }
+
+    @Test fun vehicleClassificationIsSupportingNotSufficient() {
+        val vehicle = sample(motion = 0.06f).copy(mobility = MobilityType.VEHICLE)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(vehicle, true, true).candidate)
+        assertEquals(AutoGuardCandidate.POCKET,
+            AutoGuardDecisionEngine.assess(
+                vehicle.copy(motionScore = 0.11f), true, true
+            ).candidate)
+    }
+
     @Test fun inputOutsideAllowedIdleOptionsIsRejected() {
         assertFalse(AutoGuardTiming.idleElapsed(1_000_000L, 0L, 0))
         assertFalse(AutoGuardTiming.idleElapsed(1_000_000L, 0L, 99))
