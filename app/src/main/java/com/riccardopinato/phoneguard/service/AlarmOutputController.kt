@@ -6,6 +6,9 @@ import android.media.AudioFocusRequest
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.media.MediaPlayer
+import android.media.ToneGenerator
+import android.net.Uri
 import android.os.Build
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
@@ -14,6 +17,7 @@ import android.os.VibratorManager
 import com.riccardopinato.phoneguard.alarm.AlarmVolumeLeaseManager
 import com.riccardopinato.phoneguard.alarm.FlashStrobeController
 import com.riccardopinato.phoneguard.model.AlarmOutputProfile
+import com.riccardopinato.phoneguard.model.PreAlarmStyle
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -30,6 +34,8 @@ class AlarmOutputController(
         FlashStrobeController(context)
 
     private var audioTrack: AudioTrack? = null
+    private var mediaPlayer: MediaPlayer? = null
+    private var preAlarmTone: ToneGenerator? = null
     private var audioFocusRequest: AudioFocusRequest? = null
 
     fun start(
@@ -49,7 +55,9 @@ class AlarmOutputController(
 
         val soundActive =
             if (profile.soundEnabled) {
-                startSiren()
+                startSiren(
+                    profile.customSoundUri
+                )
             } else {
                 false
             }
@@ -102,6 +110,36 @@ class AlarmOutputController(
         return health
     }
 
+    fun startPreAlarm(
+        style: PreAlarmStyle
+    ): Boolean {
+        stopPreAlarm()
+
+        return when (style) {
+            PreAlarmStyle.SILENT ->
+                true
+
+            PreAlarmStyle.VIBRATION ->
+                startPreAlarmVibration()
+
+            PreAlarmStyle.BEEP ->
+                startPreAlarmBeep()
+        }
+    }
+
+    fun stopPreAlarm() {
+        runCatching {
+            preAlarmTone
+                ?.stopTone()
+        }
+        runCatching {
+            preAlarmTone
+                ?.release()
+        }
+        preAlarmTone = null
+        stopVibration()
+    }
+
     fun stop() {
         stopSignals()
         volumeLease.restoreIfOwned()
@@ -109,6 +147,7 @@ class AlarmOutputController(
     }
 
     private fun stopSignals() {
+        stopPreAlarm()
         flashController.stop()
         stopVibration()
         stopSiren()
@@ -117,35 +156,127 @@ class AlarmOutputController(
     fun effectiveAlarmVolumePercent(): Int =
         volumeLease.currentPercent()
 
-    private fun startSiren():
-        Boolean =
-        runCatching {
-            val attributes =
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(
-                        AudioAttributes.CONTENT_TYPE_SONIFICATION
-                    )
-                    .build()
+    private fun startSiren(
+        customSoundUri: String?
+    ): Boolean {
+        val attributes =
+            AudioAttributes.Builder()
+                .setUsage(
+                    AudioAttributes.USAGE_ALARM
+                )
+                .setContentType(
+                    AudioAttributes.CONTENT_TYPE_SONIFICATION
+                )
+                .build()
 
-            val focusRequest =
+        val focusReady =
+            requestAudioFocus(
+                attributes
+            )
+
+        val customStarted =
+            customSoundUri
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?.let {
+                    startCustomSound(
+                        uriString = it,
+                        attributes = attributes
+                    )
+                }
+                ?: false
+
+        val started =
+            if (customStarted) {
+                true
+            } else {
+                startGeneratedSiren(
+                    attributes
+                )
+            }
+
+        return started &&
+            focusReady
+    }
+
+    private fun requestAudioFocus(
+        attributes: AudioAttributes
+    ): Boolean =
+        runCatching {
+            val request =
                 AudioFocusRequest.Builder(
                     AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
                 )
-                    .setAudioAttributes(attributes)
+                    .setAudioAttributes(
+                        attributes
+                    )
                     .build()
 
-            audioFocusRequest = focusRequest
-            audioManager.requestAudioFocus(focusRequest)
+            audioFocusRequest =
+                request
 
-            val samples = createSirenSamples()
+            audioManager
+                .requestAudioFocus(
+                    request
+                ) ==
+                AudioManager
+                    .AUDIOFOCUS_REQUEST_GRANTED
+        }.getOrDefault(
+            false
+        )
+
+    private fun startCustomSound(
+        uriString: String,
+        attributes: AudioAttributes
+    ): Boolean =
+        runCatching {
+            val player =
+                MediaPlayer()
+
+            player.setAudioAttributes(
+                attributes
+            )
+            player.setDataSource(
+                context,
+                Uri.parse(
+                    uriString
+                )
+            )
+            player.isLooping =
+                true
+            player.prepare()
+            player.start()
+
+            mediaPlayer =
+                player
+            true
+        }.getOrElse {
+            runCatching {
+                mediaPlayer
+                    ?.release()
+            }
+            mediaPlayer = null
+            false
+        }
+
+    private fun startGeneratedSiren(
+        attributes: AudioAttributes
+    ): Boolean =
+        runCatching {
+            val samples =
+                createSirenSamples()
 
             val track =
                 AudioTrack.Builder()
-                    .setAudioAttributes(attributes)
+                    .setAudioAttributes(
+                        attributes
+                    )
                     .setAudioFormat(
                         AudioFormat.Builder()
-                            .setSampleRate(SAMPLE_RATE)
+                            .setSampleRate(
+                                SAMPLE_RATE
+                            )
                             .setEncoding(
                                 AudioFormat.ENCODING_PCM_16BIT
                             )
@@ -154,8 +285,12 @@ class AlarmOutputController(
                             )
                             .build()
                     )
-                    .setTransferMode(AudioTrack.MODE_STATIC)
-                    .setBufferSizeInBytes(samples.size * 2)
+                    .setTransferMode(
+                        AudioTrack.MODE_STATIC
+                    )
+                    .setBufferSizeInBytes(
+                        samples.size * 2
+                    )
                     .build()
 
             track.write(
@@ -165,14 +300,34 @@ class AlarmOutputController(
                 AudioTrack.WRITE_BLOCKING
             )
 
-            track.setLoopPoints(0, samples.size, -1)
-            track.setVolume(1.0f)
+            track.setLoopPoints(
+                0,
+                samples.size,
+                -1
+            )
+            track.setVolume(
+                1.0f
+            )
             track.play()
-            audioTrack = track
+            audioTrack =
+                track
             true
-        }.getOrDefault(false)
+        }.getOrDefault(
+            false
+        )
 
     private fun stopSiren() {
+        runCatching {
+            mediaPlayer?.stop()
+        }
+        runCatching {
+            mediaPlayer?.reset()
+        }
+        runCatching {
+            mediaPlayer?.release()
+        }
+        mediaPlayer = null
+
         runCatching { audioTrack?.stop() }
         runCatching { audioTrack?.flush() }
         runCatching { audioTrack?.release() }
@@ -204,6 +359,104 @@ class AlarmOutputController(
                 .toInt()
                 .toShort()
         }
+    }
+
+    private fun startPreAlarmBeep():
+        Boolean =
+        runCatching {
+            val tone =
+                ToneGenerator(
+                    AudioManager.STREAM_ALARM,
+                    PRE_ALARM_TONE_VOLUME
+                )
+
+            preAlarmTone =
+                tone
+
+            tone.startTone(
+                ToneGenerator.TONE_PROP_BEEP2,
+                PRE_ALARM_BEEP_MS
+            )
+        }.getOrDefault(
+            false
+        )
+
+    private fun startPreAlarmVibration():
+        Boolean {
+        val vibrator =
+            getVibrator()
+                ?: return false
+
+        if (
+            !vibrator.hasVibrator()
+        ) {
+            return false
+        }
+
+        val effect =
+            if (
+                vibrator
+                    .hasAmplitudeControl()
+            ) {
+                VibrationEffect
+                    .createWaveform(
+                        longArrayOf(
+                            0,
+                            280,
+                            180,
+                            280,
+                            180
+                        ),
+                        intArrayOf(
+                            0,
+                            130,
+                            0,
+                            130,
+                            0
+                        ),
+                        0
+                    )
+            } else {
+                VibrationEffect
+                    .createWaveform(
+                        longArrayOf(
+                            0,
+                            280,
+                            180,
+                            280,
+                            180
+                        ),
+                        0
+                    )
+            }
+
+        if (
+            Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.TIRAMISU
+        ) {
+            vibrator.vibrate(
+                effect,
+                VibrationAttributes.Builder()
+                    .setUsage(
+                        VibrationAttributes
+                            .USAGE_NOTIFICATION
+                    )
+                    .build()
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(
+                effect,
+                AudioAttributes.Builder()
+                    .setUsage(
+                        AudioAttributes
+                            .USAGE_NOTIFICATION
+                    )
+                    .build()
+            )
+        }
+
+        return true
     }
 
     private fun startVibration():
@@ -276,5 +529,7 @@ class AlarmOutputController(
 
     private companion object {
         const val SAMPLE_RATE = 44_100
+        const val PRE_ALARM_TONE_VOLUME = 55
+        const val PRE_ALARM_BEEP_MS = 700
     }
 }
