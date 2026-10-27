@@ -32,13 +32,9 @@ object IncidentSessionEngine {
         }
 
         val chronological =
-            events.sortedWith(
-                compareBy<AlarmEvent> {
-                    it.timestamp
-                }.thenBy {
-                    it.id
-                }
-            )
+            events.sortedBy {
+                it.id
+            }
 
         val sessions =
             mutableListOf<
@@ -102,7 +98,7 @@ object IncidentSessionEngine {
 
         return sessions
             .sortedByDescending {
-                it.startedAt
+                it.id
             }
     }
 
