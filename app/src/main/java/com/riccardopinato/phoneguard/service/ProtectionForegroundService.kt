@@ -1268,7 +1268,7 @@ class ProtectionForegroundService : Service() {
                     getString(R.string.svc_owner_verified),
                 confidenceScore = 0,
                 detectorState =
-                    decision.state.name,
+                    detectorState,
                 journeyEndsAt =
                     activeJourneyEndAt
             )
