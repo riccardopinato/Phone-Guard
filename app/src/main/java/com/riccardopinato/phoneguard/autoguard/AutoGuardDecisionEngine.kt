@@ -44,7 +44,8 @@ object AutoGuardDecisionEngine {
             observation.lux != null && observation.lux.isFinite() &&
             observation.lux in 0f..8f &&
             observation.proximityObserved && observation.proximityNear == true &&
-            observation.motionScore >= if (observation.mobility == MobilityType.VEHICLE) 0.085f else 0.055f
+            observation.motionScore >=
+                (if (observation.mobility == MobilityType.VEHICLE) 0.085f else 0.055f)
         ) {
             return AutoGuardAssessment(
                 AutoGuardCandidate.POCKET,
@@ -56,7 +57,10 @@ object AutoGuardDecisionEngine {
             )
         }
 
-        if (allowTable && observation.proximityNear != true &&
+        if (allowTable && observation.proximityObserved &&
+            observation.proximityNear == false &&
+            observation.lightObserved && observation.lux != null &&
+            observation.lux.isFinite() && observation.lux >= 12f &&
             observation.motionScore <= 0.018f &&
             (!observation.gyroscopeObserved || observation.rotationScore <= 0.12f)
         ) {
