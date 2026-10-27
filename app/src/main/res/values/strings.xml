@@ -393,4 +393,16 @@
     <string name="live_test_instruction_accessory">Keep a supported audio accessory connected, start the test, then disconnect it.</string>
 
     <string name="alarm_custom_sound_access_failed">This audio source cannot grant persistent access. The built-in siren remains selected.</string>
+    <string name="svc_auto_guard_title">Auto Guard standby</string>
+    <string name="svc_auto_guard_waiting">Waiting for safe inactivity or covered movement</string>
+    <string name="auto_guard_title">Adaptive Auto Guard</string>
+    <string name="auto_guard_description">Automatically re-arms after inactivity or strong pocket evidence. Device sensors are checked locally in short windows; GPS is not used.</string>
+    <string name="auto_guard_toggle">Automatic protection</string>
+    <string name="auto_guard_consent">Opt-in standby with an ongoing foreground notification. Turn off at any time; does not disarm existing protection.</string>
+    <string name="auto_guard_delay">Evaluate after screen-off inactivity</string>
+    <string name="auto_guard_pocket">Pocket detection</string>
+    <string name="auto_guard_pocket_body">Covered proximity, low light and movement must agree in repeated samples.</string>
+    <string name="auto_guard_table">Table detection</string>
+    <string name="auto_guard_table_body">Requires a stable device and the selected inactivity delay.</string>
+    <string name="auto_guard_start_failed">Android prevented the standby service from starting. Auto Guard was disabled.</string>
 </resources>
