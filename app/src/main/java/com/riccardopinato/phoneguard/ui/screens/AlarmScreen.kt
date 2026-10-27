@@ -28,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -79,6 +80,7 @@ fun AlarmScreen(
     onRequestDisarm: () -> Unit
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
 
     val settings by
@@ -231,7 +233,7 @@ fun AlarmScreen(
                     }
                 } else {
                     armMessage =
-                        context.getString(
+                        resources.getString(
                             R.string
                                 .alarm_custom_sound_access_failed
                         )
@@ -424,7 +426,7 @@ fun AlarmScreen(
             ) {
                 is SmartActivationOutcome.Started -> {
                     armMessage =
-                        context.getString(
+                        resources.getString(
                             R.string
                                 .smart_arm_selected,
                             outcome
