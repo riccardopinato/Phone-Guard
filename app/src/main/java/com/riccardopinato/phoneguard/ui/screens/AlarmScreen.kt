@@ -350,38 +350,41 @@ fun AlarmScreen(
             ProtectionMode.CHARGING
         ) {
             UtilityPanel {
-                SettingSwitchRow(
-                    title =
-                        stringResource(
-                            R.string
-                                .auto_arm_charge_title
-                        ),
-                    subtitle =
-                        stringResource(
-                            R.string
-                                .auto_arm_charge_subtitle
-                        ),
-                    checked =
-                        settings
-                            .chargeAutoArmEnabled,
-                    enabled =
-                        runtime.phase ==
-                            AlarmPhase.DISARMED,
-                    onCheckedChange = {
-                        enabled ->
-                        scope.launch {
-                            settingsRepository
-                                .setChargeAutoArmEnabled(
-                                    enabled
-                                )
-                        }
-                    },
+                Column(
                     modifier =
                         Modifier.padding(
                             horizontal = 16.dp,
                             vertical = 8.dp
                         )
-                )
+                ) {
+                    SettingSwitchRow(
+                        title =
+                            stringResource(
+                                R.string
+                                    .auto_arm_charge_title
+                            ),
+                        subtitle =
+                            stringResource(
+                                R.string
+                                    .auto_arm_charge_subtitle
+                            ),
+                        checked =
+                            settings
+                                .chargeAutoArmEnabled,
+                        enabled =
+                            runtime.phase ==
+                                AlarmPhase.DISARMED,
+                        onCheckedChange = {
+                            enabled ->
+                            scope.launch {
+                                settingsRepository
+                                    .setChargeAutoArmEnabled(
+                                        enabled
+                                    )
+                            }
+                        }
+                    )
+                }
             }
         }
 
