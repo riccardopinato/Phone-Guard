@@ -93,6 +93,17 @@ class ProtectionWakePolicyTest {
     }
 
     @Test
+    fun chargingDoesNotHoldCpuLease() {
+        assertFalse(
+            ProtectionWakePolicy.requiresCpuLease(
+                ProtectionMode.CHARGING,
+                null,
+                caps()
+            )
+        )
+    }
+
+    @Test
     fun journeyUsesItsSelectedGuardProfile() {
         val capabilities =
             caps(

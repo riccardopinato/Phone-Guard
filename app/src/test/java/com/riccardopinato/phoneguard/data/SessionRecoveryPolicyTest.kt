@@ -71,6 +71,29 @@ class SessionRecoveryPolicyTest {
     }
 
     @Test
+    fun armedChargingRestoresChargingMonitor() {
+        val session =
+            PersistedProtectionSession(
+                phase = AlarmPhase.ARMED,
+                mode =
+                    ProtectionMode.CHARGING,
+                pocketGuardMode = null,
+                updatedAtWallClock = 1L,
+                journeyEndsAt = null,
+                tableCalibration = null,
+                pocketCalibration = null
+            )
+
+        assertEquals(
+            RecoveryAction.RESTORE_CHARGING,
+            SessionRecoveryPolicy.recoveryAction(
+                session,
+                now = 10L
+            )
+        )
+    }
+
+    @Test
     fun armedPocketWithProfileRestoresPocket() {
         val session =
             PersistedProtectionSession(

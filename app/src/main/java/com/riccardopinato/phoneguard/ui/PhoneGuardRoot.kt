@@ -53,6 +53,7 @@ import com.riccardopinato.phoneguard.ui.screens.EventsScreen
 import com.riccardopinato.phoneguard.ui.screens.OnboardingScreen
 import com.riccardopinato.phoneguard.ui.screens.OwnerCheckScreen
 import com.riccardopinato.phoneguard.ui.screens.ProfileScreen
+import com.riccardopinato.phoneguard.ui.screens.ProtectionCheckScreen
 import com.riccardopinato.phoneguard.ui.screens.TriggeredAlarmScreen
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 import kotlinx.coroutines.launch
@@ -131,7 +132,11 @@ fun PhoneGuardRoot(
         AlarmPhase.TRIGGERED -> {
             TriggeredAlarmScreen(
                 warningEnabled =
-                    settings.warningScreenEnabled,
+                    settings
+                        .alarmProfile(
+                            runtime.mode
+                        )
+                        .warningScreenEnabled,
                 outputHealth =
                     outputHealth,
                 onUnlock = {
@@ -232,10 +237,28 @@ fun PhoneGuardRoot(
                             onOpenAboutPrivacy = {
                                 navController.navigate("about_privacy")
                             },
+                            onOpenProtectionCheck = {
+                                navController.navigate("protection_check")
+                            },
                             diagnostics = container.hardwareDiagnostics,
                             hardware = hardware,
                             alarmRunning =
                                 runtime.phase != AlarmPhase.DISARMED
+                        )
+                    }
+
+                    composable("protection_check") {
+                        ProtectionCheckScreen(
+                            settingsRepository =
+                                container.settingsRepository,
+                            diagnostics =
+                                container.hardwareDiagnostics,
+                            alarmRunning =
+                                runtime.phase !=
+                                    AlarmPhase.DISARMED,
+                            onBack = {
+                                navController.popBackStack()
+                            }
                         )
                     }
 

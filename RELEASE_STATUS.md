@@ -1,33 +1,38 @@
 # RELEASE_STATUS.md
 
-**Version truth: 0.9.2 / versionCode 4**
+**Version truth: 0.9.3 / versionCode 5**
 
-This file separates software implementation from certification evidence.
+This file separates implementation from certification evidence.
 
-## Software hardening implemented
-- unified Table/Pocket/Bag/Journey runtime;
-- capability-truth gating;
-- live-sample calibration evidence;
-- monotonic Journey expiry within one boot;
-- persistent volume lease applied only at real alarm activation;
-- capability-aware bounded wake-lock policy;
-- PIN security health, serialized verification and persistent rate limiting;
-- malformed PIN attempt throttling;
-- strong biometric owner proof;
-- output health and 3 Hz flash ceiling;
-- EN/IT/ES/FR/PT resource parity;
-- accessibility touch-target cleanup;
-- source/release-truth CI guard;
-- JVM + emulator instrumentation gates;
-- signed INTERNAL workflow with certificate verification.
+## 0.9.3 implemented source scope
+- five modes: Table, Pocket, Bag, Charging and Journey;
+- Charging Guard with external-power disconnect detection;
+- opt-in charging auto-arm foreground standby;
+- centralized activation policy for app/tile/widget/shortcut/auto-charge;
+- Quick Settings tile, home widget and launcher shortcut;
+- configurable owner grace / pre-alarm;
+- reusable preset engine;
+- per-mode alarm output profiles;
+- Protection Check diagnostics;
+- structured, backward-compatible event evidence;
+- existing 0.9.2 security, recovery, wake-lock and alarm-side-effect invariants preserved.
 
 ## Evidence model
-Software acceptance requires the **exact candidate SHA** to pass Development checks and the signed INTERNAL workflow. GitHub Actions is the canonical execution evidence; this source file intentionally does not embed a run ID that would become stale when the file itself changes.
+Software acceptance still requires the **exact candidate SHA** to pass Development checks and the signed INTERNAL workflow. GitHub Actions is the canonical automated evidence. This file intentionally does not embed a workflow run ID that would become stale when source changes.
 
-## Not physically certified
-Pixel/Samsung/Xiaomi runtime evidence remains UNVERIFIED. This includes false-positive/negative tuning, Doze/OEM behavior and real-device output/recovery behavior.
+## Physical boundary
+The following remain **NOT VERIFIED** until tested on the exact signed artifact:
+- real cable connect/disconnect behavior;
+- Charging grace timing;
+- charging auto-arm standby after screen-off/reboot;
+- OEM background behavior;
+- Quick Settings tile behavior from lock screen;
+- launcher widget/shortcut behavior;
+- per-mode sound/vibration/flash/volume outputs;
+- Pixel/Samsung/Xiaomi sensor false-positive/negative tuning;
+- real DND and output recovery behavior.
 
 ## Google Play
-Play Console/store work is intentionally deferred until the final publication phase.
+Play Console/store work remains intentionally deferred until physical readiness.
 
-Release state: **SOFTWARE RC — NOT PHYSICALLY CERTIFIED — PLAY DEFERRED**.
+Release state: **0.9.3 SOFTWARE CANDIDATE — PHYSICAL CERTIFICATION PENDING — PLAY DEFERRED**.

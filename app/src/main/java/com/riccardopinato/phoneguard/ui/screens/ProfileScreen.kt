@@ -56,6 +56,7 @@ fun ProfileScreen(
     biometricAuthManager: BiometricAuthManager,
     batteryDiagnostics: BatteryDiagnostics,
     onOpenAboutPrivacy: () -> Unit,
+    onOpenProtectionCheck: () -> Unit,
     diagnostics: HardwareDiagnostics,
     hardware: HardwareSnapshot,
     alarmRunning: Boolean
@@ -269,6 +270,18 @@ fun ProfileScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
+
+                UtilitySecondaryAction(
+                    label =
+                        stringResource(
+                            R.string
+                                .protection_check_action
+                        ),
+                    enabled =
+                        !alarmRunning,
+                    onClick =
+                        onOpenProtectionCheck
+                )
             }
         }
 

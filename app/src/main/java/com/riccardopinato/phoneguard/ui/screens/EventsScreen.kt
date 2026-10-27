@@ -277,8 +277,122 @@ private fun EventPanel(
                                 .onSurfaceVariant
                     )
                 }
+
+                event.evidence?.let {
+                    evidence ->
+                    EvidenceDetails(
+                        event = event,
+                        evidence = evidence
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun EvidenceDetails(
+    event: AlarmEvent,
+    evidence:
+        com.riccardopinato.phoneguard.model.AlarmEventEvidence
+) {
+    val lines =
+        buildList {
+            evidence.mode?.let {
+                add(
+                    stringResource(
+                        R.string.events_evidence_mode,
+                        it.label
+                    )
+                )
+            }
+
+            evidence.source?.let {
+                add(
+                    stringResource(
+                        R.string.events_evidence_source,
+                        it
+                    )
+                )
+            }
+
+            evidence.confidenceScore
+                ?.let {
+                    add(
+                        stringResource(
+                            R.string.events_evidence_confidence,
+                            it
+                        )
+                    )
+                }
+
+            evidence.detectorState
+                ?.let {
+                    add(
+                        stringResource(
+                            R.string.events_evidence_detector,
+                            it
+                        )
+                    )
+                }
+
+            evidence.sensorSummary
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?.let {
+                    add(
+                        stringResource(
+                            R.string.events_evidence_sensors,
+                            it
+                        )
+                    )
+                }
+
+            if (
+                event.type ==
+                    AlarmEventType.TRIGGERED
+            ) {
+                evidence.outputSummary
+                    ?.takeIf {
+                        it.isNotBlank()
+                    }
+                    ?.let {
+                        add(
+                            stringResource(
+                                R.string.events_evidence_outputs,
+                                it
+                            )
+                        )
+                    }
+            }
+
+            evidence.graceSeconds
+                ?.let {
+                    add(
+                        stringResource(
+                            R.string.events_evidence_grace,
+                            it
+                        )
+                    )
+                }
+        }
+
+    if (lines.isNotEmpty()) {
+        Text(
+            text =
+                lines.joinToString(
+                    separator = "\n"
+                ),
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
     }
 }
 

@@ -103,6 +103,20 @@ class ProtectionPolicyTest {
     }
 
     @Test
+    fun chargingDoesNotRequireMotionSensors() {
+        assertTrue(
+            ProtectionPolicy.isSupported(
+                mode =
+                    ProtectionMode.CHARGING,
+                journeyGuardMode =
+                    GuardMode.POCKET,
+                capabilities =
+                    caps()
+            )
+        )
+    }
+
+    @Test
     fun journeyUsesSelectedStorageProfileCapabilities() {
         assertFalse(
             ProtectionPolicy.isSupported(

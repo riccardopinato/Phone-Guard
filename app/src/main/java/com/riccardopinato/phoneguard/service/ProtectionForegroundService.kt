@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -13,14 +14,20 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
+import android.service.quicksettings.TileService
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.riccardopinato.phoneguard.MainActivity
 import com.riccardopinato.phoneguard.PhoneGuardApp
+import com.riccardopinato.phoneguard.activation.ActivationOutcome
+import com.riccardopinato.phoneguard.activation.ActivationSource
+import com.riccardopinato.phoneguard.activation.ProtectionActivationCoordinator
+import com.riccardopinato.phoneguard.charging.ChargingStateMonitor
 import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.RecoveryAction
 import com.riccardopinato.phoneguard.data.SessionRecoveryPolicy
+import com.riccardopinato.phoneguard.model.AlarmEventEvidence
 import com.riccardopinato.phoneguard.model.AlarmEventType
 import com.riccardopinato.phoneguard.model.AppSettings
 import com.riccardopinato.phoneguard.model.ProtectionMode
@@ -30,12 +37,14 @@ import com.riccardopinato.phoneguard.pocket.model.GuardMode
 import com.riccardopinato.phoneguard.pocket.model.GuardSettings
 import com.riccardopinato.phoneguard.pocket.model.GuardState
 import com.riccardopinato.phoneguard.power.ProtectionWakeLock
+import com.riccardopinato.phoneguard.quick.PhoneGuardTileService
 import com.riccardopinato.phoneguard.power.ProtectionWakePolicy
 import com.riccardopinato.phoneguard.protection.PocketProtectionController
 import com.riccardopinato.phoneguard.protection.ProtectionPolicy
 import com.riccardopinato.phoneguard.sensor.MotionCalibration
 import com.riccardopinato.phoneguard.sensor.MotionDetector
 import com.riccardopinato.phoneguard.sensor.MotionTrigger
+import com.riccardopinato.phoneguard.widget.PhoneGuardWidgetProvider
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +54,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+private data class PendingAlarmTrigger(
+    val detail: String,
+    val lastMotionDelta: Float,
+    val confidence: Int,
+    val detectorState: String,
+    val sensorSummary: String? = null
+)
 
 class ProtectionForegroundService : Service() {
 
@@ -63,6 +80,9 @@ class ProtectionForegroundService : Service() {
     private lateinit var pocketController:
         PocketProtectionController
 
+    private lateinit var chargingMonitor:
+        ChargingStateMonitor
+
     private val container by lazy {
         (application as PhoneGuardApp)
             .container
@@ -72,6 +92,9 @@ class ProtectionForegroundService : Service() {
     private var ownerCheckJob: Job? = null
     private var journeyJob: Job? = null
 
+    private var pendingAlarmTrigger:
+        PendingAlarmTrigger? = null
+
     private var tableDetector:
         MotionDetector? = null
 
@@ -80,6 +103,16 @@ class ProtectionForegroundService : Service() {
 
     private var activeSettings:
         AppSettings? = null
+
+    private var activeActivationSource:
+        ActivationSource =
+        ActivationSource.APP
+
+    private var autoArmStandbyEnabled =
+        false
+
+    private var autoArmAwaitingFreshConnection =
+        false
 
     private var activeMode:
         ProtectionMode = ProtectionMode.TABLE
@@ -92,6 +125,81 @@ class ProtectionForegroundService : Service() {
 
     private var activeJourneyEndAtElapsedRealtime:
         Long? = null
+
+    private val powerReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?
+            ) {
+                when (intent?.action) {
+                    Intent.ACTION_POWER_DISCONNECTED -> {
+                        if (
+                            autoArmStandbyEnabled &&
+                            AlarmStateStore.state
+                                .value.phase ==
+                                AlarmPhase.DISARMED
+                        ) {
+                            autoArmAwaitingFreshConnection =
+                                false
+                        }
+
+                        if (
+                            activeMode ==
+                                ProtectionMode.CHARGING &&
+                            AlarmStateStore.state
+                                .value.phase ==
+                                AlarmPhase.ARMED
+                        ) {
+                            requestAlarm(
+                                detail =
+                                    "Mode=CHARGING; external power disconnected.",
+                                lastMotionDelta = 0f,
+                                confidence = 100,
+                                detectorState =
+                                    "POWER_DISCONNECTED",
+                                sensorSummary =
+                                    "externalPower=false"
+                            )
+                        }
+                    }
+
+                    Intent.ACTION_POWER_CONNECTED -> {
+                        if (
+                            !autoArmStandbyEnabled ||
+                            autoArmAwaitingFreshConnection ||
+                            AlarmStateStore.state
+                                .value.phase !=
+                                AlarmPhase.DISARMED
+                        ) {
+                            return
+                        }
+
+                        autoArmAwaitingFreshConnection =
+                            true
+
+                        serviceScope.launch {
+                            when (
+                                ProtectionActivationCoordinator
+                                    .evaluate(
+                                        applicationContext,
+                                        ProtectionMode.CHARGING
+                                    )
+                            ) {
+                                ActivationOutcome.Started ->
+                                    beginArming(
+                                        ProtectionMode.CHARGING,
+                                        ActivationSource.AUTO_CHARGER
+                                    )
+
+                                is ActivationOutcome.Blocked ->
+                                    Unit
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
     private val ownerReceiver =
         object : BroadcastReceiver() {
@@ -132,6 +240,11 @@ class ProtectionForegroundService : Service() {
                 onDecision = ::handlePocketDecision
             )
 
+        chargingMonitor =
+            ChargingStateMonitor(
+                applicationContext
+            )
+
         protectionWakeLock =
             ProtectionWakeLock(
                 context = applicationContext,
@@ -144,6 +257,20 @@ class ProtectionForegroundService : Service() {
             IntentFilter(
                 Intent.ACTION_USER_PRESENT
             ),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+
+        ContextCompat.registerReceiver(
+            this,
+            powerReceiver,
+            IntentFilter().apply {
+                addAction(
+                    Intent.ACTION_POWER_CONNECTED
+                )
+                addAction(
+                    Intent.ACTION_POWER_DISCONNECTED
+                )
+            },
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
 
@@ -166,7 +293,47 @@ class ProtectionForegroundService : Service() {
                         }.getOrNull()
                     } ?: ProtectionMode.TABLE
 
-                beginArming(mode)
+                val source =
+                    intent.getStringExtra(
+                        EXTRA_SOURCE
+                    )?.let {
+                        runCatching {
+                            ActivationSource.valueOf(it)
+                        }.getOrNull()
+                    } ?: ActivationSource.APP
+
+                beginArming(
+                    mode,
+                    source
+                )
+            }
+
+            ACTION_SET_AUTO_ARM -> {
+                val enabled =
+                    intent.getBooleanExtra(
+                        EXTRA_AUTO_ARM,
+                        false
+                    )
+
+                autoArmStandbyEnabled =
+                    enabled
+
+                if (
+                    AlarmStateStore.state
+                        .value.phase ==
+                    AlarmPhase.DISARMED
+                ) {
+                    if (enabled) {
+                        enterChargingAutoArmStandby()
+                    } else {
+                        ServiceCompat.stopForeground(
+                            this,
+                            ServiceCompat
+                                .STOP_FOREGROUND_REMOVE
+                        )
+                        stopSelf()
+                    }
+                }
             }
 
             ACTION_DISARM ->
@@ -177,16 +344,32 @@ class ProtectionForegroundService : Service() {
                     "Authenticated in app"
                 )
 
-            ACTION_RESTORE,
-            null ->
+            ACTION_RESTORE ->
                 restorePersistedSession()
+
+            null -> {
+                startAsForeground(
+                    phase = AlarmPhase.DISARMED,
+                    title =
+                        getString(
+                            R.string.svc_auto_arm_title
+                        ),
+                    text =
+                        getString(
+                            R.string.svc_auto_arm_checking
+                        )
+                )
+                restorePersistedSession()
+            }
         }
 
         return START_STICKY
     }
 
     private fun beginArming(
-        mode: ProtectionMode
+        mode: ProtectionMode,
+        source: ActivationSource =
+            ActivationSource.APP
     ) {
         if (
             AlarmStateStore.state
@@ -197,6 +380,8 @@ class ProtectionForegroundService : Service() {
         }
 
         activeMode = mode
+        activeActivationSource =
+            source
 
         AlarmStateStore.update(
             AlarmRuntimeState(
@@ -211,6 +396,8 @@ class ProtectionForegroundService : Service() {
             mode = mode,
             phase = AlarmPhase.ARMING
         )
+
+        refreshQuickSurfaces()
 
         startAsForeground(
             phase = AlarmPhase.ARMING,
@@ -231,11 +418,21 @@ class ProtectionForegroundService : Service() {
                         .first()
 
                 activeSettings = settings
+                autoArmStandbyEnabled =
+                    settings.autoArmCharging
 
                 container.eventRepository.add(
                     AlarmEventType.ARMING_STARTED,
                     "Mode=${mode.name}; countdown=" +
-                        "${settings.countdownSeconds}s"
+                        "${settings.countdownSeconds}s",
+                    evidence =
+                        AlarmEventEvidence(
+                            mode = mode,
+                            source = source.name,
+                            graceSeconds =
+                                settings
+                                    .gracePeriodSeconds
+                        )
                 )
 
                 for (
@@ -327,6 +524,17 @@ class ProtectionForegroundService : Service() {
             return
         }
 
+        if (
+            mode ==
+            ProtectionMode.CHARGING
+        ) {
+            startChargingMonitoring(
+                settings = settings,
+                recordArmedEvent = true
+            )
+            return
+        }
+
         val requiredGuardMode =
             guardMode ?: run {
                 failAndStop(
@@ -355,6 +563,104 @@ class ProtectionForegroundService : Service() {
             },
             onError = ::failAndStop
         )
+    }
+
+    private fun startChargingMonitoring(
+        settings: AppSettings,
+        recordArmedEvent: Boolean
+    ) {
+        tableDetector?.stop()
+        tableDetector = null
+        pocketController.stop()
+
+        activeMode =
+            ProtectionMode.CHARGING
+        activeGuardMode = null
+        activeJourneyEndAt = null
+        activeJourneyEndAtElapsedRealtime = null
+
+        if (
+            !chargingMonitor
+                .isPowerConnected()
+        ) {
+            if (!recordArmedEvent) {
+                triggerAlarm(
+                    detail =
+                        "Mode=CHARGING; power was removed while protection was being recovered.",
+                    lastMotionDelta = 0f,
+                    confidence = 100,
+                    detectorState =
+                        "POWER_DISCONNECTED_RECOVERY",
+                    sensorSummary =
+                        "externalPower=false"
+                )
+            } else {
+                failAndStop(
+                    getString(
+                        R.string
+                            .svc_charging_requires_power
+                    )
+                )
+            }
+            return
+        }
+
+        AlarmStateStore.update(
+            AlarmRuntimeState(
+                phase = AlarmPhase.ARMED,
+                mode = ProtectionMode.CHARGING,
+                message =
+                    getString(
+                        R.string
+                            .svc_charging_protected
+                    ),
+                detectorState =
+                    "POWER_CONNECTED"
+            )
+        )
+
+        container.sessionStateRepository
+            .saveState(
+                mode =
+                    ProtectionMode.CHARGING,
+                phase = AlarmPhase.ARMED
+            )
+
+        if (recordArmedEvent) {
+            container.eventRepository.add(
+                AlarmEventType.ARMED,
+                "Mode=CHARGING; external power connected.",
+                evidence =
+                    AlarmEventEvidence(
+                        mode =
+                            ProtectionMode.CHARGING,
+                        source =
+                            activeActivationSource.name,
+                        detectorState =
+                            "POWER_CONNECTED",
+                        sensorSummary =
+                            "externalPower=true",
+                        graceSeconds =
+                            settings
+                                .gracePeriodSeconds
+                    )
+            )
+        }
+
+        updateNotification(
+            AlarmPhase.ARMED,
+            getString(
+                R.string
+                    .svc_charging_title
+            ),
+            getString(
+                R.string
+                    .svc_charging_alarm_hint
+            )
+        )
+
+        protectionWakeLock
+            .setRequired(false)
     }
 
     private fun startTableMonitoring(
@@ -413,6 +719,25 @@ class ProtectionForegroundService : Service() {
                                         Locale.US,
                                         "%.3f m/s²",
                                         calibration.noiseFloor
+                                    ),
+                                evidence =
+                                    AlarmEventEvidence(
+                                        mode =
+                                            ProtectionMode.TABLE,
+                                        source =
+                                            activeActivationSource.name,
+                                        detectorState =
+                                            "TABLE_MONITORING",
+                                        sensorSummary =
+                                            "noiseFloor=" +
+                                                String.format(
+                                                    Locale.US,
+                                                    "%.3f",
+                                                    calibration.noiseFloor
+                                                ),
+                                        graceSeconds =
+                                            settings
+                                                .gracePeriodSeconds
                                     )
                             )
                     }
@@ -558,7 +883,22 @@ class ProtectionForegroundService : Service() {
             container.eventRepository.add(
                 AlarmEventType.ARMED,
                 "Mode=${mode.name}; guard=${guardMode.name}; " +
-                    "samples=${profile.sampleCount}"
+                    "samples=${profile.sampleCount}",
+                evidence =
+                    AlarmEventEvidence(
+                        mode = mode,
+                        source =
+                            activeActivationSource.name,
+                        detectorState =
+                            "WAITING_FOR_${guardMode.name}",
+                        sensorSummary =
+                            "samples=${profile.sampleCount}; " +
+                                "light=${profile.hasLightData}; " +
+                                "gyro=${profile.hasGyroscopeData}",
+                        graceSeconds =
+                            settings
+                                .gracePeriodSeconds
+                    )
             )
         }
 
@@ -652,6 +992,7 @@ class ProtectionForegroundService : Service() {
     private fun beginOwnerCheck(
         decision: DetectionDecision
     ) {
+        pendingAlarmTrigger = null
         protectionWakeLock.forceRequired()
         ownerCheckJob?.cancel()
         journeyJob?.cancel()
@@ -659,7 +1000,7 @@ class ProtectionForegroundService : Service() {
 
         val deadline =
             System.currentTimeMillis() +
-                OWNER_GRACE_MS
+                ownerGraceMs()
 
         AlarmStateStore.update(
             AlarmRuntimeState(
@@ -670,7 +1011,7 @@ class ProtectionForegroundService : Service() {
                 confidenceScore =
                     decision.confidenceScore,
                 detectorState =
-                    decision.state.name,
+                    detectorState,
                 ownerCheckDeadline =
                     deadline,
                 journeyEndsAt =
@@ -697,6 +1038,79 @@ class ProtectionForegroundService : Service() {
         scheduleOwnerCheckExpiry()
     }
 
+    private fun beginOwnerCheck(
+        trigger: PendingAlarmTrigger
+    ) {
+        pendingAlarmTrigger =
+            trigger
+        protectionWakeLock.forceRequired()
+        ownerCheckJob?.cancel()
+        journeyJob?.cancel()
+        journeyJob = null
+
+        val deadline =
+            System.currentTimeMillis() +
+                ownerGraceMs()
+
+        AlarmStateStore.update(
+            AlarmRuntimeState(
+                phase = AlarmPhase.OWNER_CHECK,
+                mode = activeMode,
+                message =
+                    getString(
+                        R.string
+                            .svc_owner_check_message
+                    ),
+                confidenceScore =
+                    trigger.confidence,
+                detectorState =
+                    trigger.detectorState,
+                ownerCheckDeadline =
+                    deadline,
+                journeyEndsAt =
+                    activeJourneyEndAt
+            )
+        )
+
+        container.sessionStateRepository
+            .saveState(
+                mode = activeMode,
+                phase =
+                    AlarmPhase.OWNER_CHECK,
+                pocketGuardMode =
+                    activeGuardMode,
+                journeyEndsAt =
+                    activeJourneyEndAt,
+                journeyEndsAtElapsedRealtime =
+                    activeJourneyEndAtElapsedRealtime
+            )
+
+        startAsForeground(
+            phase = AlarmPhase.OWNER_CHECK,
+            title =
+                getString(
+                    R.string
+                        .svc_owner_check_title
+                ),
+            text =
+                getString(
+                    R.string
+                        .svc_owner_check_notification
+                )
+        )
+
+        scheduleOwnerCheckExpiry()
+    }
+
+    private fun ownerGraceMs(): Long =
+        (
+            activeSettings
+                ?.gracePeriodSeconds
+                ?: 5
+            )
+            .toLong() *
+            1_000L
+
     private fun ownerPresenceObserved() {
         if (
             AlarmStateStore.state
@@ -716,7 +1130,7 @@ class ProtectionForegroundService : Service() {
                     getString(R.string.svc_unlocked_message),
                 ownerCheckDeadline =
                     System.currentTimeMillis() +
-                        OWNER_GRACE_MS
+                        ownerGraceMs()
             )
         )
 
@@ -728,7 +1142,7 @@ class ProtectionForegroundService : Service() {
 
         val deadline =
             System.currentTimeMillis() +
-                OWNER_GRACE_MS
+                ownerGraceMs()
 
         val current =
             AlarmStateStore.state
@@ -748,7 +1162,33 @@ class ProtectionForegroundService : Service() {
 
         ownerCheckJob =
             serviceScope.launch {
-                delay(OWNER_GRACE_MS)
+                delay(
+                    ownerGraceMs()
+                )
+
+                val pending =
+                    pendingAlarmTrigger
+
+                if (pending != null) {
+                    pendingAlarmTrigger = null
+
+                    triggerAlarm(
+                        detail =
+                            pending.detail,
+                        lastMotionDelta =
+                            pending
+                                .lastMotionDelta,
+                        confidence =
+                            pending.confidence,
+                        detectorState =
+                            pending
+                                .detectorState,
+                        sensorSummary =
+                            pending
+                                .sensorSummary
+                    )
+                    return@launch
+                }
 
                 val expired =
                     pocketController
@@ -781,15 +1221,44 @@ class ProtectionForegroundService : Service() {
         ownerCheckJob?.cancel()
         ownerCheckJob = null
 
-        val decision =
-            pocketController
-                .ownerVerified()
-                ?: return
+        val pending =
+            pendingAlarmTrigger
+
+        pendingAlarmTrigger = null
+
+        val detectorState =
+            if (pending != null) {
+                "OWNER_VERIFIED"
+            } else {
+                pocketController
+                    .ownerVerified()
+                    ?.state
+                    ?.name
+                    ?: return
+            }
 
         container.eventRepository.add(
             AlarmEventType.OWNER_VERIFIED,
-            "Mode=${activeMode.name}; source=$source"
+            "Mode=${activeMode.name}; source=$source",
+            evidence =
+                AlarmEventEvidence(
+                    mode = activeMode,
+                    source = source,
+                    detectorState =
+                        detectorState
+                )
         )
+
+        if (
+            pending != null &&
+            activeMode ==
+                ProtectionMode.CHARGING
+        ) {
+            disarm(
+                addDisarmEvent = false
+            )
+            return
+        }
 
         AlarmStateStore.update(
             AlarmRuntimeState(
@@ -843,7 +1312,7 @@ class ProtectionForegroundService : Service() {
             return
         }
 
-        triggerAlarm(
+        requestAlarm(
             detail =
                 "Mode=TABLE; Accel=" +
                     String.format(
@@ -862,7 +1331,59 @@ class ProtectionForegroundService : Service() {
                     " rad/s",
             lastMotionDelta =
                 trigger.accelerationDelta,
-            confidence = 100
+            confidence = 100,
+            detectorState =
+                "TABLE_TRIGGER",
+            sensorSummary =
+                "accel=" +
+                    String.format(
+                        Locale.US,
+                        "%.2f",
+                        trigger
+                            .accelerationDelta
+                    ) +
+                    "; gyro=" +
+                    String.format(
+                        Locale.US,
+                        "%.2f",
+                        trigger
+                            .gyroscopeMagnitude
+                    )
+        )
+    }
+
+    private fun requestAlarm(
+        detail: String,
+        lastMotionDelta: Float,
+        confidence: Int,
+        detectorState: String,
+        sensorSummary: String? = null
+    ) {
+        if (ownerGraceMs() <= 0L) {
+            triggerAlarm(
+                detail = detail,
+                lastMotionDelta =
+                    lastMotionDelta,
+                confidence = confidence,
+                detectorState =
+                    detectorState,
+                sensorSummary =
+                    sensorSummary
+            )
+            return
+        }
+
+        beginOwnerCheck(
+            PendingAlarmTrigger(
+                detail = detail,
+                lastMotionDelta =
+                    lastMotionDelta,
+                confidence = confidence,
+                detectorState =
+                    detectorState,
+                sensorSummary =
+                    sensorSummary
+            )
         )
     }
 
@@ -877,14 +1398,20 @@ class ProtectionForegroundService : Service() {
                     "confidence=$confidence; " +
                     reason,
             lastMotionDelta = 0f,
-            confidence = confidence
+            confidence = confidence,
+            detectorState =
+                GuardState.ALARM.name,
+            sensorSummary =
+                reason
         )
     }
 
     private fun triggerAlarm(
         detail: String,
         lastMotionDelta: Float,
-        confidence: Int
+        confidence: Int,
+        detectorState: String,
+        sensorSummary: String? = null
     ) {
         protectionWakeLock.forceRequired()
         val settings =
@@ -892,6 +1419,7 @@ class ProtectionForegroundService : Service() {
 
         ownerCheckJob?.cancel()
         ownerCheckJob = null
+        pendingAlarmTrigger = null
 
         journeyJob?.cancel()
         journeyJob = null
@@ -907,11 +1435,7 @@ class ProtectionForegroundService : Service() {
                 confidenceScore =
                     confidence,
                 detectorState =
-                    if (activeMode == ProtectionMode.TABLE) {
-                        "TABLE_TRIGGER"
-                    } else {
-                        GuardState.ALARM.name
-                    },
+                    detectorState,
                 journeyEndsAt =
                     activeJourneyEndAt,
                 triggeredAt =
@@ -928,13 +1452,6 @@ class ProtectionForegroundService : Service() {
                 activeJourneyEndAtElapsedRealtime
         )
 
-        container
-            .eventRepository
-            .add(
-                AlarmEventType.TRIGGERED,
-                detail
-            )
-
         startAsForeground(
             phase = AlarmPhase.TRIGGERED,
             title = getString(R.string.svc_alarm_title, activeMode.label),
@@ -942,7 +1459,38 @@ class ProtectionForegroundService : Service() {
                 getString(R.string.svc_alarm_body)
         )
 
-        outputController.start(settings)
+        val outputHealth =
+            outputController.start(
+                settings.alarmProfile(
+                    activeMode
+                )
+            )
+
+        container
+            .eventRepository
+            .add(
+                AlarmEventType.TRIGGERED,
+                detail,
+                evidence =
+                    AlarmEventEvidence(
+                        mode = activeMode,
+                        source =
+                            activeActivationSource.name,
+                        reason = detail,
+                        confidenceScore =
+                            confidence,
+                        detectorState =
+                            detectorState,
+                        sensorSummary =
+                            sensorSummary,
+                        outputSummary =
+                            outputHealth
+                                .eventSummary(),
+                        graceSeconds =
+                            settings
+                                .gracePeriodSeconds
+                    )
+            )
     }
 
     private fun scheduleJourneyEnd(
@@ -1042,6 +1590,7 @@ class ProtectionForegroundService : Service() {
 
         ownerCheckJob?.cancel()
         ownerCheckJob = null
+        pendingAlarmTrigger = null
 
         journeyJob?.cancel()
         journeyJob = null
@@ -1079,14 +1628,55 @@ class ProtectionForegroundService : Service() {
         activeJourneyEndAt = null
         activeJourneyEndAtElapsedRealtime = null
         AlarmStateStore.reset()
+        refreshQuickSurfaces()
 
-        ServiceCompat.stopForeground(
-            this,
-            ServiceCompat
-                .STOP_FOREGROUND_REMOVE
+        if (autoArmStandbyEnabled) {
+            enterChargingAutoArmStandby()
+        } else {
+            ServiceCompat.stopForeground(
+                this,
+                ServiceCompat
+                    .STOP_FOREGROUND_REMOVE
+            )
+
+            stopSelf()
+        }
+    }
+
+    private fun enterChargingAutoArmStandby() {
+        if (
+            AlarmStateStore.state
+                .value.phase !=
+            AlarmPhase.DISARMED
+        ) {
+            return
+        }
+
+        protectionWakeLock.release()
+        autoArmAwaitingFreshConnection =
+            chargingMonitor
+                .isPowerConnected()
+
+        startAsForeground(
+            phase = AlarmPhase.DISARMED,
+            title =
+                getString(
+                    R.string
+                        .svc_auto_arm_title
+                ),
+            text =
+                getString(
+                    if (
+                        autoArmAwaitingFreshConnection
+                    ) {
+                        R.string
+                            .svc_auto_arm_wait_reconnect
+                    } else {
+                        R.string
+                            .svc_auto_arm_wait_connect
+                    }
+                )
         )
-
-        stopSelf()
     }
 
     private fun restorePersistedSession() {
@@ -1103,8 +1693,31 @@ class ProtectionForegroundService : Service() {
                 .sessionStateRepository
                 .read()
                 ?: run {
-                    outputController.stop()
-                    stopSelf()
+                    serviceScope.launch {
+                        val settings =
+                            container
+                                .settingsRepository
+                                .settings
+                                .first()
+
+                        autoArmStandbyEnabled =
+                            settings
+                                .autoArmCharging
+
+                        if (
+                            autoArmStandbyEnabled
+                        ) {
+                            enterChargingAutoArmStandby()
+                        } else {
+                            outputController.stop()
+                            ServiceCompat.stopForeground(
+                                this@ProtectionForegroundService,
+                                ServiceCompat
+                                    .STOP_FOREGROUND_REMOVE
+                            )
+                            stopSelf()
+                        }
+                    }
                     return
                 }
 
@@ -1142,6 +1755,8 @@ class ProtectionForegroundService : Service() {
                     .settings.first()
 
             activeSettings = settings
+            autoArmStandbyEnabled =
+                settings.autoArmCharging
 
             when (
                 SessionRecoveryPolicy
@@ -1202,7 +1817,11 @@ class ProtectionForegroundService : Service() {
                         )
                     )
 
-                    outputController.start(settings)
+                    outputController.start(
+                        settings.alarmProfile(
+                            persisted.mode
+                        )
+                    )
                 }
 
                 RecoveryAction.RESTORE_TABLE -> {
@@ -1211,6 +1830,14 @@ class ProtectionForegroundService : Service() {
                         initialCalibration =
                             persisted.tableCalibration,
                         recordArmedEvent = false
+                    )
+                }
+
+                RecoveryAction.RESTORE_CHARGING -> {
+                    startChargingMonitoring(
+                        settings = settings,
+                        recordArmedEvent =
+                            false
                     )
                 }
 
@@ -1460,6 +2087,8 @@ class ProtectionForegroundService : Service() {
                     R.string.svc_instruction_pocket
                 ProtectionMode.BAG ->
                     R.string.svc_instruction_bag
+                ProtectionMode.CHARGING ->
+                    R.string.svc_instruction_charging
                 ProtectionMode.JOURNEY ->
                     R.string.svc_instruction_journey
             }
@@ -1476,6 +2105,8 @@ class ProtectionForegroundService : Service() {
                     R.string.svc_calibration_pocket
                 ProtectionMode.BAG ->
                     R.string.svc_calibration_bag
+                ProtectionMode.CHARGING ->
+                    R.string.svc_calibration_charging
                 ProtectionMode.JOURNEY ->
                     R.string.svc_calibration_journey
             }
@@ -1502,8 +2133,73 @@ class ProtectionForegroundService : Service() {
 
                 ProtectionMode.TABLE ->
                     R.string.svc_wait_table
+
+                ProtectionMode.CHARGING ->
+                    R.string.svc_wait_charging
             }
         )
+
+    private fun refreshQuickSurfaces() {
+        PhoneGuardWidgetProvider.updateAll(
+            applicationContext
+        )
+
+        runCatching {
+            TileService.requestListeningState(
+                applicationContext,
+                ComponentName(
+                    applicationContext,
+                    PhoneGuardTileService::class.java
+                )
+            )
+        }
+    }
+
+    private fun AlarmOutputHealth.eventSummary():
+        String =
+        buildList {
+            if (soundRequested) {
+                add(
+                    "sound=" +
+                        if (soundActive) {
+                            "active"
+                        } else {
+                            "unverified"
+                        }
+                )
+            }
+
+            if (vibrationRequested) {
+                add(
+                    "vibration=" +
+                        if (vibrationActive) {
+                            "active"
+                        } else {
+                            "unavailable"
+                        }
+                )
+            }
+
+            if (flashRequested) {
+                add(
+                    "flash=" +
+                        if (flashActive) {
+                            "active"
+                        } else {
+                            "unavailable"
+                        }
+                )
+            }
+
+            if (soundRequested) {
+                add(
+                    "volume=${effectiveVolumePercent}%"
+                )
+            }
+        }
+            .joinToString(
+                separator = "; "
+            )
 
     override fun onDestroy() {
         armingJob?.cancel()
@@ -1516,6 +2212,10 @@ class ProtectionForegroundService : Service() {
 
         runCatching {
             unregisterReceiver(ownerReceiver)
+        }
+
+        runCatching {
+            unregisterReceiver(powerReceiver)
         }
 
         serviceScope.cancel()
@@ -1548,11 +2248,17 @@ class ProtectionForegroundService : Service() {
         private const val ACTION_RESTORE =
             "com.riccardopinato.phoneguard.action.RESTORE"
 
+        private const val ACTION_SET_AUTO_ARM =
+            "com.riccardopinato.phoneguard.action.SET_AUTO_ARM"
+
         private const val EXTRA_MODE =
             "protection_mode"
 
-        private const val OWNER_GRACE_MS =
-            8_000L
+        private const val EXTRA_SOURCE =
+            "activation_source"
+
+        private const val EXTRA_AUTO_ARM =
+            "auto_arm_enabled"
 
         private const val NOTIFICATION_ID =
             4101
@@ -1565,7 +2271,9 @@ class ProtectionForegroundService : Service() {
 
         fun arm(
             context: Context,
-            mode: ProtectionMode
+            mode: ProtectionMode,
+            source: ActivationSource =
+                ActivationSource.APP
         ) {
             val intent =
                 Intent(
@@ -1577,12 +2285,48 @@ class ProtectionForegroundService : Service() {
                         EXTRA_MODE,
                         mode.name
                     )
+                    .putExtra(
+                        EXTRA_SOURCE,
+                        source.name
+                    )
 
             ContextCompat
                 .startForegroundService(
                     context,
                     intent
                 )
+        }
+
+        fun setChargingAutoArm(
+            context: Context,
+            enabled: Boolean
+        ) {
+            val intent =
+                Intent(
+                    context,
+                    ProtectionForegroundService::class.java
+                )
+                    .setAction(
+                        ACTION_SET_AUTO_ARM
+                    )
+                    .putExtra(
+                        EXTRA_AUTO_ARM,
+                        enabled
+                    )
+
+            if (enabled) {
+                ContextCompat
+                    .startForegroundService(
+                        context,
+                        intent
+                    )
+            } else {
+                runCatching {
+                    context.startService(
+                        intent
+                    )
+                }
+            }
         }
 
         fun disarm(

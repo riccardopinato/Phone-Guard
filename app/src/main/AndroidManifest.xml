@@ -54,6 +54,10 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <receiver
@@ -64,6 +68,37 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".widget.PhoneGuardWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/phone_guard_widget_info" />
+        </receiver>
+
+        <service
+            android:name=".quick.PhoneGuardTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_shield"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="true" />
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+
         <service
             android:name=".service.ProtectionForegroundService"
             android:exported="false"
@@ -71,7 +106,7 @@
             android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-initiated anti-theft protection monitoring. Phone Guard reads motion, proximity and light sensors only while the user explicitly arms a protection mode and stops when the user disarms it." />
+                android:value="User-initiated anti-theft protection monitoring. Phone Guard reads device sensors or external power state only while the user explicitly arms a protection mode. An optional user-enabled charging auto-arm standby keeps a visible foreground notification while waiting for a charger connection." />
         </service>
 
     </application>

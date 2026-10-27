@@ -13,7 +13,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import com.riccardopinato.phoneguard.alarm.AlarmVolumeLeaseManager
 import com.riccardopinato.phoneguard.alarm.FlashStrobeController
-import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.model.AlarmOutputProfile
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -33,14 +33,14 @@ class AlarmOutputController(
     private var audioFocusRequest: AudioFocusRequest? = null
 
     fun start(
-        settings: AppSettings
+        profile: AlarmOutputProfile
     ): AlarmOutputHealth {
         stopSignals()
 
         val volumeApplied =
-            if (settings.soundEnabled) {
+            if (profile.soundEnabled) {
                 volumeLease.acquire(
-                    settings.alarmVolumePercent
+                    profile.alarmVolumePercent
                 )
             } else {
                 volumeLease.restoreIfOwned()
@@ -48,23 +48,23 @@ class AlarmOutputController(
             }
 
         val soundActive =
-            if (settings.soundEnabled) {
+            if (profile.soundEnabled) {
                 startSiren()
             } else {
                 false
             }
 
         val vibrationActive =
-            if (settings.vibrationEnabled) {
+            if (profile.vibrationEnabled) {
                 startVibration()
             } else {
                 false
             }
 
         val flashActive =
-            if (settings.flashEnabled) {
+            if (profile.flashEnabled) {
                 flashController.startContinuous(
-                    settings.flashFrequencyHz
+                    profile.flashFrequencyHz
                 )
             } else {
                 false
@@ -73,21 +73,21 @@ class AlarmOutputController(
         val health =
             AlarmOutputHealth(
                 soundRequested =
-                    settings.soundEnabled,
+                    profile.soundEnabled,
                 soundActive =
                     soundActive &&
                         volumeApplied,
                 vibrationRequested =
-                    settings.vibrationEnabled,
+                    profile.vibrationEnabled,
                 vibrationActive =
                     vibrationActive,
                 flashRequested =
-                    settings.flashEnabled,
+                    profile.flashEnabled,
                 flashActive =
                     flashActive,
                 targetVolumePercent =
-                    if (settings.soundEnabled) {
-                        settings.alarmVolumePercent
+                    if (profile.soundEnabled) {
+                        profile.alarmVolumePercent
                     } else {
                         0
                     },

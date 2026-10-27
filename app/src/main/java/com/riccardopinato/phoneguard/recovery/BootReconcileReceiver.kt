@@ -5,6 +5,13 @@ import android.content.Context
 import android.content.Intent
 import com.riccardopinato.phoneguard.alarm.AlarmVolumeLeaseManager
 import com.riccardopinato.phoneguard.data.SessionStateRepository
+import com.riccardopinato.phoneguard.data.SettingsRepository
+import com.riccardopinato.phoneguard.service.ProtectionForegroundService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class BootReconcileReceiver :
     BroadcastReceiver() {
@@ -20,16 +27,48 @@ class BootReconcileReceiver :
             return
         }
 
-        val sessions =
-            SessionStateRepository(context)
+        val pending =
+            goAsync()
 
-        val active =
-            sessions.read()
+        CoroutineScope(
+            SupervisorJob() +
+                Dispatchers.IO
+        ).launch {
+            try {
+                val sessions =
+                    SessionStateRepository(
+                        context
+                    )
 
-        if (active == null) {
-            AlarmVolumeLeaseManager(
-                context
-            ).restoreIfOwned()
+                val active =
+                    sessions.read()
+
+                if (active == null) {
+                    AlarmVolumeLeaseManager(
+                        context
+                    ).restoreIfOwned()
+                }
+
+                val settings =
+                    SettingsRepository(
+                        context
+                    )
+                        .settings
+                        .first()
+
+                if (
+                    settings
+                        .autoArmCharging
+                ) {
+                    ProtectionForegroundService
+                        .setChargingAutoArm(
+                            context,
+                            true
+                        )
+                }
+            } finally {
+                pending.finish()
+            }
         }
     }
 }

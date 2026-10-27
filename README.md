@@ -1,8 +1,8 @@
 # Phone Guard
 
-Phone Guard is a standalone native Android anti-theft / anti-tampering utility with four protection modes: Table, Pocket, Bag and Journey.
+Phone Guard is a standalone native Android anti-theft / anti-tampering utility with five protection modes: Table, Pocket, Bag, Charging and Journey.
 
-**Version truth: 0.9.2 / versionCode 4**
+**Version truth: 0.9.3 / versionCode 5**
 
 ## Factory baseline
 
@@ -20,25 +20,45 @@ Donors are provenance only. Phone Guard has no runtime dependency on donor apps.
 - **Table** — calibrated motion protection for a phone left on a surface.
 - **Pocket** — proximity + accelerometer protection, with optional light/rotation corroboration.
 - **Bag** — accelerometer plus real light or gyroscope evidence.
+- **Charging** — external-power protection for a phone left charging; cable/power removal enters owner verification and can trigger the alarm.
 - **Journey** — time-bounded Pocket or Bag protection.
 
 All modes run through one authoritative `ProtectionForegroundService`.
+
+## 0.9.3 Market Value Pack
+
+The pre-1.0 product surface now also includes:
+
+- **Charging Guard** with real power-state monitoring;
+- **opt-in Charging auto-arm standby** using the same visible foreground service;
+- **Quick Settings tile**: tap while idle to arm the last selected mode; active protection always opens the app instead of bypassing owner authentication;
+- **home-screen widget** and **static launcher shortcut** for quick arming;
+- one shared **ProtectionActivationCoordinator** for app/tile/widget/shortcut/auto-charge entry points;
+- configurable **pre-alarm owner grace**;
+- deterministic **Protection Presets** for Café, Transit, Backpack, Public Charge and Travel;
+- true **per-mode AlarmOutputProfile** settings;
+- **Protection Check** diagnostics plus manual output tests;
+- **structured event evidence** for mode/source/confidence/detector/sensors/output health.
 
 ## Reliability invariants
 
 - local-first / offline-first;
 - capability support must match a reachable detector path;
 - Pocket/Bag calibration requires live evidence from required sensors;
+- Charging requires real external power at manual arm time;
+- Charging auto-arm is explicit opt-in and keeps a visible foreground standby instead of relying on an unreliable manifest power receiver;
 - one foreground-service owner;
+- every external activation surface uses the shared activation policy;
+- Tile/widget/shortcut never bypass PIN or strong-biometric disarm;
 - Journey expiry never disarms OWNER_CHECK or TRIGGERED;
 - within one boot, Journey duration is governed by monotonic elapsed time so wall-clock changes cannot alter the session;
-- wake-lock use is capability-aware; when a CPU lease is required it is bounded and renewed rather than acquired indefinitely;
+- wake-lock use is capability-aware; Charging monitoring and auto-arm standby do not hold the sensor CPU lease;
 - no UI may claim protection without a real active runtime state;
 - force-stop, OEM background restrictions and hardware limitations are never represented as guaranteed-survival cases.
 
 ## Alarm escalation
 
-Alarm outputs are owned by one `AlarmOutputController`:
+Alarm outputs are owned by one `AlarmOutputController` and may now be configured per protection mode:
 
 - siren;
 - vibration;
@@ -46,7 +66,7 @@ Alarm outputs are owned by one `AlarmOutputController`:
 - alarm-stream target volume;
 - warning screen and temporary brightness.
 
-The alarm-volume lease is acquired **only when alarm outputs actually start**. Merely arming or monitoring protection does not change the user's alarm volume. Restoration is ownership-aware and does not overwrite a manual user volume change.
+The alarm-volume lease is acquired **only when alarm outputs actually start**. Merely arming, monitoring or waiting in charging auto-arm standby does not change the user's alarm volume. Restoration is ownership-aware and does not overwrite a manual user volume change.
 
 ## Security
 
@@ -59,13 +79,14 @@ The alarm-volume lease is acquired **only when alarm outputs actually start**. M
 - malformed PIN attempts participate in rate limiting;
 - PIN verification is serialized to prevent concurrent-attempt races;
 - BIOMETRIC_STRONG is optional owner proof;
-- ACTION_USER_PRESENT is never authentication.
+- ACTION_USER_PRESENT is never authentication;
+- quick surfaces can arm only after activation-policy checks and cannot directly disarm.
 
 ## Data
 
-No account, proprietary backend, analytics, ads, location collection, audio recording, photo capture or video capture exists in the current source tree. Sensor processing and event history are local.
+No account, proprietary backend, analytics, ads, location collection, audio recording, photo capture or video capture exists in the current source tree. Sensor/power processing and event history are local.
 
-PIN verifier data, runtime protection state, alarm-volume lease and event history are excluded from Android backup/device transfer.
+PIN verifier data, runtime protection state, alarm-volume lease and event history are excluded from Android backup/device transfer. Non-sensitive preferences include presets, grace, per-mode output configuration and the opt-in charging auto-arm preference.
 
 ## Automated validation
 
@@ -84,8 +105,8 @@ The signed INTERNAL lane additionally verifies the APK/AAB signing certificate a
 
 ## Certification boundary
 
-0.9.2 is the pre-1.0 software-hardening candidate.
+0.9.3 is the expanded pre-1.0 software candidate.
 
-Software can be accepted only when the exact candidate SHA passes all automated gates and the signed INTERNAL lane. Physical Pixel/Samsung/Xiaomi certification remains a separate evidence gate. Google Play Console work is intentionally deferred until the product is otherwise ready.
+Automated gates do not certify physical Charging, Tile/widget launcher behavior, OEM background survival, real flash/volume/DND behavior or sensor false-positive/negative behavior. Those remain part of the exact-artifact physical matrix.
 
-Phone Guard must not be labelled fully CERTIFIED until physical-device evidence is complete.
+Phone Guard must not be labelled fully CERTIFIED until the physical Pixel/Samsung/Xiaomi evidence is complete.

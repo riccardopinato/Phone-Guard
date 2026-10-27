@@ -32,6 +32,9 @@ internal object ProtectionWakePolicy {
                     capabilities
                 )
 
+            ProtectionMode.CHARGING ->
+                false
+
             ProtectionMode.JOURNEY ->
                 when (
                     guardMode
