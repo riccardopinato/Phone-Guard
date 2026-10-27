@@ -44,6 +44,8 @@ import com.riccardopinato.phoneguard.hardware.BatteryDiagnostics
 import com.riccardopinato.phoneguard.hardware.HardwareDiagnostics
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
 import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.autoguard.AutoGuardRuntimePhase
+import com.riccardopinato.phoneguard.autoguard.AutoGuardRuntimeStore
 import com.riccardopinato.phoneguard.service.ProtectionForegroundService
 import com.riccardopinato.phoneguard.ui.components.SetPinDialog
 import com.riccardopinato.phoneguard.ui.components.SettingSwitchRow
@@ -73,6 +75,11 @@ fun ProfileScreen(
     val settings by
         settingsRepository.settings.collectAsStateWithLifecycle(
             initialValue = AppSettings()
+        )
+
+    val adaptiveRuntime by
+        AutoGuardRuntimeStore.state.collectAsStateWithLifecycle(
+            initialValue = AutoGuardRuntimePhase.OFF
         )
 
     val hasPin by
@@ -354,6 +361,23 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SectionTitle(stringResource(R.string.auto_guard_title))
+                Text(
+                    text = stringResource(
+                        when {
+                            alarmRunning -> R.string.auto_guard_state_protection
+                            !settings.adaptiveAutoGuardEnabled -> R.string.auto_guard_state_off
+                            adaptiveRuntime == AutoGuardRuntimePhase.CHECKING ->
+                                R.string.auto_guard_state_checking
+                            adaptiveRuntime == AutoGuardRuntimePhase.WAITING ->
+                                R.string.auto_guard_state_waiting
+                            adaptiveRuntime == AutoGuardRuntimePhase.PAUSED ->
+                                R.string.auto_guard_state_paused
+                            else -> R.string.auto_guard_state_unavailable
+                        }
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Text(
                     text = stringResource(R.string.auto_guard_description),
                     style = MaterialTheme.typography.bodySmall,
