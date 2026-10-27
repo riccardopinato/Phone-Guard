@@ -13,8 +13,6 @@ import com.riccardopinato.phoneguard.pocket.model.SensorSnapshot
 import com.riccardopinato.phoneguard.pocket.sensor.SamplingMode
 import com.riccardopinato.phoneguard.pocket.sensor.SensorController
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
 data class LiveGuardTestResult(
