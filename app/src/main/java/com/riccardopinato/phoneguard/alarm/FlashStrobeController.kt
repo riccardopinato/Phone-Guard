@@ -39,8 +39,16 @@ class FlashStrobeController(context: Context) : AutoCloseable {
     private var closed = false
 
     @Synchronized
-    fun startContinuous(frequencyHz: Float) {
-        if (closed || cameraId == null || !hasCameraPermission()) return
+    fun startContinuous(
+        frequencyHz: Float
+    ): Boolean {
+        if (
+            closed ||
+            cameraId == null ||
+            !hasCameraPermission()
+        ) {
+            return false
+        }
 
         val safeHz = frequencyHz.coerceIn(MIN_HZ, MAX_HZ)
         val halfPeriodMs =
@@ -49,30 +57,100 @@ class FlashStrobeController(context: Context) : AutoCloseable {
                 .coerceIn(MIN_PHASE_MS, MAX_PHASE_MS)
 
         stopLocked()
-        val myGeneration = generation.incrementAndGet()
+
+        if (!setTorch(cameraId, true)) {
+            running.set(false)
+            return false
+        }
+
+        val myGeneration =
+            generation.incrementAndGet()
+
         running.set(true)
 
-        try {
+        return try {
             currentTask = executor.submit {
                 try {
-                    while (isCurrent(myGeneration)) {
-                        setTorch(cameraId, true)
-                        if (!sleepInterruptibly(halfPeriodMs, myGeneration)) break
-                        setTorch(cameraId, false)
-                        if (!sleepInterruptibly(halfPeriodMs, myGeneration)) break
+                    if (
+                        !sleepInterruptibly(
+                            halfPeriodMs,
+                            myGeneration
+                        )
+                    ) {
+                        return@submit
                     }
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
+
+                    while (
+                        isCurrent(
+                            myGeneration
+                        )
+                    ) {
+                        if (
+                            !setTorch(
+                                cameraId,
+                                false
+                            )
+                        ) {
+                            break
+                        }
+
+                        if (
+                            !sleepInterruptibly(
+                                halfPeriodMs,
+                                myGeneration
+                            )
+                        ) {
+                            break
+                        }
+
+                        if (
+                            !setTorch(
+                                cameraId,
+                                true
+                            )
+                        ) {
+                            break
+                        }
+
+                        if (
+                            !sleepInterruptibly(
+                                halfPeriodMs,
+                                myGeneration
+                            )
+                        ) {
+                            break
+                        }
+                    }
+                } catch (
+                    _: InterruptedException
+                ) {
+                    Thread.currentThread()
+                        .interrupt()
                 } finally {
-                    setTorch(cameraId, false)
-                    if (generation.get() == myGeneration) {
+                    setTorch(
+                        cameraId,
+                        false
+                    )
+
+                    if (
+                        generation.get() ==
+                        myGeneration
+                    ) {
                         running.set(false)
                     }
                 }
             }
-        } catch (_: RejectedExecutionException) {
+
+            true
+        } catch (
+            _: RejectedExecutionException
+        ) {
             running.set(false)
-            setTorch(cameraId, false)
+            setTorch(
+                cameraId,
+                false
+            )
+            false
         }
     }
 
@@ -164,23 +242,51 @@ class FlashStrobeController(context: Context) : AutoCloseable {
     private fun setTorch(
         id: String?,
         enabled: Boolean
-    ) {
-        if (id == null || cameraManager == null) return
-        try {
-            cameraManager.setTorchMode(id, enabled)
-        } catch (_: CameraAccessException) {
-            Log.d(tag, "Camera busy or unavailable")
-        } catch (_: SecurityException) {
-            Log.d(tag, "Camera permission unavailable")
-        } catch (_: IllegalArgumentException) {
-            Log.d(tag, "Invalid camera id")
+    ): Boolean {
+        if (
+            id == null ||
+            cameraManager == null
+        ) {
+            return false
+        }
+
+        return try {
+            cameraManager.setTorchMode(
+                id,
+                enabled
+            )
+            true
+        } catch (
+            _: CameraAccessException
+        ) {
+            Log.d(
+                tag,
+                "Camera busy or unavailable"
+            )
+            false
+        } catch (
+            _: SecurityException
+        ) {
+            Log.d(
+                tag,
+                "Camera permission unavailable"
+            )
+            false
+        } catch (
+            _: IllegalArgumentException
+        ) {
+            Log.d(
+                tag,
+                "Invalid camera id"
+            )
+            false
         }
     }
 
     private companion object {
         const val MIN_HZ = 0.5f
-        const val MAX_HZ = 10f
-        const val MIN_PHASE_MS = 50L
+        const val MAX_HZ = 3f
+        const val MIN_PHASE_MS = 160L
         const val MAX_PHASE_MS = 1_000L
     }
 }

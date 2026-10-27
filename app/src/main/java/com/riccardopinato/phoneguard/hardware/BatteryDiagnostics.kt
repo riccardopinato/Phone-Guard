@@ -1,4 +1,3 @@
-// TARGET: app/src/main/java/com/riccardopinato/tabletopalarm/hardware/BatteryDiagnostics.kt
 package com.riccardopinato.phoneguard.hardware
 
 import android.content.Context

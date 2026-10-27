@@ -15,7 +15,6 @@ data class PersistedProtectionSession(
     val pocketGuardMode: GuardMode?,
     val updatedAtWallClock: Long,
     val journeyEndsAt: Long?,
-    val previousAlarmVolume: Int?,
     val tableCalibration: MotionCalibration?,
     val pocketCalibration: CalibrationProfile?
 )
@@ -48,6 +47,13 @@ internal object SessionRecoveryPolicy {
         now: Long
     ): RecoveryAction {
         if (
+            session.phase == AlarmPhase.TRIGGERED ||
+            session.phase == AlarmPhase.OWNER_CHECK
+        ) {
+            return RecoveryAction.RESTORE_ALARM
+        }
+
+        if (
             session.mode == ProtectionMode.JOURNEY &&
             session.journeyEndsAt != null &&
             session.journeyEndsAt <= now
@@ -56,10 +62,6 @@ internal object SessionRecoveryPolicy {
         }
 
         return when (session.phase) {
-            AlarmPhase.TRIGGERED,
-            AlarmPhase.OWNER_CHECK ->
-                RecoveryAction.RESTORE_ALARM
-
             AlarmPhase.ARMED ->
                 when (session.mode) {
                     ProtectionMode.TABLE ->
@@ -82,6 +84,10 @@ internal object SessionRecoveryPolicy {
             AlarmPhase.ARMING,
             AlarmPhase.CALIBRATING ->
                 RecoveryAction.RECALIBRATE
+
+            AlarmPhase.TRIGGERED,
+            AlarmPhase.OWNER_CHECK ->
+                RecoveryAction.RESTORE_ALARM
 
             AlarmPhase.DISARMED,
             AlarmPhase.ERROR ->
@@ -177,20 +183,6 @@ class SessionStateRepository(
             .putLong(KEY_BOOT_MARKER, currentBootMarker())
             .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
             .commit()
-    }
-
-    fun savePreviousAlarmVolume(level: Int?) {
-        val editor =
-            prefs.edit()
-                .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
-
-        if (level == null) {
-            editor.remove(KEY_PREVIOUS_ALARM_VOLUME)
-        } else {
-            editor.putInt(KEY_PREVIOUS_ALARM_VOLUME, level)
-        }
-
-        editor.commit()
     }
 
     fun saveJourneyEnd(endAt: Long?) {
@@ -358,13 +350,6 @@ class SessionStateRepository(
                 } else {
                     null
                 },
-            previousAlarmVolume =
-                if (prefs.contains(KEY_PREVIOUS_ALARM_VOLUME)) {
-                    prefs.getInt(KEY_PREVIOUS_ALARM_VOLUME, 0)
-                        .takeIf { it >= 0 }
-                } else {
-                    null
-                },
             tableCalibration = tableCalibration,
             pocketCalibration = pocketCalibration
         )
@@ -415,7 +400,6 @@ class SessionStateRepository(
         const val KEY_UPDATED_AT = "updated_at"
         const val KEY_BOOT_MARKER = "boot_marker"
         const val KEY_JOURNEY_ENDS_AT = "journey_ends_at"
-        const val KEY_PREVIOUS_ALARM_VOLUME = "previous_alarm_volume"
 
         const val KEY_HAS_TABLE_CALIBRATION = "has_table_calibration"
         const val KEY_BASELINE_X = "baseline_x"

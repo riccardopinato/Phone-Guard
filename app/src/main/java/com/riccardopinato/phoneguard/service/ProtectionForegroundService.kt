@@ -98,9 +98,7 @@ class ProtectionForegroundService : Service() {
                     intent?.action ==
                     Intent.ACTION_USER_PRESENT
                 ) {
-                    ownerVerified(
-                        "Android ACTION_USER_PRESENT"
-                    )
+                    ownerPresenceObserved()
                 }
             }
         }
@@ -110,7 +108,11 @@ class ProtectionForegroundService : Service() {
 
         outputController =
             AlarmOutputController(
-                applicationContext
+                context =
+                    applicationContext,
+                volumeLease =
+                    container
+                        .alarmVolumeLeaseManager
             )
 
         notificationManager =
@@ -164,6 +166,7 @@ class ProtectionForegroundService : Service() {
                     "Authenticated in app"
                 )
 
+            ACTION_RESTORE,
             null ->
                 restorePersistedSession()
         }
@@ -189,7 +192,7 @@ class ProtectionForegroundService : Service() {
                 phase = AlarmPhase.ARMING,
                 mode = mode,
                 message =
-                    "Preparazione ${mode.label}…"
+                    getString(R.string.svc_preparing, mode.label)
             )
         )
 
@@ -200,7 +203,7 @@ class ProtectionForegroundService : Service() {
 
         startAsForeground(
             phase = AlarmPhase.ARMING,
-            title = "Preparazione ${mode.label}",
+            title = getString(R.string.svc_preparing_title, mode.label),
             text = armingInstruction(mode)
         )
 
@@ -218,13 +221,9 @@ class ProtectionForegroundService : Service() {
 
                 activeSettings = settings
 
-                val previousAlarmVolume =
-                    outputController.prepare(settings)
-
-                container.sessionStateRepository
-                    .savePreviousAlarmVolume(
-                        previousAlarmVolume
-                    )
+                outputController.prepare(
+                    settings
+                )
 
                 container.eventRepository.add(
                     AlarmEventType.ARMING_STARTED,
@@ -251,14 +250,14 @@ class ProtectionForegroundService : Service() {
                             mode = mode,
                             countdownSeconds = remaining,
                             message =
-                                "Attivazione ${mode.label} in ${remaining}s"
+                                getString(R.string.svc_activating, mode.label, remaining)
                         )
                     )
 
                     updateNotification(
                         AlarmPhase.ARMING,
-                        "Preparazione ${mode.label}",
-                        "Attivazione in ${remaining}s"
+                        getString(R.string.svc_preparing_title, mode.label),
+                        getString(R.string.svc_activating_short, remaining)
                     )
 
                     delay(1_000)
@@ -310,7 +309,7 @@ class ProtectionForegroundService : Service() {
 
         updateNotification(
             AlarmPhase.CALIBRATING,
-            "Calibrazione ${mode.label}",
+            getString(R.string.svc_calibrating_title, mode.label),
             calibrationMessage(mode)
         )
 
@@ -324,7 +323,7 @@ class ProtectionForegroundService : Service() {
         val requiredGuardMode =
             guardMode ?: run {
                 failAndStop(
-                    "Profilo Pocket/Bag non valido."
+                    getString(R.string.svc_invalid_profile)
                 )
                 return
             }
@@ -382,7 +381,7 @@ class ProtectionForegroundService : Service() {
                             phase = AlarmPhase.ARMED,
                             mode = ProtectionMode.TABLE,
                             message =
-                                "Table protetto. Non muovere il dispositivo."
+                                getString(R.string.svc_table_protected)
                         )
                     )
 
@@ -412,8 +411,8 @@ class ProtectionForegroundService : Service() {
 
                     updateNotification(
                         AlarmPhase.ARMED,
-                        "Table protetto",
-                        "Il movimento farà scattare l'allarme."
+                        getString(R.string.svc_table_title),
+                        getString(R.string.svc_table_alarm_hint)
                     )
                 },
                 onMovement = {
@@ -426,7 +425,7 @@ class ProtectionForegroundService : Service() {
 
         if (!detector.start()) {
             failAndStop(
-                "Accelerometro non disponibile."
+                getString(R.string.svc_accel_unavailable)
             )
         }
     }
@@ -450,7 +449,7 @@ class ProtectionForegroundService : Service() {
                 )
                 ?: run {
                     failAndStop(
-                        "Profilo Pocket/Bag non valido."
+                        getString(R.string.svc_invalid_profile)
                     )
                     return
                 }
@@ -486,7 +485,7 @@ class ProtectionForegroundService : Service() {
             )
         ) {
             failAndStop(
-                "Sensori insufficienti per ${guardMode.name}."
+                getString(R.string.svc_sensors_insufficient, guardMode.name)
             )
             return
         }
@@ -543,7 +542,7 @@ class ProtectionForegroundService : Service() {
 
         updateNotification(
             AlarmPhase.ARMED,
-            "${mode.label} protetto",
+            getString(R.string.svc_mode_protected_title, mode.label),
             waitingMessage(
                 mode,
                 guardMode
@@ -572,10 +571,10 @@ class ProtectionForegroundService : Service() {
                             )
 
                         GuardState.POCKET_CONFIRMED ->
-                            "${activeMode.label} attivo: dispositivo in posizione protetta."
+                            getString(R.string.svc_position_protected, activeMode.label)
 
                         GuardState.REMOVAL_SUSPECTED ->
-                            "Possibile estrazione rilevata…"
+                            getString(R.string.svc_possible_removal)
 
                         else -> ""
                     }
@@ -597,7 +596,7 @@ class ProtectionForegroundService : Service() {
                 if (decision.changed) {
                     updateNotification(
                         AlarmPhase.ARMED,
-                        "${activeMode.label} protetto",
+                        getString(R.string.svc_mode_protected_title, activeMode.label),
                         message
                     )
                 }
@@ -628,6 +627,8 @@ class ProtectionForegroundService : Service() {
         decision: DetectionDecision
     ) {
         ownerCheckJob?.cancel()
+        journeyJob?.cancel()
+        journeyJob = null
 
         val deadline =
             System.currentTimeMillis() +
@@ -638,7 +639,7 @@ class ProtectionForegroundService : Service() {
                 phase = AlarmPhase.OWNER_CHECK,
                 mode = activeMode,
                 message =
-                    "Verifica proprietario: sblocca il telefono o autenticati.",
+                    getString(R.string.svc_owner_check_message),
                 confidenceScore =
                     decision.confidenceScore,
                 detectorState =
@@ -659,10 +660,62 @@ class ProtectionForegroundService : Service() {
 
         startAsForeground(
             phase = AlarmPhase.OWNER_CHECK,
-            title = "Verifica proprietario",
+            title = getString(R.string.svc_owner_check_title),
             text =
-                "Autenticati per evitare l'allarme."
+                getString(R.string.svc_owner_check_notification)
         )
+
+        scheduleOwnerCheckExpiry()
+    }
+
+    private fun ownerPresenceObserved() {
+        if (
+            AlarmStateStore.state
+                .value.phase !=
+            AlarmPhase.OWNER_CHECK
+        ) {
+            return
+        }
+
+        val current =
+            AlarmStateStore.state
+                .value
+
+        AlarmStateStore.update(
+            current.copy(
+                message =
+                    getString(R.string.svc_unlocked_message),
+                ownerCheckDeadline =
+                    System.currentTimeMillis() +
+                        OWNER_GRACE_MS
+            )
+        )
+
+        scheduleOwnerCheckExpiry()
+    }
+
+    private fun scheduleOwnerCheckExpiry() {
+        ownerCheckJob?.cancel()
+
+        val deadline =
+            System.currentTimeMillis() +
+                OWNER_GRACE_MS
+
+        val current =
+            AlarmStateStore.state
+                .value
+
+        if (
+            current.phase ==
+            AlarmPhase.OWNER_CHECK
+        ) {
+            AlarmStateStore.update(
+                current.copy(
+                    ownerCheckDeadline =
+                        deadline
+                )
+            )
+        }
 
         ownerCheckJob =
             serviceScope.launch {
@@ -714,7 +767,7 @@ class ProtectionForegroundService : Service() {
                 phase = AlarmPhase.ARMED,
                 mode = activeMode,
                 message =
-                    "Proprietario verificato. Protezione ancora attiva.",
+                    getString(R.string.svc_owner_verified),
                 confidenceScore = 0,
                 detectorState =
                     decision.state.name,
@@ -733,8 +786,14 @@ class ProtectionForegroundService : Service() {
         updateNotification(
             AlarmPhase.ARMED,
             "${activeMode.label} protetto",
-            "Proprietario verificato. Protezione ancora attiva."
+            getString(R.string.svc_owner_verified)
         )
+
+        if (activeMode == ProtectionMode.JOURNEY) {
+            scheduleJourneyEnd(
+                activeJourneyEndAt
+            )
+        }
     }
 
     private fun triggerTableAlarm(
@@ -797,12 +856,15 @@ class ProtectionForegroundService : Service() {
         ownerCheckJob?.cancel()
         ownerCheckJob = null
 
+        journeyJob?.cancel()
+        journeyJob = null
+
         AlarmStateStore.update(
             AlarmRuntimeState(
                 phase = AlarmPhase.TRIGGERED,
                 mode = activeMode,
                 message =
-                    "Protezione attivata!",
+                    getString(R.string.svc_alarm_triggered),
                 lastMotionDelta =
                     lastMotionDelta,
                 confidenceScore =
@@ -836,9 +898,9 @@ class ProtectionForegroundService : Service() {
 
         startAsForeground(
             phase = AlarmPhase.TRIGGERED,
-            title = "⚠ ${activeMode.label}: allarme",
+            title = getString(R.string.svc_alarm_title, activeMode.label),
             text =
-                "Apri l'app e autenticati per fermare l'allarme."
+                getString(R.string.svc_alarm_body)
         )
 
         outputController.start(settings)
@@ -853,6 +915,17 @@ class ProtectionForegroundService : Service() {
         if (
             activeMode !=
             ProtectionMode.JOURNEY
+        ) {
+            return
+        }
+
+        val phase =
+            AlarmStateStore.state
+                .value.phase
+
+        if (
+            phase == AlarmPhase.OWNER_CHECK ||
+            phase == AlarmPhase.TRIGGERED
         ) {
             return
         }
@@ -882,6 +955,19 @@ class ProtectionForegroundService : Service() {
     }
 
     private fun finishJourney() {
+        journeyJob = null
+
+        val phase =
+            AlarmStateStore.state
+                .value.phase
+
+        if (
+            phase == AlarmPhase.OWNER_CHECK ||
+            phase == AlarmPhase.TRIGGERED
+        ) {
+            return
+        }
+
         container.eventRepository.add(
             AlarmEventType.JOURNEY_ENDED,
             "Journey session completed."
@@ -951,11 +1037,20 @@ class ProtectionForegroundService : Service() {
     }
 
     private fun restorePersistedSession() {
+        if (
+            AlarmStateStore.state
+                .value.phase !=
+            AlarmPhase.DISARMED
+        ) {
+            return
+        }
+
         val persisted =
             container
                 .sessionStateRepository
                 .read()
                 ?: run {
+                    outputController.stop()
                     stopSelf()
                     return
                 }
@@ -979,9 +1074,9 @@ class ProtectionForegroundService : Service() {
                     AlarmPhase.CALIBRATING
                 },
             title =
-                "Ripristino ${persisted.mode.label}",
+                getString(R.string.svc_restore_title, persisted.mode.label),
             text =
-                "Ripristino protezione in corso."
+                getString(R.string.svc_restore_body)
         )
 
         acquireWakeLock()
@@ -993,10 +1088,9 @@ class ProtectionForegroundService : Service() {
 
             activeSettings = settings
 
-            outputController.adoptPreviousAlarmVolume(
-                persisted.previousAlarmVolume
+            outputController.prepare(
+                settings
             )
-            outputController.prepare(settings)
 
             when (
                 SessionRecoveryPolicy
@@ -1016,6 +1110,7 @@ class ProtectionForegroundService : Service() {
                         )
                     }
 
+                    outputController.stop()
                     container.sessionStateRepository.clear()
                     releaseWakeLock()
                     ServiceCompat.stopForeground(
@@ -1041,7 +1136,7 @@ class ProtectionForegroundService : Service() {
                             phase = AlarmPhase.TRIGGERED,
                             mode = persisted.mode,
                             message =
-                                "Allarme ripristinato dopo interruzione.",
+                                getString(R.string.svc_alarm_restored),
                             confidenceScore = 100,
                             journeyEndsAt =
                                 persisted.journeyEndsAt,
@@ -1051,9 +1146,6 @@ class ProtectionForegroundService : Service() {
                     )
 
                     outputController.start(settings)
-                    scheduleJourneyEnd(
-                        persisted.journeyEndsAt
-                    )
                 }
 
                 RecoveryAction.RESTORE_TABLE -> {
@@ -1116,7 +1208,7 @@ class ProtectionForegroundService : Service() {
 
         updateNotification(
             AlarmPhase.ERROR,
-            "Errore protezione",
+            getString(R.string.svc_error_title),
             message
         )
 
@@ -1251,12 +1343,12 @@ class ProtectionForegroundService : Service() {
         val monitor =
             NotificationChannel(
                 CHANNEL_MONITOR,
-                "Phone Guard protection",
+                getString(R.string.svc_channel_monitor_name),
                 NotificationManager
                     .IMPORTANCE_LOW
             ).apply {
                 description =
-                    "Mostrata mentre una modalità Phone Guard è attiva."
+                    getString(R.string.svc_channel_monitor_desc)
                 setSound(null, null)
                 enableVibration(false)
             }
@@ -1264,12 +1356,12 @@ class ProtectionForegroundService : Service() {
         val alarm =
             NotificationChannel(
                 CHANNEL_ALARM,
-                "Phone Guard alerts",
+                getString(R.string.svc_channel_alarm_name),
                 NotificationManager
                     .IMPORTANCE_HIGH
             ).apply {
                 description =
-                    "Owner check e allarmi antifurto."
+                    getString(R.string.svc_channel_alarm_desc)
                 setSound(null, null)
                 enableVibration(false)
             }
@@ -1321,58 +1413,58 @@ class ProtectionForegroundService : Service() {
     private fun armingInstruction(
         mode: ProtectionMode
     ): String =
-        when (mode) {
-            ProtectionMode.TABLE ->
-                "Appoggia il telefono e non muoverlo."
-
-            ProtectionMode.POCKET ->
-                "Prepara il telefono per la tasca."
-
-            ProtectionMode.BAG ->
-                "Prepara il telefono nella borsa o nello zaino."
-
-            ProtectionMode.JOURNEY ->
-                "Preparazione Journey Guard."
-        }
+        getString(
+            when (mode) {
+                ProtectionMode.TABLE ->
+                    R.string.svc_instruction_table
+                ProtectionMode.POCKET ->
+                    R.string.svc_instruction_pocket
+                ProtectionMode.BAG ->
+                    R.string.svc_instruction_bag
+                ProtectionMode.JOURNEY ->
+                    R.string.svc_instruction_journey
+            }
+        )
 
     private fun calibrationMessage(
         mode: ProtectionMode
     ): String =
-        when (mode) {
-            ProtectionMode.TABLE ->
-                "Non muovere il telefono."
-
-            ProtectionMode.POCKET ->
-                "Calibrazione ambiente Pocket…"
-
-            ProtectionMode.BAG ->
-                "Calibrazione ambiente Bag…"
-
-            ProtectionMode.JOURNEY ->
-                "Calibrazione Journey Guard…"
-        }
+        getString(
+            when (mode) {
+                ProtectionMode.TABLE ->
+                    R.string.svc_calibration_table
+                ProtectionMode.POCKET ->
+                    R.string.svc_calibration_pocket
+                ProtectionMode.BAG ->
+                    R.string.svc_calibration_bag
+                ProtectionMode.JOURNEY ->
+                    R.string.svc_calibration_journey
+            }
+        )
 
     private fun waitingMessage(
         mode: ProtectionMode,
         guardMode: GuardMode
     ): String =
-        when (mode) {
-            ProtectionMode.POCKET ->
-                "Inserisci il telefono in tasca: si armerà automaticamente."
+        getString(
+            when (mode) {
+                ProtectionMode.POCKET ->
+                    R.string.svc_wait_pocket
 
-            ProtectionMode.BAG ->
-                "Metti il telefono nella borsa: si armerà automaticamente."
+                ProtectionMode.BAG ->
+                    R.string.svc_wait_bag
 
-            ProtectionMode.JOURNEY ->
-                if (guardMode == GuardMode.POCKET) {
-                    "Journey attivo: in attesa della tasca."
-                } else {
-                    "Journey attivo: in attesa della borsa."
-                }
+                ProtectionMode.JOURNEY ->
+                    if (guardMode == GuardMode.POCKET) {
+                        R.string.svc_wait_journey_pocket
+                    } else {
+                        R.string.svc_wait_journey_bag
+                    }
 
-            ProtectionMode.TABLE ->
-                "Protezione Table attiva."
-        }
+                ProtectionMode.TABLE ->
+                    R.string.svc_wait_table
+            }
+        )
 
     override fun onDestroy() {
         armingJob?.cancel()
@@ -1414,11 +1506,14 @@ class ProtectionForegroundService : Service() {
         private const val ACTION_OWNER_VERIFIED =
             "com.riccardopinato.phoneguard.action.OWNER_VERIFIED"
 
+        private const val ACTION_RESTORE =
+            "com.riccardopinato.phoneguard.action.RESTORE"
+
         private const val EXTRA_MODE =
             "protection_mode"
 
         private const val OWNER_GRACE_MS =
-            2_500L
+            8_000L
 
         private const val NOTIFICATION_ID =
             4101
@@ -1465,6 +1560,24 @@ class ProtectionForegroundService : Service() {
             runCatching {
                 context.startService(intent)
             }
+        }
+
+        fun restore(
+            context: Context
+        ) {
+            val intent =
+                Intent(
+                    context,
+                    ProtectionForegroundService::class.java
+                ).setAction(
+                    ACTION_RESTORE
+                )
+
+            ContextCompat
+                .startForegroundService(
+                    context,
+                    intent
+                )
         }
 
         fun ownerVerified(

@@ -22,10 +22,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 
 @Composable
@@ -91,14 +93,15 @@ fun SetPinDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Imposta PIN") },
+        title = { Text(stringResource(R.string.pin_set_title)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Scegli un PIN da 4 a 6 cifre. " +
-                        "Non viene salvato in chiaro."
+                    stringResource(
+                        R.string.pin_set_text
+                    )
                 )
 
                 OutlinedTextField(
@@ -108,7 +111,7 @@ fun SetPinDialog(
                             pin = it
                         }
                     },
-                    label = { Text("PIN") },
+                    label = { Text(stringResource(R.string.common_pin)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -123,7 +126,7 @@ fun SetPinDialog(
                             confirm = it
                         }
                     },
-                    label = { Text("Conferma PIN") },
+                    label = { Text(stringResource(R.string.pin_confirm)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -137,12 +140,12 @@ fun SetPinDialog(
                 enabled = valid,
                 onClick = { onSave(pin) }
             ) {
-                Text("Salva")
+                Text(stringResource(R.string.common_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Annulla")
+                Text(stringResource(R.string.common_cancel))
             }
         }
     )
@@ -199,7 +202,7 @@ fun UnlockDialog(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = onBiometric
                     ) {
-                        Text("Usa biometria")
+                        Text(stringResource(R.string.unlock_use_biometric))
                     }
                 }
             }
@@ -214,7 +217,7 @@ fun UnlockDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Chiudi")
+                Text(stringResource(R.string.common_close))
             }
         }
     )

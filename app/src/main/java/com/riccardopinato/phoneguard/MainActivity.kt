@@ -1,4 +1,3 @@
-// TARGET: app/src/main/java/com/riccardopinato/tabletopalarm/MainActivity.kt
 package com.riccardopinato.phoneguard
 
 import android.os.Bundle
@@ -6,8 +5,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.fragment.app.FragmentActivity
 import com.riccardopinato.phoneguard.auth.BiometricAuthManager
+import com.riccardopinato.phoneguard.service.ProtectionForegroundService
 import com.riccardopinato.phoneguard.ui.PhoneGuardRoot
-import com.riccardopinato.phoneguard.ui.theme.TabletopAlarmTheme
+import com.riccardopinato.phoneguard.ui.theme.PhoneGuardTheme
 
 class MainActivity : FragmentActivity() {
 
@@ -27,8 +27,17 @@ class MainActivity : FragmentActivity() {
         val biometricAuthManager =
             BiometricAuthManager(this)
 
+        if (
+            container
+                .sessionStateRepository
+                .read() != null
+        ) {
+            ProtectionForegroundService
+                .restore(this)
+        }
+
         setContent {
-            TabletopAlarmTheme {
+            PhoneGuardTheme {
                 PhoneGuardRoot(
                     container = container,
                     biometricAuthManager =

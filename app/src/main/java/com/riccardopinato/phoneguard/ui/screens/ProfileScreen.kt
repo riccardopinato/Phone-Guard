@@ -27,11 +27,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riccardopinato.phoneguard.BuildConfig
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.auth.BiometricAuthManager
+import com.riccardopinato.phoneguard.data.SecurityHealth
 import com.riccardopinato.phoneguard.data.SecurityRepository
 import com.riccardopinato.phoneguard.data.SettingsRepository
 import com.riccardopinato.phoneguard.hardware.BatteryDiagnostics
@@ -58,6 +61,8 @@ fun ProfileScreen(
     alarmRunning: Boolean
 ) {
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val resources = context.resources
 
     val settings by
         settingsRepository.settings.collectAsStateWithLifecycle(
@@ -69,6 +74,11 @@ fun ProfileScreen(
             initialValue = false
         )
 
+    val securityHealth by
+        securityRepository.securityHealth.collectAsStateWithLifecycle(
+            initialValue = SecurityHealth.NO_PIN
+        )
+
     var showSetPin by remember {
         mutableStateOf(false)
     }
@@ -76,6 +86,12 @@ fun ProfileScreen(
     var statusMessage by remember {
         mutableStateOf<String?>(null)
     }
+
+    val alarmEnvironment =
+        remember {
+            diagnostics
+                .alarmEnvironmentSnapshot()
+        }
 
     val flashPermissionLauncher =
         rememberLauncherForActivityResult(
@@ -85,13 +101,13 @@ fun ProfileScreen(
                 scope.launch {
                     statusMessage =
                         if (diagnostics.testFlash()) {
-                            "Flash OK"
+                            resources.getString(R.string.flash_ok)
                         } else {
-                            "Test flash non riuscito."
+                            resources.getString(R.string.flash_failed)
                         }
                 }
             } else {
-                statusMessage = "Permesso fotocamera non concesso."
+                statusMessage = resources.getString(R.string.camera_permission_denied)
             }
         }
 
@@ -106,14 +122,14 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
             Text(
-                text = "IMPOSTAZIONI",
+                text = stringResource(R.string.profile_kicker),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = OmniAccent
             )
 
             Text(
-                text = "Profilo e sicurezza",
+                text = stringResource(R.string.profile_title),
                 style = MaterialTheme.typography.headlineLarge
             )
         }
@@ -123,24 +139,34 @@ fun ProfileScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SectionTitle("Sicurezza")
+                SectionTitle(stringResource(R.string.security_section))
 
                 StatusLine(
                     label = "PIN",
-                    ready = hasPin,
-                    readyText = "Configurato",
-                    missingText = "Da configurare"
+                    ready = securityHealth == SecurityHealth.READY,
+                    readyText = stringResource(R.string.pin_configured),
+                    missingText =
+                        if (hasPin) {
+                            stringResource(R.string.pin_repair)
+                        } else {
+                            stringResource(R.string.pin_missing)
+                        }
                 )
 
                 UtilitySecondaryAction(
-                    label = if (hasPin) "Cambia PIN" else "Imposta PIN",
+                    label =
+                        if (hasPin) {
+                            stringResource(R.string.pin_change)
+                        } else {
+                            stringResource(R.string.pin_set)
+                        },
                     enabled = !alarmRunning,
                     onClick = { showSetPin = true }
                 )
 
                 SettingSwitchRow(
-                    title = "Biometria",
-                    subtitle = "Usa biometria forte per disattivare l'allarme",
+                    title = stringResource(R.string.biometric_title),
+                    subtitle = stringResource(R.string.biometric_subtitle),
                     checked = settings.biometricEnabled,
                     enabled =
                         hasPin &&
@@ -155,7 +181,7 @@ fun ProfileScreen(
 
                 if (!biometricAuthManager.isAvailable()) {
                     Text(
-                        text = "Biometria forte non disponibile o non configurata.",
+                        text = stringResource(R.string.biometric_unavailable),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -168,45 +194,72 @@ fun ProfileScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
-                SectionTitle("Diagnostica hardware")
+                SectionTitle(stringResource(R.string.diagnostics_title))
 
-                HardwareLine("Accelerometro", hardware.hasAccelerometer)
-                HardwareLine("Giroscopio", hardware.hasGyroscope)
-                HardwareLine("Prossimità", hardware.hasProximity)
-                HardwareLine("Sensore luce", hardware.hasLight)
-                HardwareLine("Flash", hardware.hasFlash)
-                HardwareLine("Vibrazione", hardware.hasVibrator)
+                HardwareLine(stringResource(R.string.status_accelerometer), hardware.hasAccelerometer)
+                HardwareLine(stringResource(R.string.status_gyroscope), hardware.hasGyroscope)
+                HardwareLine(stringResource(R.string.status_proximity), hardware.hasProximity)
+                HardwareLine(stringResource(R.string.sensor_light), hardware.hasLight)
+                HardwareLine(stringResource(R.string.status_flash), hardware.hasFlash)
+                HardwareLine(stringResource(R.string.status_vibration), hardware.hasVibrator)
+
+                StatusLine(
+                    label = stringResource(R.string.alarm_volume),
+                    ready =
+                        alarmEnvironment
+                            .alarmVolumePercent > 0,
+                    readyText =
+                        "${alarmEnvironment.alarmVolumePercent}%",
+                    missingText = "0%"
+                )
+
+                StatusLine(
+                    label = stringResource(R.string.dnd_label),
+                    ready =
+                        !alarmEnvironment
+                            .doNotDisturbActive,
+                    readyText = stringResource(R.string.dnd_inactive),
+                    missingText =
+                        if (
+                            alarmEnvironment
+                                .notificationPolicyAccess
+                        ) {
+                            stringResource(R.string.dnd_active_access)
+                        } else {
+                            stringResource(R.string.dnd_active_no_override)
+                        }
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     UtilitySecondaryAction(
-                        label = "Audio",
+                        label = stringResource(R.string.test_audio),
                         enabled = !alarmRunning,
                         onClick = {
                             diagnostics.testSound()
-                            statusMessage = "Test audio avviato."
+                            statusMessage = resources.getString(R.string.audio_test_started)
                         },
                         modifier = Modifier.weight(1f)
                     )
 
                     UtilitySecondaryAction(
-                        label = "Vibra",
+                        label = stringResource(R.string.test_vibrate),
                         enabled = !alarmRunning && hardware.hasVibrator,
                         onClick = {
                             statusMessage =
                                 if (diagnostics.testVibration()) {
-                                    "Vibrazione OK"
+                                    resources.getString(R.string.vibration_ok)
                                 } else {
-                                    "Vibrazione non disponibile."
+                                    resources.getString(R.string.vibration_unavailable)
                                 }
                         },
                         modifier = Modifier.weight(1f)
                     )
 
                     UtilitySecondaryAction(
-                        label = "Flash",
+                        label = stringResource(R.string.test_flash),
                         enabled = !alarmRunning && hardware.hasFlash,
                         onClick = {
                             flashPermissionLauncher.launch(
@@ -224,28 +277,26 @@ fun ProfileScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SectionTitle("Background")
+                SectionTitle(stringResource(R.string.background_title))
 
                 val unrestricted =
                     batteryDiagnostics.isIgnoringBatteryOptimizations()
 
                 StatusLine(
-                    label = "Ottimizzazione batteria",
+                    label = stringResource(R.string.battery_optimization),
                     ready = unrestricted,
-                    readyText = "Esclusa",
-                    missingText = "Standard"
+                    readyText = stringResource(R.string.battery_excluded),
+                    missingText = stringResource(R.string.battery_standard)
                 )
 
                 Text(
-                    text =
-                        "Table, Pocket, Bag e Journey usano un unico Foreground Service visibile. " +
-                            "Controlla le impostazioni solo se noti interruzioni.",
+                    text = stringResource(R.string.background_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 UtilitySecondaryAction(
-                    label = "Impostazioni batteria",
+                    label = stringResource(R.string.battery_settings),
                     enabled = !alarmRunning,
                     onClick = {
                         val opened =
@@ -253,9 +304,9 @@ fun ProfileScreen(
 
                         statusMessage =
                             if (opened) {
-                                "Impostazioni batteria aperte."
+                                resources.getString(R.string.battery_settings_opened)
                             } else {
-                                "Impossibile aprire le impostazioni batteria."
+                                resources.getString(R.string.battery_settings_failed)
                             }
                     }
                 )
@@ -267,18 +318,16 @@ fun ProfileScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                SectionTitle("Dati e informazioni")
+                SectionTitle(stringResource(R.string.data_info_title))
 
                 Text(
-                    text =
-                        "Le impostazioni non sensibili possono usare Android Auto Backup. " +
-                            "PIN, dati di sicurezza e storico eventi restano esclusi.",
+                    text = stringResource(R.string.data_info_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 UtilitySecondaryAction(
-                    label = "Info e privacy",
+                    label = stringResource(R.string.info_privacy),
                     onClick = onOpenAboutPrivacy
                 )
             }
@@ -316,7 +365,7 @@ fun ProfileScreen(
         }
 
         Text(
-            text = "Versione ${BuildConfig.VERSION_NAME}",
+            text = stringResource(R.string.version_label, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -329,7 +378,7 @@ fun ProfileScreen(
                 scope.launch {
                     securityRepository.setPin(pin)
                     showSetPin = false
-                    statusMessage = "PIN aggiornato."
+                    statusMessage = resources.getString(R.string.pin_updated)
                 }
             }
         )
@@ -392,7 +441,7 @@ private fun HardwareLine(
     StatusLine(
         label = label,
         ready = available,
-        readyText = "OK",
-        missingText = "Non presente"
+        readyText = stringResource(R.string.status_ok),
+        missingText = stringResource(R.string.hardware_missing)
     )
 }

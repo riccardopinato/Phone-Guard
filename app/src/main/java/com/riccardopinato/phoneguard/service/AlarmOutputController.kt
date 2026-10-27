@@ -11,14 +11,17 @@ import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import com.riccardopinato.phoneguard.alarm.AlarmVolumeController
+import com.riccardopinato.phoneguard.alarm.AlarmVolumeLeaseManager
 import com.riccardopinato.phoneguard.alarm.FlashStrobeController
 import com.riccardopinato.phoneguard.model.AppSettings
 import kotlin.math.PI
 import kotlin.math.sin
 
 class AlarmOutputController(
-    private val context: Context
+    private val context: Context,
+    private val volumeLease:
+        AlarmVolumeLeaseManager =
+        AlarmVolumeLeaseManager(context)
 ) {
     private val audioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -26,46 +29,88 @@ class AlarmOutputController(
     private val flashController =
         FlashStrobeController(context)
 
-    private val volumeController =
-        AlarmVolumeController(context)
-
     private var audioTrack: AudioTrack? = null
     private var audioFocusRequest: AudioFocusRequest? = null
 
-    fun prepare(settings: AppSettings): Int? {
-        return if (settings.soundEnabled) {
-            volumeController.applyTarget(settings.alarmVolumePercent)
-        } else {
-            null
-        }
-    }
-
-    fun adoptPreviousAlarmVolume(level: Int?) {
-        volumeController.adoptPreviousVolume(level)
-    }
-
-    fun start(settings: AppSettings) {
-        stopSignals()
-        prepare(settings)
-
+    fun prepare(
+        settings: AppSettings
+    ): Boolean =
         if (settings.soundEnabled) {
-            startSiren()
-        }
-
-        if (settings.vibrationEnabled) {
-            startVibration()
-        }
-
-        if (settings.flashEnabled) {
-            flashController.startContinuous(
-                settings.flashFrequencyHz
+            volumeLease.acquire(
+                settings.alarmVolumePercent
             )
+        } else {
+            volumeLease.restoreIfOwned()
+            true
         }
+
+    fun start(
+        settings: AppSettings
+    ): AlarmOutputHealth {
+        stopSignals()
+
+        val volumeApplied =
+            prepare(settings)
+
+        val soundActive =
+            if (settings.soundEnabled) {
+                startSiren()
+            } else {
+                false
+            }
+
+        val vibrationActive =
+            if (settings.vibrationEnabled) {
+                startVibration()
+            } else {
+                false
+            }
+
+        val flashActive =
+            if (settings.flashEnabled) {
+                flashController.startContinuous(
+                    settings.flashFrequencyHz
+                )
+            } else {
+                false
+            }
+
+        val health =
+            AlarmOutputHealth(
+                soundRequested =
+                    settings.soundEnabled,
+                soundActive =
+                    soundActive &&
+                        volumeApplied,
+                vibrationRequested =
+                    settings.vibrationEnabled,
+                vibrationActive =
+                    vibrationActive,
+                flashRequested =
+                    settings.flashEnabled,
+                flashActive =
+                    flashActive,
+                targetVolumePercent =
+                    if (settings.soundEnabled) {
+                        settings.alarmVolumePercent
+                    } else {
+                        0
+                    },
+                effectiveVolumePercent =
+                    effectiveAlarmVolumePercent()
+            )
+
+        AlarmOutputHealthStore.update(
+            health
+        )
+
+        return health
     }
 
     fun stop() {
         stopSignals()
-        volumeController.restore()
+        volumeLease.restoreIfOwned()
+        AlarmOutputHealthStore.reset()
     }
 
     private fun stopSignals() {
@@ -75,9 +120,10 @@ class AlarmOutputController(
     }
 
     fun effectiveAlarmVolumePercent(): Int =
-        volumeController.currentPercent()
+        volumeLease.currentPercent()
 
-    private fun startSiren() {
+    private fun startSiren():
+        Boolean =
         runCatching {
             val attributes =
                 AudioAttributes.Builder()
@@ -128,8 +174,8 @@ class AlarmOutputController(
             track.setVolume(1.0f)
             track.play()
             audioTrack = track
-        }
-    }
+            true
+        }.getOrDefault(false)
 
     private fun stopSiren() {
         runCatching { audioTrack?.stop() }
@@ -165,9 +211,15 @@ class AlarmOutputController(
         }
     }
 
-    private fun startVibration() {
-        val vibrator = getVibrator() ?: return
-        if (!vibrator.hasVibrator()) return
+    private fun startVibration():
+        Boolean {
+        val vibrator =
+            getVibrator()
+                ?: return false
+
+        if (!vibrator.hasVibrator()) {
+            return false
+        }
 
         val timings =
             longArrayOf(0, 650, 180, 650, 180)
@@ -207,6 +259,8 @@ class AlarmOutputController(
                     .build()
             )
         }
+
+        return true
     }
 
     private fun stopVibration() {

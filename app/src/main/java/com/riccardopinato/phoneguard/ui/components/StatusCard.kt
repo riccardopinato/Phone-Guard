@@ -19,9 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
 import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.service.AlarmPhase
@@ -82,7 +84,7 @@ private fun HardwarePanel(
         ) {
             Text(
                 text =
-                    "Hardware · ${selectedMode.label}",
+                    stringResource(R.string.status_hardware_mode, selectedMode.label),
                 style =
                     MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
@@ -90,36 +92,36 @@ private fun HardwarePanel(
             )
 
             HardwareRow(
-                label = "Accelerometro",
+                label = stringResource(R.string.status_accelerometer),
                 ready = hardware.hasAccelerometer
             )
 
             HardwareRow(
-                label = "Giroscopio",
+                label = stringResource(R.string.status_gyroscope),
                 ready = hardware.hasGyroscope,
                 optional = true
             )
 
             HardwareRow(
-                label = "Prossimità",
+                label = stringResource(R.string.status_proximity),
                 ready = hardware.hasProximity,
                 optional = !requiresProximity
             )
 
             HardwareRow(
-                label = "Luce",
+                label = stringResource(R.string.status_light),
                 ready = hardware.hasLight,
                 optional = true
             )
 
             HardwareRow(
-                label = "Flash",
+                label = stringResource(R.string.status_flash),
                 ready = hardware.hasFlash,
                 optional = true
             )
 
             HardwareRow(
-                label = "Vibrazione",
+                label = stringResource(R.string.status_vibration),
                 ready = hardware.hasVibrator,
                 optional = true
             )
@@ -166,9 +168,9 @@ private fun HardwareRow(
             Text(
                 text =
                     when {
-                        ready -> "OK"
-                        optional -> "Opzionale"
-                        else -> "Richiesto"
+                        ready -> stringResource(R.string.status_ok)
+                        optional -> stringResource(R.string.status_optional)
+                        else -> stringResource(R.string.status_required)
                     },
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -291,7 +293,7 @@ private fun ActiveAlarmPanel(
                 }
                 ?.let {
                     Text(
-                        text = "Detector: $it",
+                        text = stringResource(R.string.status_detector, it),
                         style = MaterialTheme.typography.bodySmall,
                         color = OmniHeroMuted
                     )
@@ -303,7 +305,7 @@ private fun ActiveAlarmPanel(
             ) {
                 Text(
                     text =
-                        "Confidence: ${runtime.confidenceScore}/100",
+                        stringResource(R.string.status_confidence, runtime.confidenceScore),
                     style = MaterialTheme.typography.bodySmall,
                     color = OmniHeroMuted
                 )
@@ -313,13 +315,15 @@ private fun ActiveAlarmPanel(
                 ?.let { endAt ->
                     Text(
                         text =
-                            "Journey fino alle " +
+                            stringResource(
+                                R.string.status_journey_until,
                                 SimpleDateFormat(
                                     "HH:mm",
                                     locale
                                 ).format(
                                     Date(endAt)
-                                ),
+                                )
+                            ),
                         style = MaterialTheme.typography.bodySmall,
                         color = OmniHeroMuted
                     )
@@ -328,28 +332,31 @@ private fun ActiveAlarmPanel(
     }
 }
 
+@Composable
 private fun phaseTitle(
     phase: AlarmPhase
 ): String =
-    when (phase) {
-        AlarmPhase.DISARMED ->
-            "Pronto"
+    stringResource(
+        when (phase) {
+            AlarmPhase.DISARMED ->
+                R.string.phase_ready
 
-        AlarmPhase.ARMING ->
-            "Preparazione"
+            AlarmPhase.ARMING ->
+                R.string.phase_preparing
 
-        AlarmPhase.CALIBRATING ->
-            "Calibrazione"
+            AlarmPhase.CALIBRATING ->
+                R.string.phase_calibrating
 
-        AlarmPhase.ARMED ->
-            "Protezione attiva"
+            AlarmPhase.ARMED ->
+                R.string.phase_active
 
-        AlarmPhase.OWNER_CHECK ->
-            "Verifica proprietario"
+            AlarmPhase.OWNER_CHECK ->
+                R.string.phase_owner_check
 
-        AlarmPhase.TRIGGERED ->
-            "ALLARME"
+            AlarmPhase.TRIGGERED ->
+                R.string.phase_alarm
 
-        AlarmPhase.ERROR ->
-            "Errore"
-    }
+            AlarmPhase.ERROR ->
+                R.string.phase_error
+        }
+    )

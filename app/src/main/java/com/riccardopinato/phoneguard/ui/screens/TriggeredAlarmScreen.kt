@@ -30,154 +30,347 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.riccardopinato.phoneguard.R
+import com.riccardopinato.phoneguard.service.AlarmOutputHealth
 import com.riccardopinato.phoneguard.ui.components.UtilityPrimaryAction
 
-private val WarningDark = Color(0xFF250000)
-private val WarningBright = Color(0xFFD50000)
+private val WarningDark =
+    Color(0xFF250000)
+
+private val WarningBright =
+    Color(0xFFD50000)
 
 @Composable
 fun TriggeredAlarmScreen(
-    pulseEnabled: Boolean = true,
+    warningEnabled: Boolean,
+    outputHealth: AlarmOutputHealth,
     onUnlock: () -> Unit
 ) {
     val transition =
         rememberInfiniteTransition(
-            label = "phone-guard-warning"
+            label =
+                "phone-guard-warning"
         )
 
-    val background by
+    val warningBackground by
         transition.animateColor(
-            initialValue = WarningDark,
+            initialValue =
+                WarningDark,
             targetValue =
-                if (pulseEnabled) {
-                    WarningBright
-                } else {
-                    WarningDark
-                },
+                WarningBright,
             animationSpec =
                 infiniteRepeatable(
-                    animation = tween(320),
-                    repeatMode = RepeatMode.Reverse
+                    animation =
+                        tween(450),
+                    repeatMode =
+                        RepeatMode.Reverse
                 ),
-            label = "warning-background"
+            label =
+                "warning-background"
         )
 
     val warningAlpha by
         transition.animateFloat(
-            initialValue = 0.45f,
-            targetValue =
-                if (pulseEnabled) 1f else 0.85f,
+            initialValue = 0.55f,
+            targetValue = 1f,
             animationSpec =
                 infiniteRepeatable(
-                    animation = tween(320),
-                    repeatMode = RepeatMode.Reverse
+                    animation =
+                        tween(450),
+                    repeatMode =
+                        RepeatMode.Reverse
                 ),
-            label = "warning-alpha"
+            label =
+                "warning-alpha"
         )
 
-    ForceWarningBrightness()
+    ForceWarningBrightness(
+        enabled =
+            warningEnabled
+    )
+
+    val background =
+        if (warningEnabled) {
+            warningBackground
+        } else {
+            MaterialTheme
+                .colorScheme
+                .background
+        }
+
+    val foreground =
+        if (warningEnabled) {
+            Color.White
+        } else {
+            MaterialTheme
+                .colorScheme
+                .onBackground
+        }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(background)
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(
-            space = 24.dp,
-            alignment = Alignment.CenterVertically
-        )
+            .padding(
+                horizontal = 24.dp
+            ),
+        horizontalAlignment =
+            Alignment.CenterHorizontally,
+        verticalArrangement =
+            Arrangement.spacedBy(
+                space = 24.dp,
+                alignment =
+                    Alignment
+                        .CenterVertically
+            )
     ) {
         Text(
-            text = "WARNING!",
-            modifier = Modifier.alpha(warningAlpha),
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Black,
-            color = Color.White,
-            textAlign = TextAlign.Center
+            text =
+                if (warningEnabled) {
+                    stringResource(R.string.alarm_warning)
+                } else {
+                    stringResource(R.string.alarm_active)
+                },
+            modifier =
+                if (warningEnabled) {
+                    Modifier.alpha(
+                        warningAlpha
+                    )
+                } else {
+                    Modifier
+                },
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineLarge,
+            fontWeight =
+                FontWeight.Black,
+            color = foreground,
+            textAlign =
+                TextAlign.Center
         )
 
         Box(
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.18f)),
-            contentAlignment = Alignment.Center
+                .background(
+                    foreground.copy(
+                        alpha = 0.14f
+                    )
+                ),
+            contentAlignment =
+                Alignment.Center
         ) {
             Text(
                 text = "!",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Black,
-                color = Color.White
+                style =
+                    MaterialTheme
+                        .typography
+                        .headlineLarge,
+                fontWeight =
+                    FontWeight.Black,
+                color = foreground
             )
         }
 
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    10.dp
+                )
         ) {
             Text(
-                text = "PROTECTED DEVICE",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Black,
-                color = Color.White,
-                textAlign = TextAlign.Center
+                text =
+                    stringResource(R.string.alarm_protected_device),
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleLarge,
+                fontWeight =
+                    FontWeight.Black,
+                color = foreground,
+                textAlign =
+                    TextAlign.Center
             )
 
             Text(
                 text =
                     "Movimento non autorizzato rilevato. " +
-                        "Sirena, vibrazione e segnalazioni visive sono attive.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.92f),
-                textAlign = TextAlign.Center
+                        outputSummary(
+                            health = outputHealth,
+                            noOutputs = stringResource(R.string.alarm_no_outputs),
+                            soundActive = stringResource(R.string.alarm_sound_active),
+                            soundUnverified = stringResource(R.string.alarm_sound_unverified),
+                            vibrationActive = stringResource(R.string.alarm_vibration_active),
+                            vibrationUnavailable = stringResource(R.string.alarm_vibration_unavailable),
+                            flashActive = stringResource(R.string.alarm_flash_active),
+                            flashUnavailable = stringResource(R.string.alarm_flash_unavailable)
+                        ),
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodyLarge,
+                color =
+                    foreground.copy(
+                        alpha = 0.92f
+                    ),
+                textAlign =
+                    TextAlign.Center
             )
         }
 
         UtilityPrimaryAction(
-            label = "SBLOCCA E DISATTIVA",
+            label =
+                stringResource(R.string.alarm_unlock),
             enabled = true,
             destructive = true,
             onClick = onUnlock,
-            modifier = Modifier.fillMaxWidth(0.86f)
+            modifier =
+                Modifier
+                    .fillMaxWidth(
+                        0.86f
+                    )
+        )
+    }
+}
+
+private fun outputSummary(
+    health: AlarmOutputHealth,
+    noOutputs: String,
+    soundActive: String,
+    soundUnverified: String,
+    vibrationActive: String,
+    vibrationUnavailable: String,
+    flashActive: String,
+    flashUnavailable: String
+): String {
+    val active =
+        buildList {
+            if (
+                health.soundRequested
+            ) {
+                add(
+                    if (
+                        health.soundActive
+                    ) {
+                        soundActive
+                    } else {
+                        soundUnverified
+                    }
+                )
+            }
+
+            if (
+                health.vibrationRequested
+            ) {
+                add(
+                    if (
+                        health.vibrationActive
+                    ) {
+                        vibrationActive
+                    } else {
+                        vibrationUnavailable
+                    }
+                )
+            }
+
+            if (
+                health.flashRequested
+            ) {
+                add(
+                    if (
+                        health.flashActive
+                    ) {
+                        flashActive
+                    } else {
+                        flashUnavailable
+                    }
+                )
+            }
+        }
+
+    return if (active.isEmpty()) {
+        noOutputs
+    } else {
+        active.joinToString(
+            separator = " · ",
+            postfix = "."
         )
     }
 }
 
 @Composable
-private fun ForceWarningBrightness() {
-    val view = LocalView.current
-    val activity = view.context.findActivity()
+private fun ForceWarningBrightness(
+    enabled: Boolean
+) {
+    val view =
+        LocalView.current
 
-    DisposableEffect(activity) {
-        if (activity == null) {
+    val activity =
+        view.context
+            .findActivity()
+
+    DisposableEffect(
+        activity,
+        enabled
+    ) {
+        if (
+            activity == null ||
+            !enabled
+        ) {
             onDispose { }
         } else {
-            val window = activity.window
+            val window =
+                activity.window
+
             val oldBrightness =
-                window.attributes.screenBrightness
+                window.attributes
+                    .screenBrightness
+
             val hadKeepScreenOn =
                 window.attributes.flags and
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON != 0
+                    WindowManager
+                        .LayoutParams
+                        .FLAG_KEEP_SCREEN_ON !=
+                    0
 
-            val attrs = window.attributes
-            attrs.screenBrightness = 1f
-            window.attributes = attrs
+            val attrs =
+                window.attributes
+
+            attrs.screenBrightness =
+                1f
+
+            window.attributes =
+                attrs
+
             window.addFlags(
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                WindowManager
+                    .LayoutParams
+                    .FLAG_KEEP_SCREEN_ON
             )
 
             onDispose {
-                val restore = window.attributes
-                restore.screenBrightness = oldBrightness
-                window.attributes = restore
+                val restore =
+                    window.attributes
+
+                restore.screenBrightness =
+                    oldBrightness
+
+                window.attributes =
+                    restore
 
                 if (!hadKeepScreenOn) {
                     window.clearFlags(
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                        WindowManager
+                            .LayoutParams
+                            .FLAG_KEEP_SCREEN_ON
                     )
                 }
             }
@@ -185,10 +378,16 @@ private fun ForceWarningBrightness() {
     }
 }
 
-private tailrec fun Context.findActivity(): Activity? =
+private tailrec fun Context.findActivity():
+    Activity? =
     when (this) {
-        is Activity -> this
+        is Activity ->
+            this
+
         is ContextWrapper ->
-            baseContext.findActivity()
-        else -> null
+            baseContext
+                .findActivity()
+
+        else ->
+            null
     }

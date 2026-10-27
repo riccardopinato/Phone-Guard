@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,9 +38,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.riccardopinato.phoneguard.AppContainer
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.auth.BiometricAuthManager
+import com.riccardopinato.phoneguard.data.PinVerificationResult
 import com.riccardopinato.phoneguard.model.AppSettings
 import com.riccardopinato.phoneguard.service.AlarmPhase
+import com.riccardopinato.phoneguard.service.AlarmOutputHealthStore
 import com.riccardopinato.phoneguard.service.AlarmStateStore
 import com.riccardopinato.phoneguard.service.ProtectionForegroundService
 import com.riccardopinato.phoneguard.ui.components.UnlockDialog
@@ -69,11 +73,15 @@ fun PhoneGuardRoot(
     biometricAuthManager: BiometricAuthManager
 ) {
     val context = LocalContext.current
+    val resources = context.resources
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
 
     val runtime by
         AlarmStateStore.state.collectAsStateWithLifecycle()
+
+    val outputHealth by
+        AlarmOutputHealthStore.state.collectAsStateWithLifecycle()
 
     val settings by
         container.settingsRepository.settings.collectAsStateWithLifecycle(
@@ -122,7 +130,10 @@ fun PhoneGuardRoot(
     when (runtime.phase) {
         AlarmPhase.TRIGGERED -> {
             TriggeredAlarmScreen(
-                pulseEnabled = settings.warningScreenEnabled,
+                warningEnabled =
+                    settings.warningScreenEnabled,
+                outputHealth =
+                    outputHealth,
                 onUnlock = {
                     requestUnlock(UnlockPurpose.DISARM)
                 }
@@ -143,15 +154,15 @@ fun PhoneGuardRoot(
                 listOf(
                     BottomDestination(
                         route = "protection",
-                        label = "Protezione"
+                        label = stringResource(R.string.nav_protection)
                     ),
                     BottomDestination(
                         route = "events",
-                        label = "Eventi"
+                        label = stringResource(R.string.nav_events)
                     ),
                     BottomDestination(
                         route = "profile",
-                        label = "Profilo"
+                        label = stringResource(R.string.nav_profile)
                     )
                 )
 
@@ -254,10 +265,42 @@ fun PhoneGuardRoot(
             },
             onPinSubmit = { pin ->
                 scope.launch {
-                    if (container.securityRepository.verifyPin(pin)) {
-                        completeAuthentication()
-                    } else {
-                        unlockError = "PIN non corretto."
+                    when (
+                        val result =
+                            container
+                                .securityRepository
+                                .verifyPin(pin)
+                    ) {
+                        PinVerificationResult.Success ->
+                            completeAuthentication()
+
+                        is PinVerificationResult.Invalid ->
+                            unlockError =
+                                resources.getString(
+                                    R.string.pin_wrong_attempts,
+                                    result.attemptsBeforeLockout
+                                )
+
+                        is PinVerificationResult.LockedOut -> {
+                            val seconds =
+                                (
+                                    result.remainingMs +
+                                        999L
+                                    ) /
+                                    1_000L
+
+                            unlockError =
+                                resources.getString(
+                                    R.string.pin_locked_seconds,
+                                    seconds
+                                )
+                        }
+
+                        is PinVerificationResult.Unavailable ->
+                            unlockError =
+                                resources.getString(
+                                    R.string.security_unavailable_unlock
+                                )
                     }
                 }
             },
@@ -267,27 +310,41 @@ fun PhoneGuardRoot(
                         completeAuthentication()
                     } else {
                         unlockError =
-                            "Autenticazione biometrica non riuscita."
+                            resources.getString(
+                                R.string.biometric_failed
+                            )
                     }
                 }
             },
             title =
                 if (ownerCheck) {
-                    "Verifica proprietario"
+                    stringResource(
+                        R.string.owner_unlock_title
+                    )
                 } else {
-                    "Disattiva protezione"
+                    stringResource(
+                        R.string.disable_unlock_title
+                    )
                 },
             message =
                 if (ownerCheck) {
-                    "Conferma che sei il proprietario. La protezione resterà attiva."
+                    stringResource(
+                        R.string.owner_unlock_message
+                    )
                 } else {
-                    "Inserisci il PIN oppure usa la biometria."
+                    stringResource(
+                        R.string.disable_unlock_message
+                    )
                 },
             confirmLabel =
                 if (ownerCheck) {
-                    "Conferma"
+                    stringResource(
+                        R.string.owner_unlock_confirm
+                    )
                 } else {
-                    "Disattiva"
+                    stringResource(
+                        R.string.disable_unlock_confirm
+                    )
                 }
         )
     }

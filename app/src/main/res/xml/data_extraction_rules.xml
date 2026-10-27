@@ -6,6 +6,7 @@
         <exclude domain="file" path="datastore/phone_guard_security.preferences_pb" />
         <exclude domain="file" path="events.json" />
         <exclude domain="sharedpref" path="protection_runtime_session.xml" />
+        <exclude domain="sharedpref" path="phone_guard_volume_lease.xml" />
     </cloud-backup>
 
     <device-transfer>
@@ -14,5 +15,6 @@
         <exclude domain="file" path="datastore/phone_guard_security.preferences_pb" />
         <exclude domain="file" path="events.json" />
         <exclude domain="sharedpref" path="protection_runtime_session.xml" />
+        <exclude domain="sharedpref" path="phone_guard_volume_lease.xml" />
     </device-transfer>
 </data-extraction-rules>
