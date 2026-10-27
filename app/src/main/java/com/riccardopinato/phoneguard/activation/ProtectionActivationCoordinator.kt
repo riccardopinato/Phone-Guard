@@ -49,20 +49,22 @@ object ProtectionActivationCoordinator {
         context: Context,
         mode: ProtectionMode
     ): ActivationOutcome {
-        if (
-            AlarmStateStore.state.value.phase !=
-            AlarmPhase.DISARMED
-        ) {
-            return ActivationOutcome.Blocked(
-                ActivationBlockReason.ALREADY_ACTIVE
-            )
-        }
-
         val app =
             context.applicationContext as PhoneGuardApp
 
         val container =
             app.container
+
+        if (
+            AlarmStateStore.state.value.phase !=
+                AlarmPhase.DISARMED ||
+            container.sessionStateRepository
+                .read() != null
+        ) {
+            return ActivationOutcome.Blocked(
+                ActivationBlockReason.ALREADY_ACTIVE
+            )
+        }
 
         if (
             container
