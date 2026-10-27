@@ -22,7 +22,12 @@ data class ProtectedAccessory(
                 .lowercase(
                     Locale.ROOT
                 )
-}
+
+    fun recoveryIdentity():
+        String =
+        stableFingerprint() +
+            "|id=" +
+            id
 
 class AccessoryStateMonitor(
     context: Context
@@ -192,7 +197,7 @@ class AccessoryStateMonitor(
             } else {
                 connected
                     .filter {
-                        it.stableFingerprint() in
+                        it.recoveryIdentity() in
                             protectedFingerprints
                     }
             }
