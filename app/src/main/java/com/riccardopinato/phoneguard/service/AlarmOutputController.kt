@@ -243,32 +243,30 @@ class AlarmOutputController(
             MediaPlayer? = null
 
         return runCatching {
-            candidate =
+            val player =
                 MediaPlayer()
 
-            candidate
-                ?.setAudioAttributes(
-                    attributes
+            candidate =
+                player
+
+            player.setAudioAttributes(
+                attributes
+            )
+            player.setDataSource(
+                context,
+                Uri.parse(
+                    uriString
                 )
-            candidate
-                ?.setDataSource(
-                    context,
-                    Uri.parse(
-                        uriString
-                    )
-                )
-            candidate
-                ?.isLooping =
+            )
+            player.isLooping =
                 true
-            candidate
-                ?.prepare()
-            candidate
-                ?.start()
+            player.prepare()
+            player.start()
 
             mediaPlayer =
-                candidate
+                player
 
-            candidate != null
+            true
         }.getOrElse {
             runCatching {
                 candidate
@@ -289,7 +287,7 @@ class AlarmOutputController(
             val samples =
                 createSirenSamples()
 
-            candidate =
+            val track =
                 AudioTrack.Builder()
                     .setAudioAttributes(
                         attributes
@@ -315,31 +313,30 @@ class AlarmOutputController(
                     )
                     .build()
 
-            candidate
-                ?.write(
-                    samples,
-                    0,
-                    samples.size,
-                    AudioTrack.WRITE_BLOCKING
-                )
+            candidate =
+                track
 
-            candidate
-                ?.setLoopPoints(
-                    0,
-                    samples.size,
-                    -1
-                )
-            candidate
-                ?.setVolume(
-                    1.0f
-                )
-            candidate
-                ?.play()
+            track.write(
+                samples,
+                0,
+                samples.size,
+                AudioTrack.WRITE_BLOCKING
+            )
+
+            track.setLoopPoints(
+                0,
+                samples.size,
+                -1
+            )
+            track.setVolume(
+                1.0f
+            )
+            track.play()
 
             audioTrack =
-                candidate
+                track
 
-            candidate != null
+            true
         }.getOrElse {
             runCatching {
                 candidate
