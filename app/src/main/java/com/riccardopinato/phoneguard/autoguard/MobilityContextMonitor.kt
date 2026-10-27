@@ -17,8 +17,6 @@ import com.google.android.gms.location.ActivityTransitionRequest
 import com.google.android.gms.location.ActivityTransitionResult
 import com.google.android.gms.location.DetectedActivity
 
-enum class MobilityType { UNKNOWN, STILL, WALKING, RUNNING, BICYCLE, VEHICLE }
-
 /** In-memory only: no position coordinates, routes, history or raw activity traces. */
 object MobilityContextStore {
     @Volatile var enabled: Boolean = false
@@ -92,11 +90,11 @@ class MobilityContextMonitor(context: Context) {
             Intent(appContext, MobilityTransitionReceiver::class.java)
                 .setAction("com.riccardopinato.phoneguard.MOBILITY_TRANSITION"),
             PendingIntent.FLAG_UPDATE_CURRENT or
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     PendingIntent.FLAG_MUTABLE
                 } else {
                     0
-                }
+                })
         )
     }
 
