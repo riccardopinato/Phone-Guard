@@ -27,10 +27,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.SecurityHealth
 import com.riccardopinato.phoneguard.data.SecurityRepository
 import com.riccardopinato.phoneguard.data.SettingsRepository
@@ -215,7 +217,7 @@ fun AlarmScreen(
                 Arrangement.spacedBy(1.dp)
         ) {
             Text(
-                text = "PROTEZIONE",
+                text = stringResource(R.string.home_kicker),
                 style =
                     MaterialTheme
                         .typography
@@ -235,7 +237,7 @@ fun AlarmScreen(
         }
 
         UtilitySectionHeader(
-            title = "MODALITÀ",
+            title = stringResource(R.string.home_modes),
             trailing = selectedMode.label
         )
 
@@ -294,7 +296,7 @@ fun AlarmScreen(
         }
 
         Text(
-            text = selectedMode.description,
+            text = modeDescription(selectedMode),
             style =
                 MaterialTheme
                     .typography
@@ -365,7 +367,7 @@ fun AlarmScreen(
                 ) {
                     Text(
                         text =
-                            "Sicurezza locale non pronta",
+                            stringResource(R.string.security_not_ready),
                         style =
                             MaterialTheme
                                 .typography
@@ -382,13 +384,13 @@ fun AlarmScreen(
                         text =
                             when (securityHealth) {
                                 SecurityHealth.KEY_UNAVAILABLE ->
-                                    "La chiave Android Keystore del PIN non è disponibile. Reimposta il PIN dal Profilo prima di armare."
+                                    stringResource(R.string.security_key_unavailable)
 
                                 SecurityHealth.CORRUPTED_VERIFIER ->
-                                    "I dati locali del PIN non sono validi. Reimposta il PIN dal Profilo prima di armare."
+                                    stringResource(R.string.security_corrupted)
 
                                 else ->
-                                    "Configura un PIN valido prima di armare."
+                                    stringResource(R.string.security_configure_pin)
                             },
                         style =
                             MaterialTheme
@@ -418,7 +420,7 @@ fun AlarmScreen(
                             .spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "PIN richiesto",
+                        text = stringResource(R.string.pin_required_title),
                         style =
                             MaterialTheme
                                 .typography
@@ -433,7 +435,7 @@ fun AlarmScreen(
 
                     Text(
                         text =
-                            "Imposta un PIN prima di armare la protezione.",
+                            stringResource(R.string.pin_required_body),
                         style =
                             MaterialTheme
                                 .typography
@@ -445,7 +447,7 @@ fun AlarmScreen(
                     )
 
                     UtilityPrimaryAction(
-                        label = "Imposta PIN",
+                        label = stringResource(R.string.pin_set_action),
                         enabled = true,
                         onClick = {
                             showSetPin = true
@@ -523,9 +525,9 @@ fun AlarmScreen(
         }
 
         UtilitySectionHeader(
-            title = "COUNTDOWN",
+            title = stringResource(R.string.countdown_title),
             trailing =
-                "${settings.countdownSeconds}s"
+                stringResource(R.string.seconds_format, settings.countdownSeconds)
         )
 
         Row(
@@ -540,7 +542,7 @@ fun AlarmScreen(
                 15
             ).forEach { seconds ->
                 UtilityChoice(
-                    label = "${seconds}s",
+                    label = stringResource(R.string.seconds_format, seconds),
                     selected =
                         settings
                             .countdownSeconds ==
@@ -723,9 +725,9 @@ private fun TableSensitivity(
     onChange: (Sensitivity) -> Unit
 ) {
     UtilitySectionHeader(
-        title = "SENSIBILITÀ TABLE",
+        title = stringResource(R.string.table_sensitivity_title),
         trailing =
-            settings.sensitivity.label
+            sensitivityLabel(settings.sensitivity)
     )
 
     Row(
@@ -737,7 +739,7 @@ private fun TableSensitivity(
             .forEach { sensitivity ->
                 UtilityChoice(
                     label =
-                        sensitivity.label,
+                        sensitivityLabel(sensitivity),
                     selected =
                         settings
                             .sensitivity ==
@@ -762,7 +764,7 @@ private fun PocketSensitivityOptions(
     onChange: (PocketSensitivity) -> Unit
 ) {
     UtilitySectionHeader(
-        title = "SENSIBILITÀ POCKET/BAG",
+        title = stringResource(R.string.pocket_sensitivity_title),
         trailing =
             settings
                 .pocketSensitivity
@@ -804,7 +806,7 @@ private fun JourneyOptions(
     onDuration: (JourneyDuration) -> Unit
 ) {
     UtilitySectionHeader(
-        title = "JOURNEY PROFILE",
+        title = stringResource(R.string.journey_profile_title),
         trailing =
             settings.journeyGuardMode.name
     )
@@ -840,7 +842,7 @@ private fun JourneyOptions(
     }
 
     UtilitySectionHeader(
-        title = "DURATA JOURNEY",
+        title = stringResource(R.string.journey_duration_title),
         trailing =
             settings
                 .journeyDuration
@@ -893,8 +895,8 @@ private fun AlarmOutputOptions(
             AlarmPhase.DISARMED
 
     UtilitySectionHeader(
-        title = "ESCALATION",
-        trailing = "Allarme"
+        title = stringResource(R.string.escalation_title),
+        trailing = stringResource(R.string.alarm_label)
     )
 
     UtilityPanel {
@@ -908,9 +910,9 @@ private fun AlarmOutputOptions(
                 Arrangement.spacedBy(8.dp)
         ) {
             SettingSwitchRow(
-                title = "Sirena",
+                title = stringResource(R.string.siren_title),
                 subtitle =
-                    "Tono di allarme locale",
+                    stringResource(R.string.siren_subtitle),
                 checked =
                     settings.soundEnabled,
                 enabled = editable,
@@ -920,8 +922,7 @@ private fun AlarmOutputOptions(
 
             Text(
                 text =
-                    "Volume target: " +
-                        "${volumeDraft.roundToInt()}%",
+                    stringResource(R.string.volume_target_format, volumeDraft.roundToInt()),
                 style =
                     MaterialTheme
                         .typography
@@ -942,9 +943,9 @@ private fun AlarmOutputOptions(
             )
 
             SettingSwitchRow(
-                title = "Vibrazione",
+                title = stringResource(R.string.vibration_title),
                 subtitle =
-                    "Pattern continuo durante l'allarme",
+                    stringResource(R.string.vibration_subtitle),
                 checked =
                     settings
                         .vibrationEnabled,
@@ -956,14 +957,14 @@ private fun AlarmOutputOptions(
             )
 
             SettingSwitchRow(
-                title = "Flash LED",
+                title = stringResource(R.string.flash_led_title),
                 subtitle =
                     if (
                         hardware.hasFlash
                     ) {
-                        "Strobo configurabile fino a 3 Hz durante l'allarme"
+                        stringResource(R.string.flash_available_subtitle)
                     } else {
-                        "Non disponibile su questo dispositivo"
+                        stringResource(R.string.unavailable_device)
                     },
                 checked =
                     settings.flashEnabled &&
@@ -981,11 +982,7 @@ private fun AlarmOutputOptions(
             ) {
                 Text(
                     text =
-                        "Frequenza flash: " +
-                            String.format(
-                                "%.1f Hz",
-                                flashFrequencyDraft
-                            ),
+                        stringResource(R.string.flash_frequency_format, flashFrequencyDraft),
                     style =
                         MaterialTheme
                             .typography
@@ -1007,9 +1004,9 @@ private fun AlarmOutputOptions(
             }
 
             SettingSwitchRow(
-                title = "Warning screen",
+                title = stringResource(R.string.warning_screen_title),
                 subtitle =
-                    "Schermata rossa ad alta visibilità quando scatta l'allarme",
+                    stringResource(R.string.warning_screen_subtitle),
                 checked =
                     settings
                         .warningScreenEnabled,
@@ -1021,82 +1018,146 @@ private fun AlarmOutputOptions(
     }
 }
 
+@Composable
 private fun actionLabel(
     runtime: AlarmRuntimeState,
     selectedMode: ProtectionMode
 ): String =
     when (runtime.phase) {
         AlarmPhase.DISARMED ->
-            "ATTIVA ${selectedMode.label.uppercase()}"
+            stringResource(
+                R.string.action_arm,
+                selectedMode.label.uppercase()
+            )
 
         AlarmPhase.ARMING ->
-            "ANNULLA · ${runtime.countdownSeconds}s"
+            stringResource(
+                R.string.action_cancel_countdown,
+                runtime.countdownSeconds
+            )
 
         AlarmPhase.CALIBRATING ->
-            "ANNULLA CALIBRAZIONE"
+            stringResource(
+                R.string.action_cancel_calibration
+            )
 
         AlarmPhase.ARMED ->
-            "DISATTIVA ${runtime.mode.label.uppercase()}"
+            stringResource(
+                R.string.action_disarm,
+                runtime.mode.label.uppercase()
+            )
 
         AlarmPhase.OWNER_CHECK ->
-            "VERIFICA PROPRIETARIO"
+            stringResource(
+                R.string.action_verify_owner
+            )
 
         AlarmPhase.TRIGGERED ->
-            "SBLOCCA E DISATTIVA"
+            stringResource(
+                R.string.action_unlock_disarm
+            )
 
         AlarmPhase.ERROR ->
-            "CHIUDI"
+            stringResource(
+                R.string.action_close
+            )
     }
 
+@Composable
 private fun unsupportedMessage(
     mode: ProtectionMode,
     journeyGuardMode: GuardMode
 ): String =
-    when (
-        ProtectionPolicy
-            .effectiveGuardMode(
-                mode,
-                journeyGuardMode
-            )
-    ) {
-        null ->
-            "Questa modalità richiede l'accelerometro."
+    stringResource(
+        when (
+            ProtectionPolicy
+                .effectiveGuardMode(
+                    mode,
+                    journeyGuardMode
+                )
+        ) {
+            null ->
+                R.string.unsupported_accel
 
-        GuardMode.POCKET ->
-            "Pocket richiede accelerometro e sensore di prossimità."
+            GuardMode.POCKET ->
+                R.string.unsupported_pocket
 
-        GuardMode.BAG ->
-            "Bag richiede accelerometro e almeno un sensore tra luce e giroscopio."
-    }
+            GuardMode.BAG ->
+                R.string.unsupported_bag
+        }
+    )
 
+@Composable
 private fun PocketSensitivity.label():
     String =
-    when (this) {
-        PocketSensitivity.LOW ->
-            "Bassa"
+    sensitivityLabel(
+        when (this) {
+            PocketSensitivity.LOW ->
+                Sensitivity.LOW
 
-        PocketSensitivity.NORMAL ->
-            "Normale"
+            PocketSensitivity.NORMAL ->
+                Sensitivity.MEDIUM
 
-        PocketSensitivity.HIGH ->
-            "Alta"
-    }
+            PocketSensitivity.HIGH ->
+                Sensitivity.HIGH
+        }
+    )
 
+@Composable
+private fun sensitivityLabel(
+    value: Sensitivity
+): String =
+    stringResource(
+        when (value) {
+            Sensitivity.LOW ->
+                R.string.sensitivity_low
+
+            Sensitivity.MEDIUM ->
+                R.string.sensitivity_normal
+
+            Sensitivity.HIGH ->
+                R.string.sensitivity_high
+        }
+    )
+
+@Composable
 private fun JourneyDuration.label():
     String =
-    when (this) {
-        JourneyDuration.MINUTES_30 ->
-            "30 minuti"
+    stringResource(
+        when (this) {
+            JourneyDuration.MINUTES_30 ->
+                R.string.duration_30m
 
-        JourneyDuration.HOUR_1 ->
-            "1 ora"
+            JourneyDuration.HOUR_1 ->
+                R.string.duration_1h
 
-        JourneyDuration.HOURS_2 ->
-            "2 ore"
+            JourneyDuration.HOURS_2 ->
+                R.string.duration_2h
 
-        JourneyDuration.UNTIL_STOPPED ->
-            "Fino allo stop"
-    }
+            JourneyDuration.UNTIL_STOPPED ->
+                R.string.duration_until_stop
+        }
+    )
+
+@Composable
+private fun modeDescription(
+    mode: ProtectionMode
+): String =
+    stringResource(
+        when (mode) {
+            ProtectionMode.TABLE ->
+                R.string.mode_table_description
+
+            ProtectionMode.POCKET ->
+                R.string.mode_pocket_description
+
+            ProtectionMode.BAG ->
+                R.string.mode_bag_description
+
+            ProtectionMode.JOURNEY ->
+                R.string.mode_journey_description
+        }
+    )
 
 private fun JourneyDuration.shortLabel():
     String =
