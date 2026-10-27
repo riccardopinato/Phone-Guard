@@ -4,7 +4,7 @@ package com.riccardopinato.phoneguard.autoguard
  * Offline context classification. Confidence is a relative evidence score, NOT a probability.
  * A recommendation does not arm protection: activation policy and live calibration remain required.
  */
-enum class AutoGuardCandidate { NONE, TABLE, POCKET }
+enum class AutoGuardCandidate { NONE, TABLE, POCKET, BAG }
 enum class MobilityType { UNKNOWN, STILL, WALKING, RUNNING, BICYCLE, VEHICLE }
 
 data class AutoGuardObservation(
@@ -55,6 +55,18 @@ object AutoGuardDecisionEngine {
                     "covered_and_moving"
                 }, 90
             )
+        }
+
+        // Bag requires dark + moving + independent gyroscope rotation;
+        // covered static objects and unknown-rotation devices remain unclassified.
+        if (allowPocket && observation.lightObserved &&
+            observation.lux != null && observation.lux.isFinite() &&
+            observation.lux in 0f..8f &&
+            observation.proximityObserved && observation.proximityNear == false &&
+            observation.gyroscopeObserved && observation.rotationScore >= 0.28f &&
+            observation.motionScore >= 0.09f
+        ) {
+            return AutoGuardAssessment(AutoGuardCandidate.BAG, "dark_moving_rotating", 78)
         }
 
         if (allowTable && observation.proximityObserved &&
