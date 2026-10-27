@@ -1,6 +1,9 @@
 package com.riccardopinato.phoneguard.ui.screens
 
 import android.Manifest
+import android.os.Build
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -347,7 +350,16 @@ fun ProfileScreen(
                         (securityHealth == SecurityHealth.READY ||
                             settings.adaptiveAutoGuardEnabled),
                     onCheckedChange = { enabled ->
-                        scope.launch {
+                        val notificationGranted =
+                            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                                ContextCompat.checkSelfPermission(
+                                    context, Manifest.permission.POST_NOTIFICATIONS
+                                ) == PackageManager.PERMISSION_GRANTED
+                        if (enabled && !notificationGranted) {
+                            statusMessage = resources.getString(
+                                R.string.activation_block_notifications
+                            )
+                        } else scope.launch {
                             settingsRepository.setAdaptiveAutoGuardEnabled(enabled)
                             val started = runCatching {
                                 ProtectionForegroundService.setAdaptiveAutoGuard(
