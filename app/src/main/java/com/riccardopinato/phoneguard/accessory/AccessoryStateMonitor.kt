@@ -77,13 +77,29 @@ class AccessoryStateMonitor(
             .isNotEmpty()
 
     fun start(
+        protectedFingerprints:
+            Set<String>? = null,
         onProtectedAccessoryRemoved:
             (List<ProtectedAccessory>) -> Unit
     ): List<ProtectedAccessory> {
         stop()
 
-        val initial =
+        val connected =
             connectedAccessories()
+
+        val initial =
+            if (
+                protectedFingerprints
+                    .isNullOrEmpty()
+            ) {
+                connected
+            } else {
+                connected
+                    .filter {
+                        it.stableFingerprint() in
+                            protectedFingerprints
+                    }
+            }
 
         protectedIds =
             initial
