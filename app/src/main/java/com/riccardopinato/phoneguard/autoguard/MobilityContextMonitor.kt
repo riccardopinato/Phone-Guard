@@ -82,6 +82,7 @@ class MobilityContextMonitor(context: Context) {
     private val appContext = context.applicationContext
     private var generation = 0
     private var subscribed = false
+    private var requestAttempted = false
 
     private val callback: PendingIntent by lazy {
         PendingIntent.getBroadcast(
@@ -99,7 +100,7 @@ class MobilityContextMonitor(context: Context) {
     }
 
     fun start(): Boolean {
-        if (subscribed) return true
+        if (subscribed || requestAttempted) return true
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
             ContextCompat.checkSelfPermission(
                 appContext, Manifest.permission.ACTIVITY_RECOGNITION
@@ -129,6 +130,7 @@ class MobilityContextMonitor(context: Context) {
 
         val token = ++generation
         MobilityContextStore.enabled = true
+        requestAttempted = true
         return runCatching {
             ActivityRecognition.getClient(appContext)
                 .requestActivityTransitionUpdates(
@@ -147,11 +149,13 @@ class MobilityContextMonitor(context: Context) {
                 .addOnFailureListener {
                     if (token == generation) {
                         subscribed = false
+                        requestAttempted = false
                         MobilityContextStore.clear()
                     }
                 }
             true
         }.getOrElse {
+            requestAttempted = false
             MobilityContextStore.clear()
             false
         }
@@ -161,6 +165,8 @@ class MobilityContextMonitor(context: Context) {
         generation++
         MobilityContextStore.clear()
         subscribed = false
+        if (!requestAttempted) return
+        requestAttempted = false
         runCatching {
             ActivityRecognition.getClient(appContext)
                 .removeActivityTransitionUpdates(callback)
