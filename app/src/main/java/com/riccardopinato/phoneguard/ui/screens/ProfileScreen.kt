@@ -66,7 +66,8 @@ fun ProfileScreen(
     onOpenProtectionCheck: () -> Unit,
     diagnostics: HardwareDiagnostics,
     hardware: HardwareSnapshot,
-    alarmRunning: Boolean
+    alarmRunning: Boolean,
+    protectionArmed: Boolean
 ) {
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -364,7 +365,8 @@ fun ProfileScreen(
                 Text(
                     text = stringResource(
                         when {
-                            alarmRunning -> R.string.auto_guard_state_protection
+                            protectionArmed -> R.string.auto_guard_state_protection
+                            alarmRunning -> R.string.auto_guard_state_activating
                             !settings.adaptiveAutoGuardEnabled -> R.string.auto_guard_state_off
                             adaptiveRuntime == AutoGuardRuntimePhase.CHECKING ->
                                 R.string.auto_guard_state_checking
