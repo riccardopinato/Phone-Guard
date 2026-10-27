@@ -121,6 +121,26 @@ class AutoGuardDecisionEngineTest {
             ).candidate)
     }
 
+    @Test fun bagRequiresLightMotionGyroscopeAndKnownFarProximity() {
+        val bag = sample(
+            lux = 1f, near = false, motion = 0.13f, rotation = 0.4f
+        )
+        assertEquals(AutoGuardCandidate.BAG,
+            AutoGuardDecisionEngine.assess(bag, true, true).candidate)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                bag.copy(gyroscopeObserved = false), true, false
+            ).candidate)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                bag.copy(rotationScore = 0f), true, false
+            ).candidate)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                bag.copy(proximityObserved = false), true, false
+            ).candidate)
+    }
+
     @Test fun vehicleClassificationIsSupportingNotSufficient() {
         val vehicle = sample(motion = 0.06f).copy(mobility = MobilityType.VEHICLE)
         assertEquals(AutoGuardCandidate.NONE,
