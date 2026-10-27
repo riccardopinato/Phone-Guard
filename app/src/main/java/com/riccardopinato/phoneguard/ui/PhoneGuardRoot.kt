@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -73,6 +74,7 @@ fun PhoneGuardRoot(
     biometricAuthManager: BiometricAuthManager
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
 
@@ -275,7 +277,7 @@ fun PhoneGuardRoot(
 
                         is PinVerificationResult.Invalid ->
                             unlockError =
-                                context.getString(
+                                resources.getString(
                                     R.string.pin_wrong_attempts,
                                     result.attemptsBeforeLockout
                                 )
@@ -289,7 +291,7 @@ fun PhoneGuardRoot(
                                     1_000L
 
                             unlockError =
-                                context.getString(
+                                resources.getString(
                                     R.string.pin_locked_seconds,
                                     seconds
                                 )
@@ -297,7 +299,7 @@ fun PhoneGuardRoot(
 
                         is PinVerificationResult.Unavailable ->
                             unlockError =
-                                context.getString(
+                                resources.getString(
                                     R.string.security_unavailable_unlock
                                 )
                     }
@@ -309,7 +311,7 @@ fun PhoneGuardRoot(
                         completeAuthentication()
                     } else {
                         unlockError =
-                            context.getString(
+                            resources.getString(
                                 R.string.biometric_failed
                             )
                     }
