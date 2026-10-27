@@ -1,7 +1,6 @@
 package com.riccardopinato.phoneguard.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -104,32 +104,23 @@ fun EventsScreen(
             }
 
             if (events.isNotEmpty()) {
-                Text(
-                    text =
-                        stringResource(
-                            R.string
-                                .events_clear
-                        ),
-                    modifier = Modifier
-                        .clip(
+                TextButton(
+                    onClick =
+                        eventRepository::clear
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string
+                                    .events_clear
+                            ),
+                        style =
                             MaterialTheme
-                                .shapes
-                                .small
-                        )
-                        .clickable(
-                            onClick =
-                                eventRepository::clear
-                        )
-                        .padding(
-                            horizontal = 10.dp,
-                            vertical = 8.dp
-                        ),
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelLarge,
-                    color = OmniDanger
-                )
+                                .typography
+                                .labelLarge,
+                        color = OmniDanger
+                    )
+                }
             }
         }
 

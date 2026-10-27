@@ -1,7 +1,6 @@
 package com.riccardopinato.phoneguard.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -267,34 +267,24 @@ fun OnboardingScreen(
                 page <
                 pages.lastIndex
             ) {
-                Text(
-                    text =
-                        stringResource(
-                            R.string.common_skip
-                        ),
-                    modifier = Modifier
-                        .clip(
+                TextButton(
+                    onClick = onCompleted
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.common_skip
+                            ),
+                        style =
                             MaterialTheme
-                                .shapes
-                                .small
-                        )
-                        .clickable(
-                            onClick =
-                                onCompleted
-                        )
-                        .padding(
-                            horizontal = 16.dp,
-                            vertical = 8.dp
-                        ),
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelLarge,
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
+                                .typography
+                                .labelLarge,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+                }
             }
         }
     }

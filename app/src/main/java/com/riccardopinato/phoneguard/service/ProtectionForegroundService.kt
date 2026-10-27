@@ -474,22 +474,10 @@ class ProtectionForegroundService : Service() {
         val guardSettings =
             GuardSettings(
                 mode = guardMode,
-                armDelaySeconds = 0,
                 sensitivity =
                     settings.pocketSensitivity,
-                journeyDuration =
-                    settings.journeyDuration,
                 pocketStableMs = 1_200L,
-                removalWindowMs = 1_600L,
-                ownerGraceMs = OWNER_GRACE_MS,
-                soundEnabled = settings.soundEnabled,
-                vibrationEnabled =
-                    settings.vibrationEnabled,
-                flashEnabled = settings.flashEnabled,
-                biometricEnabled =
-                    settings.biometricEnabled,
-                enhancedReliability =
-                    mode == ProtectionMode.JOURNEY
+                removalWindowMs = 1_600L
             )
 
         if (
@@ -828,7 +816,10 @@ class ProtectionForegroundService : Service() {
 
         updateNotification(
             AlarmPhase.ARMED,
-            "${activeMode.label} protetto",
+            getString(
+                R.string.svc_mode_protected_title,
+                activeMode.label
+            ),
             getString(R.string.svc_owner_verified)
         )
 
