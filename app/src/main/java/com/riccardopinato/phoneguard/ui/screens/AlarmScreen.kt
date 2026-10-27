@@ -1,6 +1,7 @@
 package com.riccardopinato.phoneguard.ui.screens
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -27,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,11 +39,14 @@ import com.riccardopinato.phoneguard.activation.ActivationBlockReason
 import com.riccardopinato.phoneguard.activation.ActivationOutcome
 import com.riccardopinato.phoneguard.activation.ActivationSource
 import com.riccardopinato.phoneguard.activation.ProtectionActivationCoordinator
+import com.riccardopinato.phoneguard.activation.SmartActivationOutcome
 import com.riccardopinato.phoneguard.data.SecurityHealth
 import com.riccardopinato.phoneguard.data.SecurityRepository
 import com.riccardopinato.phoneguard.data.SettingsRepository
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
+import com.riccardopinato.phoneguard.model.AlarmDuration
 import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.model.PreAlarmStyle
 import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.model.ProtectionPreset
 import com.riccardopinato.phoneguard.model.Sensitivity
@@ -60,6 +65,7 @@ import com.riccardopinato.phoneguard.ui.components.SettingSwitchRow
 import com.riccardopinato.phoneguard.ui.components.UtilityChoice
 import com.riccardopinato.phoneguard.ui.components.UtilityPanel
 import com.riccardopinato.phoneguard.ui.components.UtilityPrimaryAction
+import com.riccardopinato.phoneguard.ui.components.UtilitySecondaryAction
 import com.riccardopinato.phoneguard.ui.components.UtilitySectionHeader
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 import kotlinx.coroutines.launch
@@ -74,6 +80,7 @@ fun AlarmScreen(
     onRequestDisarm: () -> Unit
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
 
     val settings by
@@ -129,6 +136,12 @@ fun AlarmScreen(
                 .charging_connect_first
         )
 
+    val accessoryConnectFirstMessage =
+        stringResource(
+            R.string
+                .activation_block_accessory
+        )
+
     fun activationMessage(
         reason: ActivationBlockReason
     ): String =
@@ -147,6 +160,9 @@ fun AlarmScreen(
 
             ActivationBlockReason.CHARGER_NOT_CONNECTED ->
                 chargingConnectFirstMessage
+
+            ActivationBlockReason.ACCESSORY_NOT_CONNECTED ->
+                accessoryConnectFirstMessage
 
             ActivationBlockReason.NOTIFICATION_PERMISSION ->
                 activationNotificationsMessage
@@ -181,6 +197,49 @@ fun AlarmScreen(
         settings.alarmProfile(
             selectedMode
         )
+
+    val customSoundPicker =
+        rememberLauncherForActivityResult(
+            contract =
+                ActivityResultContracts
+                    .OpenDocument()
+        ) { uri ->
+            if (
+                uri != null
+            ) {
+                val persistentAccess =
+                    runCatching {
+                        context
+                            .contentResolver
+                            .takePersistableUriPermission(
+                                uri,
+                                Intent
+                                    .FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        true
+                    }.getOrDefault(
+                        false
+                    )
+
+                if (
+                    persistentAccess
+                ) {
+                    scope.launch {
+                        settingsRepository
+                            .setCustomSoundUri(
+                                selectedMode,
+                                uri.toString()
+                            )
+                    }
+                } else {
+                    armMessage =
+                        resources.getString(
+                            R.string
+                                .alarm_custom_sound_access_failed
+                        )
+                }
+            }
+        }
 
     var volumeDraft by
         remember(
@@ -335,6 +394,58 @@ fun AlarmScreen(
         }
     }
 
+    fun requestSmartArm() {
+        if (
+            runtime.phase !=
+            AlarmPhase.DISARMED
+        ) {
+            return
+        }
+
+        if (!hasPin) {
+            showSetPin = true
+            return
+        }
+
+        if (
+            securityHealth !=
+            SecurityHealth.READY
+        ) {
+            armMessage =
+                securityNotReadyMessage
+            return
+        }
+
+        scope.launch {
+            when (
+                val outcome =
+                    ProtectionActivationCoordinator
+                        .requestSmartArm(
+                            context
+                        )
+            ) {
+                is SmartActivationOutcome.Started -> {
+                    armMessage =
+                        resources.getString(
+                            R.string
+                                .smart_arm_selected,
+                            outcome
+                                .decision
+                                .mode
+                                .label
+                        )
+                }
+
+                is SmartActivationOutcome.Blocked -> {
+                    armMessage =
+                        activationMessage(
+                            outcome.reason
+                        )
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -446,25 +557,42 @@ fun AlarmScreen(
             }
         }
 
-        ModeChoice(
-            mode = ProtectionMode.JOURNEY,
-            selected =
-                settings.selectedMode ==
-                    ProtectionMode.JOURNEY,
-            enabled =
-                runtime.phase ==
-                    AlarmPhase.DISARMED,
-            onClick = {
-                scope.launch {
-                    settingsRepository
-                        .setSelectedMode(
-                            ProtectionMode.JOURNEY
-                        )
-                }
-            },
+        Row(
             modifier =
-                Modifier.fillMaxWidth()
-        )
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
+                )
+        ) {
+            listOf(
+                ProtectionMode.ACCESSORY,
+                ProtectionMode.JOURNEY
+            ).forEach {
+                mode ->
+                ModeChoice(
+                    mode = mode,
+                    selected =
+                        settings.selectedMode ==
+                            mode,
+                    enabled =
+                        runtime.phase ==
+                            AlarmPhase.DISARMED,
+                    onClick = {
+                        scope.launch {
+                            settingsRepository
+                                .setSelectedMode(
+                                    mode
+                                )
+                        }
+                    },
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        )
+                )
+            }
+        }
 
         Text(
             text = modeDescription(selectedMode),
@@ -623,6 +751,53 @@ fun AlarmScreen(
                         onClick = {
                             showSetPin = true
                         }
+                    )
+                }
+            }
+        }
+
+        if (
+            runtime.phase ==
+            AlarmPhase.DISARMED
+        ) {
+            UtilityPanel {
+                Column(
+                    modifier =
+                        Modifier.padding(
+                            14.dp
+                        ),
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string
+                                    .smart_arm_body
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+
+                    UtilitySecondaryAction(
+                        label =
+                            stringResource(
+                                R.string
+                                    .smart_arm_action
+                            ),
+                        enabled =
+                            securityHealth ==
+                                SecurityHealth.READY,
+                        onClick =
+                            ::requestSmartArm
                     )
                 }
             }
@@ -819,6 +994,9 @@ fun AlarmScreen(
                     }
                 )
             }
+
+            ProtectionMode.ACCESSORY ->
+                Unit
         }
 
         AlarmOutputOptions(
@@ -887,6 +1065,43 @@ fun AlarmScreen(
                         .setWarningScreenEnabled(
                             selectedMode,
                             it
+                        )
+                }
+            },
+            onPickCustomSound = {
+                customSoundPicker
+                    .launch(
+                        arrayOf(
+                            "audio/*"
+                        )
+                    )
+            },
+            onClearCustomSound = {
+                scope.launch {
+                    settingsRepository
+                        .setCustomSoundUri(
+                            selectedMode,
+                            null
+                        )
+                }
+            },
+            setPreAlarmStyle = {
+                value ->
+                scope.launch {
+                    settingsRepository
+                        .setPreAlarmStyle(
+                            selectedMode,
+                            value
+                        )
+                }
+            },
+            setAlarmDuration = {
+                value ->
+                scope.launch {
+                    settingsRepository
+                        .setAlarmDuration(
+                            selectedMode,
+                            value
                         )
                 }
             }
@@ -1390,7 +1605,13 @@ private fun AlarmOutputOptions(
     setSound: (Boolean) -> Unit,
     setVibration: (Boolean) -> Unit,
     setFlash: (Boolean) -> Unit,
-    setWarningScreen: (Boolean) -> Unit
+    setWarningScreen: (Boolean) -> Unit,
+    onPickCustomSound: () -> Unit,
+    onClearCustomSound: () -> Unit,
+    setPreAlarmStyle:
+        (PreAlarmStyle) -> Unit,
+    setAlarmDuration:
+        (AlarmDuration) -> Unit
 ) {
     val editable =
         runtime.phase ==
@@ -1426,6 +1647,87 @@ private fun AlarmOutputOptions(
                 onCheckedChange =
                     setSound
             )
+
+            if (
+                profile.soundEnabled
+            ) {
+                Text(
+                    text =
+                        stringResource(
+                            R.string
+                                .alarm_custom_sound_title
+                        ) +
+                            ": " +
+                            stringResource(
+                                if (
+                                    profile
+                                        .customSoundUri ==
+                                        null
+                                ) {
+                                    R.string
+                                        .alarm_custom_sound_builtin
+                                } else {
+                                    R.string
+                                        .alarm_custom_sound_custom
+                                }
+                            ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    UtilitySecondaryAction(
+                        label =
+                            stringResource(
+                                R.string
+                                    .alarm_custom_sound_choose
+                            ),
+                        enabled =
+                            editable,
+                        onClick =
+                            onPickCustomSound,
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            )
+                    )
+
+                    if (
+                        profile
+                            .customSoundUri !=
+                            null
+                    ) {
+                        UtilitySecondaryAction(
+                            label =
+                                stringResource(
+                                    R.string
+                                        .alarm_custom_sound_reset
+                                ),
+                            enabled =
+                                editable,
+                            onClick =
+                                onClearCustomSound,
+                            modifier =
+                                Modifier.weight(
+                                    1f
+                                )
+                        )
+                    }
+                }
+            }
 
             Text(
                 text =
@@ -1520,6 +1822,108 @@ private fun AlarmOutputOptions(
                 enabled = editable,
                 onCheckedChange =
                     setWarningScreen
+            )
+
+            UtilitySectionHeader(
+                title =
+                    stringResource(
+                        R.string
+                            .pre_alarm_style_title
+                    )
+            )
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        6.dp
+                    )
+            ) {
+                PreAlarmStyle.entries
+                    .forEach {
+                        style ->
+                        UtilityChoice(
+                            label =
+                                preAlarmStyleLabel(
+                                    style
+                                ),
+                            selected =
+                                profile
+                                    .preAlarmStyle ==
+                                    style,
+                            enabled =
+                                editable,
+                            onClick = {
+                                setPreAlarmStyle(
+                                    style
+                                )
+                            },
+                            modifier =
+                                Modifier.weight(
+                                    1f
+                                )
+                        )
+                    }
+            }
+
+            UtilitySectionHeader(
+                title =
+                    stringResource(
+                        R.string
+                            .alarm_duration_title
+                    )
+            )
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        5.dp
+                    )
+            ) {
+                AlarmDuration.entries
+                    .forEach {
+                        duration ->
+                        UtilityChoice(
+                            label =
+                                alarmDurationLabel(
+                                    duration
+                                ),
+                            selected =
+                                profile
+                                    .alarmDuration ==
+                                    duration,
+                            enabled =
+                                editable,
+                            onClick = {
+                                setAlarmDuration(
+                                    duration
+                                )
+                            },
+                            modifier =
+                                Modifier.weight(
+                                    1f
+                                )
+                        )
+                    }
+            }
+
+            Text(
+                text =
+                    stringResource(
+                        R.string
+                            .alarm_duration_note
+                    ),
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
             )
         }
     }
@@ -1664,8 +2068,48 @@ private fun modeDescription(
             ProtectionMode.CHARGING ->
                 R.string.mode_charging_description
 
+            ProtectionMode.ACCESSORY ->
+                R.string.mode_accessory_description
+
             ProtectionMode.JOURNEY ->
                 R.string.mode_journey_description
+        }
+    )
+
+@Composable
+private fun preAlarmStyleLabel(
+    value: PreAlarmStyle
+): String =
+    stringResource(
+        when (value) {
+            PreAlarmStyle.SILENT ->
+                R.string.pre_alarm_silent
+
+            PreAlarmStyle.VIBRATION ->
+                R.string.pre_alarm_vibration
+
+            PreAlarmStyle.BEEP ->
+                R.string.pre_alarm_beep
+        }
+    )
+
+@Composable
+private fun alarmDurationLabel(
+    value: AlarmDuration
+): String =
+    stringResource(
+        when (value) {
+            AlarmDuration.SECONDS_30 ->
+                R.string.alarm_duration_30s
+
+            AlarmDuration.MINUTE_1 ->
+                R.string.alarm_duration_1m
+
+            AlarmDuration.MINUTES_3 ->
+                R.string.alarm_duration_3m
+
+            AlarmDuration.UNTIL_DISARMED ->
+                R.string.alarm_duration_until_disarmed
         }
     )
 

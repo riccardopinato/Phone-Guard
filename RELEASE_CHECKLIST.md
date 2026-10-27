@@ -1,6 +1,6 @@
 # RELEASE_CHECKLIST.md — Phone Guard
 
-Version truth: 0.9.3 / versionCode 5
+Version truth: 0.9.4 / versionCode 6
 
 ## Exact-SHA automated gate
 The release SHA must show all of the following green:
@@ -74,3 +74,18 @@ Phone Guard must not be labelled fully CERTIFIED until the physical gate is comp
 - [ ] Per-mode alarm profiles verified independently.
 - [ ] Structured event evidence verified after real triggers.
 - [ ] EN/IT/ES/FR/PT UI sanity checked.
+
+
+## 0.9.4 Market Value Pack 2 gates
+- [ ] Accessory Guard wired/USB/Bluetooth removal verified on physical devices.
+- [ ] Accessory owner-grace cancel and alarm paths verified.
+- [ ] Smart Arm context selection checked in charging/accessory/pocket/bag/table contexts.
+- [ ] Smart Arm still obeys security/capability/permission/recovery gates.
+- [ ] Live Guard Test validated for all six protection paths.
+- [ ] Sensitivity Advisor recommendations checked against stable/noisy real environments.
+- [ ] Protection Center OEM/last-exit/system-setting actions verified.
+- [ ] custom alarm URI persistence and built-in fallback verified.
+- [ ] pre-alarm silent/vibration/beep behavior verified.
+- [ ] 30s/1m/3m output timeout stops outputs only and never disarms.
+- [ ] Incident Sessions and shared local reports verified.
+- [ ] EN/IT/ES/FR/PT key parity and UI sanity checked.

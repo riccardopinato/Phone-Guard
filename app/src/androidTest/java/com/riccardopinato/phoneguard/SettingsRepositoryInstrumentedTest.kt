@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.riccardopinato.phoneguard.data.SettingsRepository
+import com.riccardopinato.phoneguard.model.AlarmDuration
+import com.riccardopinato.phoneguard.model.PreAlarmStyle
 import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.model.ProtectionPreset
 import kotlinx.coroutines.flow.first
@@ -91,6 +93,58 @@ class SettingsRepositoryInstrumentedTest {
                         ProtectionMode.TABLE
                     )
                     .alarmVolumePercent
+            )
+        }
+
+    @Test
+    fun advancedAccessoryAlarmProfilePersists() =
+        runBlocking {
+            val context =
+                ApplicationProvider
+                    .getApplicationContext<Context>()
+
+            val repository =
+                SettingsRepository(
+                    context
+                )
+
+            repository
+                .setCustomSoundUri(
+                    ProtectionMode.ACCESSORY,
+                    "content://phoneguard/test-audio"
+                )
+
+            repository
+                .setPreAlarmStyle(
+                    ProtectionMode.ACCESSORY,
+                    PreAlarmStyle.BEEP
+                )
+
+            repository
+                .setAlarmDuration(
+                    ProtectionMode.ACCESSORY,
+                    AlarmDuration.MINUTE_1
+                )
+
+            val profile =
+                repository
+                    .settings
+                    .first()
+                    .alarmProfile(
+                        ProtectionMode.ACCESSORY
+                    )
+
+            assertEquals(
+                "content://phoneguard/test-audio",
+                profile.customSoundUri
+            )
+            assertEquals(
+                PreAlarmStyle.BEEP,
+                profile.preAlarmStyle
+            )
+            assertEquals(
+                AlarmDuration.MINUTE_1,
+                profile.alarmDuration
             )
         }
 

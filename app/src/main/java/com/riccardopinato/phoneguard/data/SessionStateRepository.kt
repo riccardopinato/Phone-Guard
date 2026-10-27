@@ -17,7 +17,9 @@ data class PersistedProtectionSession(
     val journeyEndsAt: Long?,
     val tableCalibration: MotionCalibration?,
     val pocketCalibration: CalibrationProfile?,
-    val journeyEndsAtElapsedRealtime: Long? = null
+    val journeyEndsAtElapsedRealtime: Long? = null,
+    val accessoryFingerprints: Set<String> = emptySet(),
+    val triggeredAtWallClock: Long? = null
 )
 
 internal enum class RecoveryAction {
@@ -26,6 +28,7 @@ internal enum class RecoveryAction {
     RESTORE_TABLE,
     RESTORE_POCKET,
     RESTORE_CHARGING,
+    RESTORE_ACCESSORY,
     RESTORE_ALARM
 }
 
@@ -43,6 +46,20 @@ internal object SessionRecoveryPolicy {
         return abs(savedBootMarker - currentBootMarker) <=
             BOOT_MARKER_TOLERANCE_MS
     }
+
+    fun recoveryTriggeredAt(
+        session: PersistedProtectionSession,
+        now: Long
+    ): Long =
+        if (
+            session.phase ==
+            AlarmPhase.OWNER_CHECK
+        ) {
+            now
+        } else {
+            session.triggeredAtWallClock
+                ?: session.updatedAtWallClock
+        }
 
     fun recoveryAction(
         session: PersistedProtectionSession,
@@ -96,6 +113,9 @@ internal object SessionRecoveryPolicy {
 
                     ProtectionMode.CHARGING ->
                         RecoveryAction.RESTORE_CHARGING
+
+                    ProtectionMode.ACCESSORY ->
+                        RecoveryAction.RESTORE_ACCESSORY
                 }
 
             AlarmPhase.ARMING,
@@ -127,7 +147,8 @@ class SessionStateRepository(
         phase: AlarmPhase,
         pocketGuardMode: GuardMode? = null,
         journeyEndsAt: Long? = null,
-        journeyEndsAtElapsedRealtime: Long? = null
+        journeyEndsAtElapsedRealtime: Long? = null,
+        triggeredAtWallClock: Long? = null
     ) {
         if (
             phase == AlarmPhase.DISARMED ||
@@ -137,12 +158,40 @@ class SessionStateRepository(
             return
         }
 
+        val now =
+            System.currentTimeMillis()
+
         val editor =
             prefs.edit()
                 .putString(KEY_PHASE, phase.name)
                 .putString(KEY_MODE, mode.name)
-                .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
+                .putLong(KEY_UPDATED_AT, now)
                 .putLong(KEY_BOOT_MARKER, currentBootMarker())
+
+        if (
+            phase ==
+            AlarmPhase.TRIGGERED
+        ) {
+            val persistedTrigger =
+                prefs.getLong(
+                    KEY_TRIGGERED_AT,
+                    0L
+                )
+                    .takeIf {
+                        it > 0L
+                    }
+
+            editor.putLong(
+                KEY_TRIGGERED_AT,
+                triggeredAtWallClock
+                    ?: persistedTrigger
+                    ?: now
+            )
+        } else {
+            editor.remove(
+                KEY_TRIGGERED_AT
+            )
+        }
 
         if (pocketGuardMode == null) {
             editor.remove(KEY_POCKET_GUARD_MODE)
@@ -178,6 +227,15 @@ class SessionStateRepository(
             removePocketCalibration(editor)
         }
 
+        if (
+            mode !=
+            ProtectionMode.ACCESSORY
+        ) {
+            editor.remove(
+                KEY_ACCESSORY_FINGERPRINTS
+            )
+        }
+
         editor.commit()
     }
 
@@ -211,6 +269,21 @@ class SessionStateRepository(
             .putBoolean(KEY_HAS_POCKET_CALIBRATION, true)
             .putLong(KEY_BOOT_MARKER, currentBootMarker())
             .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
+            .commit()
+    }
+
+    fun saveAccessoryFingerprints(
+        fingerprints: Set<String>
+    ) {
+        prefs.edit()
+            .putStringSet(
+                KEY_ACCESSORY_FINGERPRINTS,
+                fingerprints.toSet()
+            )
+            .putLong(
+                KEY_UPDATED_AT,
+                System.currentTimeMillis()
+            )
             .commit()
     }
 
@@ -407,7 +480,22 @@ class SessionStateRepository(
                     ).takeIf { it > 0L }
                 } else {
                     null
-                }
+                },
+            accessoryFingerprints =
+                prefs.getStringSet(
+                    KEY_ACCESSORY_FINGERPRINTS,
+                    emptySet()
+                )
+                    ?.toSet()
+                    ?: emptySet(),
+            triggeredAtWallClock =
+                prefs.getLong(
+                    KEY_TRIGGERED_AT,
+                    0L
+                )
+                    .takeIf {
+                        it > 0L
+                    }
         )
     }
 
@@ -458,6 +546,10 @@ class SessionStateRepository(
         const val KEY_JOURNEY_ENDS_AT = "journey_ends_at"
         const val KEY_JOURNEY_ENDS_AT_ELAPSED =
             "journey_ends_at_elapsed"
+        const val KEY_ACCESSORY_FINGERPRINTS =
+            "accessory_fingerprints"
+        const val KEY_TRIGGERED_AT =
+            "triggered_at_wall_clock"
 
         const val KEY_HAS_TABLE_CALIBRATION = "has_table_calibration"
         const val KEY_BASELINE_X = "baseline_x"

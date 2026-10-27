@@ -92,8 +92,17 @@ private fun HardwarePanel(
             )
 
             HardwareRow(
-                label = stringResource(R.string.status_accelerometer),
-                ready = hardware.hasAccelerometer
+                label =
+                    stringResource(
+                        R.string.status_accelerometer
+                    ),
+                ready =
+                    hardware.hasAccelerometer,
+                optional =
+                    selectedMode ==
+                        ProtectionMode.CHARGING ||
+                        selectedMode ==
+                            ProtectionMode.ACCESSORY
             )
 
             HardwareRow(

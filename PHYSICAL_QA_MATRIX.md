@@ -1,6 +1,6 @@
 # PHYSICAL_QA_MATRIX.md — Phone Guard
 
-Candidate software line: **0.9.3 / versionCode 5**
+Candidate software line: **0.9.4 / versionCode 6**
 
 
 Status: **UNVERIFIED** until measurements from real devices are recorded.
@@ -84,3 +84,55 @@ Run on the same signed artifact used for release evidence.
 - [ ] service/process interruption while Charging and unplugged fails closed to alarm;
 - [ ] disabling charging auto-arm stops standby when no active protection exists;
 - [ ] disabling auto-arm never disarms an already active protection session.
+
+
+## Accessory / Smart / Protection Center — 0.9.4
+
+Run every row on the exact signed INTERNAL candidate used for certification.
+
+| Scenario | Pixel | Samsung | Xiaomi/Redmi | Expected |
+|---|---|---|---|---|
+| Accessory arm with no supported audio output | ⬜ | ⬜ | ⬜ | blocked truthfully |
+| Wired headset arm + removal | ⬜ | ⬜ | ⬜ | OWNER_CHECK/alarm path exactly once |
+| USB audio arm + removal | ⬜ | ⬜ | ⬜ | OWNER_CHECK/alarm path exactly once |
+| Bluetooth audio arm + disconnect | ⬜ | ⬜ | ⬜ | OWNER_CHECK/alarm path exactly once |
+| Accessory 0s grace | ⬜ | ⬜ | ⬜ | immediate full alarm |
+| Accessory 2/5/8s grace | ⬜ | ⬜ | ⬜ | owner check then alarm |
+| Owner verifies intentional accessory removal | ⬜ | ⬜ | ⬜ | session ends cleanly |
+| Accessory process recovery while still connected | ⬜ | ⬜ | ⬜ | monitor restores without false protected state |
+| Accessory recovery after device disappeared | ⬜ | ⬜ | ⬜ | fails closed to alarm path |
+| Smart Arm while charging | ⬜ | ⬜ | ⬜ | selects Charging |
+| Smart Arm with supported audio accessory | ⬜ | ⬜ | ⬜ | selects Accessory when not charging |
+| Smart Arm pocket context | ⬜ | ⬜ | ⬜ | selects Pocket when evidence supports it |
+| Smart Arm bag context | ⬜ | ⬜ | ⬜ | selects Bag when evidence supports it |
+| Smart Arm ambiguous/stable context | ⬜ | ⬜ | ⬜ | safe Table/fallback choice; no false capability claim |
+| Live Guard Test Table | ⬜ | ⬜ | ⬜ | real movement recognized without full alarm |
+| Live Guard Test Pocket | ⬜ | ⬜ | ⬜ | cover/uncover transition recognized |
+| Live Guard Test Bag | ⬜ | ⬜ | ⬜ | stored/removal transition recognized |
+| Live Guard Test Charging | ⬜ | ⬜ | ⬜ | real power disconnect recognized |
+| Live Guard Test Accessory | ⬜ | ⬜ | ⬜ | real accessory disconnect recognized |
+| Sensitivity Advisor stable surface | ⬜ | ⬜ | ⬜ | plausible higher-sensitivity recommendation |
+| Sensitivity Advisor noisy environment | ⬜ | ⬜ | ⬜ | plausible lower-sensitivity recommendation |
+| Sensitivity recommendation apply | ⬜ | ⬜ | ⬜ | settings change only after explicit tap |
+| Protection Center OEM guidance | ⬜ | ⬜ | ⬜ | manufacturer advice matches device family |
+| Protection Center last-exit report | ⬜ | ⬜ | ⬜ | Android-reported cause surfaced without survival guarantee |
+| Battery/security settings actions | ⬜ | ⬜ | ⬜ | open supported system settings or safe fallback |
+| Custom alarm sound | ⬜ | ⬜ | ⬜ | selected URI plays; built-in fallback works if URI is unavailable |
+| Custom sound across reboot | ⬜ | ⬜ | ⬜ | persistable permission works or fallback is truthful |
+| Pre-alarm silent | ⬜ | ⬜ | ⬜ | no pre-signal; full alarm still starts on expiry |
+| Pre-alarm vibration | ⬜ | ⬜ | ⬜ | moderate pre-vibration; no premature alarm-volume lease |
+| Pre-alarm beep | ⬜ | ⬜ | ⬜ | short beep; no premature alarm-volume lease |
+| Alarm duration 30s / 1m / 3m | ⬜ | ⬜ | ⬜ | outputs stop on time; state remains TRIGGERED |
+| Alarm duration until disarmed | ⬜ | ⬜ | ⬜ | outputs persist until owner authentication |
+| Incident Session grouping | ⬜ | ⬜ | ⬜ | one coherent session per protection lifecycle |
+| Incident report share | ⬜ | ⬜ | ⬜ | local text report; no location/account data |
+
+### 0.9.4 false-positive / recovery additions
+- [ ] Bluetooth reconnect/disconnect bounce does not generate duplicate Accessory alarms;
+- [ ] changing unrelated audio routing does not trigger a protected-device removal unless the protected device actually leaves the output-device set;
+- [ ] Smart Arm never bypasses notification/camera/security/recovery gates;
+- [ ] Live Guard Test never creates a persisted protected session;
+- [ ] alarm-output timeout never changes TRIGGERED to DISARMED;
+- [ ] owner authentication after output timeout still closes the incident correctly;
+- [ ] custom sound provider revocation cannot crash or silence fallback alarm generation;
+- [ ] Protection Center never presents OEM guidance as a guaranteed fix.

@@ -106,7 +106,7 @@
             android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-initiated anti-theft protection monitoring. Phone Guard reads device sensors or external power state only while the user explicitly arms a protection mode. An optional user-enabled charging auto-arm standby keeps a visible foreground notification while waiting for a charger connection." />
+                android:value="User-initiated anti-theft protection monitoring. Phone Guard reads device sensors, external power state, or connected audio-accessory state only while the user explicitly arms a protection mode. Smart Arm uses a short local sensor sample before user-initiated activation. An optional user-enabled charging auto-arm standby keeps a visible foreground notification while waiting for a charger connection." />
         </service>
 
     </application>

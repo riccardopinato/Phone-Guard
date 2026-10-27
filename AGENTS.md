@@ -9,11 +9,14 @@
 
 ## Product invariants
 - One authoritative foreground service: `ProtectionForegroundService`.
-- Modes: Table, Pocket, Bag, Charging, Journey.
+- Modes: Table, Pocket, Bag, Charging, Accessory, Journey.
 - No UI may claim protection when runtime/capability health cannot support it.
 - Pocket/Bag calibration requires live evidence from required sensors; hardware presence alone is insufficient.
 - Charging requires real external power at arm time and reacts to a real power-disconnect broadcast while its service is active.
-- All entry surfaces (app, tile, widget, shortcut, charging auto-arm) must route through one activation policy; none may bypass SecurityHealth, capability or permission gates.
+- Accessory Guard requires a real supported audio output at arm time, protects the devices present at arming, and must not request microphone recording.
+- Smart Arm is deterministic context resolution only; it must route the selected mode through the same activation policy and never become an authentication path.
+- Alarm-output duration may stop outputs but must never disarm, clear TRIGGERED, or satisfy owner authentication.
+- All entry surfaces (app, Smart Arm, tile, widget, shortcut, charging auto-arm) must route through one activation policy; none may bypass SecurityHealth, capability or permission gates.
 - Tile/widget/shortcut must never bypass PIN/strong-biometric disarm.
 - Charging auto-arm is opt-in foreground standby with a visible notification; do not replace it with an unreliable implicit manifest power receiver.
 - OWNER_CHECK and TRIGGERED always outrank Journey expiry.

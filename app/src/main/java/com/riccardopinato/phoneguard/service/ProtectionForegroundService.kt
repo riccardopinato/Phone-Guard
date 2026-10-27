@@ -23,6 +23,7 @@ import com.riccardopinato.phoneguard.PhoneGuardApp
 import com.riccardopinato.phoneguard.activation.ActivationOutcome
 import com.riccardopinato.phoneguard.activation.ActivationSource
 import com.riccardopinato.phoneguard.activation.ProtectionActivationCoordinator
+import com.riccardopinato.phoneguard.accessory.AccessoryStateMonitor
 import com.riccardopinato.phoneguard.charging.ChargingStateMonitor
 import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.RecoveryAction
@@ -84,6 +85,9 @@ class ProtectionForegroundService : Service() {
     private lateinit var chargingMonitor:
         ChargingStateMonitor
 
+    private lateinit var accessoryMonitor:
+        AccessoryStateMonitor
+
     private val container by lazy {
         (application as PhoneGuardApp)
             .container
@@ -92,6 +96,7 @@ class ProtectionForegroundService : Service() {
     private var armingJob: Job? = null
     private var ownerCheckJob: Job? = null
     private var journeyJob: Job? = null
+    private var alarmOutputTimeoutJob: Job? = null
 
     private var pendingAlarmTrigger:
         PendingAlarmTrigger? = null
@@ -243,6 +248,11 @@ class ProtectionForegroundService : Service() {
 
         chargingMonitor =
             ChargingStateMonitor(
+                applicationContext
+            )
+
+        accessoryMonitor =
+            AccessoryStateMonitor(
                 applicationContext
             )
 
@@ -538,6 +548,17 @@ class ProtectionForegroundService : Service() {
             return
         }
 
+        if (
+            mode ==
+            ProtectionMode.ACCESSORY
+        ) {
+            startAccessoryMonitoring(
+                settings = settings,
+                recordArmedEvent = true
+            )
+            return
+        }
+
         val requiredGuardMode =
             guardMode ?: run {
                 failAndStop(
@@ -661,6 +682,212 @@ class ProtectionForegroundService : Service() {
             getString(
                 R.string
                     .svc_charging_alarm_hint
+            )
+        )
+
+        protectionWakeLock
+            .setRequired(false)
+    }
+
+    private fun startAccessoryMonitoring(
+        settings: AppSettings,
+        recordArmedEvent: Boolean,
+        expectedFingerprints:
+            Set<String>? = null
+    ) {
+        tableDetector?.stop()
+        tableDetector = null
+        pocketController.stop()
+        accessoryMonitor.stop()
+
+        activeMode =
+            ProtectionMode.ACCESSORY
+        activeGuardMode = null
+        activeJourneyEndAt = null
+        activeJourneyEndAtElapsedRealtime = null
+
+        val protected =
+            accessoryMonitor.start(
+                protectedFingerprints =
+                    expectedFingerprints
+            ) {
+                removed ->
+                if (
+                    activeMode ==
+                        ProtectionMode.ACCESSORY &&
+                    AlarmStateStore.state
+                        .value.phase ==
+                        AlarmPhase.ARMED
+                ) {
+                    val summary =
+                        removed
+                            .joinToString(
+                                separator = ", "
+                            ) {
+                                it.name
+                            }
+
+                    requestAlarm(
+                        detail =
+                            "Mode=ACCESSORY; protected audio accessory disconnected: " +
+                                summary,
+                        lastMotionDelta = 0f,
+                        confidence = 100,
+                        detectorState =
+                            "ACCESSORY_DISCONNECTED",
+                        sensorSummary =
+                            "removed=" +
+                                summary
+                    )
+                }
+            }
+
+        if (
+            protected.isEmpty()
+        ) {
+            accessoryMonitor.stop()
+
+            if (
+                !recordArmedEvent
+            ) {
+                triggerAlarm(
+                    detail =
+                        "Mode=ACCESSORY; protected accessory was absent while protection was being recovered.",
+                    lastMotionDelta = 0f,
+                    confidence = 100,
+                    detectorState =
+                        "ACCESSORY_DISCONNECTED_RECOVERY",
+                    sensorSummary =
+                        "accessoryConnected=false"
+                )
+            } else {
+                failAndStop(
+                    getString(
+                        R.string
+                            .svc_accessory_requires_device
+                    )
+                )
+            }
+            return
+        }
+
+        val currentFingerprints =
+            protected
+                .map {
+                    it.recoveryIdentity()
+                }
+                .toSet()
+
+        val protectedFingerprints =
+            expectedFingerprints
+                ?.takeIf {
+                    it.isNotEmpty()
+                }
+                ?: currentFingerprints
+
+        if (
+            expectedFingerprints !=
+                null &&
+            expectedFingerprints
+                .isNotEmpty() &&
+            !currentFingerprints
+                .containsAll(
+                    expectedFingerprints
+                )
+        ) {
+            accessoryMonitor.stop()
+
+            triggerAlarm(
+                detail =
+                    "Mode=ACCESSORY; original protected accessory set is no longer present during recovery.",
+                lastMotionDelta = 0f,
+                confidence = 100,
+                detectorState =
+                    "ACCESSORY_IDENTITY_MISMATCH_RECOVERY",
+                sensorSummary =
+                    "expected=" +
+                        expectedFingerprints
+                            .sorted()
+                            .joinToString() +
+                        "; current=" +
+                        currentFingerprints
+                            .sorted()
+                            .joinToString()
+            )
+            return
+        }
+
+        val summary =
+            protected
+                .joinToString(
+                    separator = ", "
+                ) {
+                    it.name
+                }
+
+        AlarmStateStore.update(
+            AlarmRuntimeState(
+                phase = AlarmPhase.ARMED,
+                mode =
+                    ProtectionMode.ACCESSORY,
+                message =
+                    getString(
+                        R.string
+                            .svc_accessory_protected
+                    ),
+                detectorState =
+                    "ACCESSORY_CONNECTED"
+            )
+        )
+
+        refreshQuickSurfaces()
+
+        container.sessionStateRepository
+            .saveState(
+                mode =
+                    ProtectionMode.ACCESSORY,
+                phase =
+                    AlarmPhase.ARMED
+            )
+
+        container.sessionStateRepository
+            .saveAccessoryFingerprints(
+                protectedFingerprints
+            )
+
+        if (
+            recordArmedEvent
+        ) {
+            container.eventRepository.add(
+                AlarmEventType.ARMED,
+                "Mode=ACCESSORY; protected=$summary",
+                evidence =
+                    AlarmEventEvidence(
+                        mode =
+                            ProtectionMode.ACCESSORY,
+                        source =
+                            activeActivationSource.name,
+                        detectorState =
+                            "ACCESSORY_CONNECTED",
+                        sensorSummary =
+                            "protected=" +
+                                summary,
+                        graceSeconds =
+                            settings
+                                .gracePeriodSeconds
+                    )
+            )
+        }
+
+        updateNotification(
+            AlarmPhase.ARMED,
+            getString(
+                R.string
+                    .svc_accessory_title
+            ),
+            getString(
+                R.string
+                    .svc_accessory_alarm_hint
             )
         )
 
@@ -978,9 +1205,15 @@ class ProtectionForegroundService : Service() {
             }
 
             GuardState.OWNER_CHECK -> {
-                beginOwnerCheck(
-                    decision
-                )
+                if (
+                    AlarmStateStore.state
+                        .value.phase !=
+                        AlarmPhase.OWNER_CHECK
+                ) {
+                    beginOwnerCheck(
+                        decision
+                    )
+                }
             }
 
             GuardState.ALARM -> {
@@ -1046,6 +1279,7 @@ class ProtectionForegroundService : Service() {
                 getString(R.string.svc_owner_check_notification)
         )
 
+        startConfiguredPreAlarm()
         scheduleOwnerCheckExpiry()
     }
 
@@ -1112,6 +1346,7 @@ class ProtectionForegroundService : Service() {
                 )
         )
 
+        startConfiguredPreAlarm()
         scheduleOwnerCheckExpiry()
     }
 
@@ -1123,6 +1358,38 @@ class ProtectionForegroundService : Service() {
             )
             .toLong() *
             1_000L
+
+    private fun startConfiguredPreAlarm() {
+        val settings =
+            activeSettings
+                ?: return
+
+        val profile =
+            settings.alarmProfile(
+                activeMode
+            )
+
+        outputController.startPreAlarm(
+            profile.preAlarmStyle
+        )
+
+        container.eventRepository.add(
+            AlarmEventType.PRE_ALARM_STARTED,
+            "Mode=${activeMode.name}; style=${profile.preAlarmStyle.name}",
+            evidence =
+                AlarmEventEvidence(
+                    mode = activeMode,
+                    source =
+                        activeActivationSource.name,
+                    detectorState =
+                        "OWNER_CHECK",
+                    graceSeconds =
+                        settings
+                            .gracePeriodSeconds
+                )
+        )
+    }
+
 
     private fun ownerPresenceObserved() {
         if (
@@ -1234,6 +1501,9 @@ class ProtectionForegroundService : Service() {
         ownerCheckJob?.cancel()
         ownerCheckJob = null
 
+        outputController
+            .stopPreAlarm()
+
         val pending =
             pendingAlarmTrigger
 
@@ -1272,7 +1542,15 @@ class ProtectionForegroundService : Service() {
                 PendingTriggerOwnerAction
                     .END_CHARGING_SESSION -> {
                     disarm(
-                        addDisarmEvent = false
+                        addDisarmEvent = true
+                    )
+                    return
+                }
+
+                PendingTriggerOwnerAction
+                    .END_ACCESSORY_SESSION -> {
+                    disarm(
+                        addDisarmEvent = true
                     )
                     return
                 }
@@ -1468,6 +1746,14 @@ class ProtectionForegroundService : Service() {
         detectorState: String,
         sensorSummary: String? = null
     ) {
+        if (
+            AlarmStateStore.state
+                .value.phase ==
+                AlarmPhase.TRIGGERED
+        ) {
+            return
+        }
+
         protectionWakeLock.forceRequired()
         val settings =
             activeSettings ?: return
@@ -1478,6 +1764,9 @@ class ProtectionForegroundService : Service() {
 
         journeyJob?.cancel()
         journeyJob = null
+
+        val triggeredAt =
+            System.currentTimeMillis()
 
         AlarmStateStore.update(
             AlarmRuntimeState(
@@ -1494,7 +1783,7 @@ class ProtectionForegroundService : Service() {
                 journeyEndsAt =
                     activeJourneyEndAt,
                 triggeredAt =
-                    System.currentTimeMillis()
+                    triggeredAt
             )
         )
 
@@ -1506,7 +1795,9 @@ class ProtectionForegroundService : Service() {
             pocketGuardMode = activeGuardMode,
             journeyEndsAt = activeJourneyEndAt,
             journeyEndsAtElapsedRealtime =
-                activeJourneyEndAtElapsedRealtime
+                activeJourneyEndAtElapsedRealtime,
+            triggeredAtWallClock =
+                triggeredAt
         )
 
         startAsForeground(
@@ -1516,12 +1807,20 @@ class ProtectionForegroundService : Service() {
                 getString(R.string.svc_alarm_body)
         )
 
+        val profile =
+            settings.alarmProfile(
+                activeMode
+            )
+
         val outputHealth =
             outputController.start(
-                settings.alarmProfile(
-                    activeMode
-                )
+                profile
             )
+
+        scheduleAlarmOutputTimeout(
+            profile.alarmDuration.durationMs,
+            triggeredAt
+        )
 
         container
             .eventRepository
@@ -1548,6 +1847,83 @@ class ProtectionForegroundService : Service() {
                                 .gracePeriodSeconds
                     )
             )
+    }
+
+    private fun scheduleAlarmOutputTimeout(
+        durationMs: Long?,
+        triggeredAt: Long
+    ) {
+        alarmOutputTimeoutJob
+            ?.cancel()
+        alarmOutputTimeoutJob =
+            null
+
+        val configuredDuration =
+            durationMs
+                ?: return
+
+        val elapsed =
+            (
+                System.currentTimeMillis() -
+                    triggeredAt
+                )
+                .coerceAtLeast(
+                    0L
+                )
+
+        val remaining =
+            (
+                configuredDuration -
+                    elapsed
+                )
+                .coerceAtLeast(
+                    0L
+                )
+
+        alarmOutputTimeoutJob =
+            serviceScope.launch {
+                if (
+                    remaining > 0L
+                ) {
+                    delay(
+                        remaining
+                    )
+                }
+
+                if (
+                    AlarmStateStore.state
+                        .value.phase ==
+                        AlarmPhase.TRIGGERED
+                ) {
+                    outputController.stop()
+
+                    container.eventRepository.add(
+                        AlarmEventType.ALARM_OUTPUTS_TIMED_OUT,
+                        "Mode=${activeMode.name}; alarm outputs stopped after configured duration.",
+                        evidence =
+                            AlarmEventEvidence(
+                                mode = activeMode,
+                                source =
+                                    activeActivationSource.name,
+                                detectorState =
+                                    "ALARM_OUTPUTS_TIMED_OUT"
+                            )
+                    )
+
+                    updateNotification(
+                        AlarmPhase.TRIGGERED,
+                        getString(
+                            R.string
+                                .svc_alarm_title,
+                            activeMode.label
+                        ),
+                        getString(
+                            R.string
+                                .svc_alarm_outputs_stopped
+                        )
+                    )
+                }
+            }
     }
 
     private fun scheduleJourneyEnd(
@@ -1652,10 +2028,14 @@ class ProtectionForegroundService : Service() {
         journeyJob?.cancel()
         journeyJob = null
 
+        alarmOutputTimeoutJob?.cancel()
+        alarmOutputTimeoutJob = null
+
         tableDetector?.stop()
         tableDetector = null
 
         pocketController.stop()
+        accessoryMonitor.stop()
 
         outputController.stop()
         protectionWakeLock.release()
@@ -1848,6 +2228,15 @@ class ProtectionForegroundService : Service() {
                 }
 
                 RecoveryAction.RESTORE_ALARM -> {
+                    val originalTriggeredAt =
+                        SessionRecoveryPolicy
+                            .recoveryTriggeredAt(
+                                session =
+                                    persisted,
+                                now =
+                                    System.currentTimeMillis()
+                            )
+
                     container.sessionStateRepository.saveState(
                         mode = persisted.mode,
                         phase = AlarmPhase.TRIGGERED,
@@ -1857,7 +2246,9 @@ class ProtectionForegroundService : Service() {
                             persisted.journeyEndsAt,
                         journeyEndsAtElapsedRealtime =
                             persisted
-                                .journeyEndsAtElapsedRealtime
+                                .journeyEndsAtElapsedRealtime,
+                        triggeredAtWallClock =
+                            originalTriggeredAt
                     )
 
                     AlarmStateStore.update(
@@ -1870,17 +2261,94 @@ class ProtectionForegroundService : Service() {
                             journeyEndsAt =
                                 persisted.journeyEndsAt,
                             triggeredAt =
-                                persisted.updatedAtWallClock
+                                originalTriggeredAt
                         )
                     )
 
                     refreshQuickSurfaces()
 
-                    outputController.start(
+                    val profile =
                         settings.alarmProfile(
                             persisted.mode
                         )
-                    )
+
+                    val durationMs =
+                        profile
+                            .alarmDuration
+                            .durationMs
+
+                    val outputsAlreadyExpired =
+                        durationMs != null &&
+                            (
+                                System.currentTimeMillis() -
+                                    originalTriggeredAt
+                                )
+                                .coerceAtLeast(
+                                    0L
+                                ) >=
+                                durationMs
+
+                    val restoredOutputHealth =
+                        if (
+                            outputsAlreadyExpired
+                        ) {
+                            outputController.stop()
+
+                            updateNotification(
+                                AlarmPhase.TRIGGERED,
+                                getString(
+                                    R.string
+                                        .svc_alarm_title,
+                                    activeMode.label
+                                ),
+                                getString(
+                                    R.string
+                                        .svc_alarm_outputs_stopped
+                                )
+                            )
+
+                            null
+                        } else {
+                            outputController.start(
+                                profile
+                            ).also {
+                                scheduleAlarmOutputTimeout(
+                                    durationMs,
+                                    originalTriggeredAt
+                                )
+                            }
+                        }
+
+                    if (
+                        persisted.phase ==
+                        AlarmPhase.OWNER_CHECK
+                    ) {
+                        container.eventRepository.add(
+                            AlarmEventType.TRIGGERED,
+                            "Mode=" +
+                                persisted.mode.name +
+                                "; owner-check session recovered fail-closed into alarm.",
+                            evidence =
+                                AlarmEventEvidence(
+                                    mode =
+                                        persisted.mode,
+                                    source =
+                                        "RECOVERY",
+                                    reason =
+                                        "Owner-check session recovered fail-closed into alarm.",
+                                    confidenceScore =
+                                        100,
+                                    detectorState =
+                                        "OWNER_CHECK_RECOVERY_ALARM",
+                                    outputSummary =
+                                        restoredOutputHealth
+                                            ?.eventSummary(),
+                                    graceSeconds =
+                                        settings
+                                            .gracePeriodSeconds
+                                )
+                        )
+                    }
                 }
 
                 RecoveryAction.RESTORE_TABLE -> {
@@ -1897,6 +2365,17 @@ class ProtectionForegroundService : Service() {
                         settings = settings,
                         recordArmedEvent =
                             false
+                    )
+                }
+
+                RecoveryAction.RESTORE_ACCESSORY -> {
+                    startAccessoryMonitoring(
+                        settings = settings,
+                        recordArmedEvent =
+                            false,
+                        expectedFingerprints =
+                            persisted
+                                .accessoryFingerprints
                     )
                 }
 
@@ -2150,6 +2629,8 @@ class ProtectionForegroundService : Service() {
                     R.string.svc_instruction_bag
                 ProtectionMode.CHARGING ->
                     R.string.svc_instruction_charging
+                ProtectionMode.ACCESSORY ->
+                    R.string.svc_instruction_accessory
                 ProtectionMode.JOURNEY ->
                     R.string.svc_instruction_journey
             }
@@ -2168,6 +2649,8 @@ class ProtectionForegroundService : Service() {
                     R.string.svc_calibration_bag
                 ProtectionMode.CHARGING ->
                     R.string.svc_calibration_charging
+                ProtectionMode.ACCESSORY ->
+                    R.string.svc_calibration_accessory
                 ProtectionMode.JOURNEY ->
                     R.string.svc_calibration_journey
             }
@@ -2197,6 +2680,9 @@ class ProtectionForegroundService : Service() {
 
                 ProtectionMode.CHARGING ->
                     R.string.svc_wait_charging
+
+                ProtectionMode.ACCESSORY ->
+                    R.string.svc_wait_accessory
             }
         )
 
@@ -2266,9 +2752,11 @@ class ProtectionForegroundService : Service() {
         armingJob?.cancel()
         ownerCheckJob?.cancel()
         journeyJob?.cancel()
+        alarmOutputTimeoutJob?.cancel()
         tableDetector?.stop()
         pocketController.stop()
-        outputController.stop()
+        accessoryMonitor.stop()
+        outputController.release()
         protectionWakeLock.close()
 
         runCatching {

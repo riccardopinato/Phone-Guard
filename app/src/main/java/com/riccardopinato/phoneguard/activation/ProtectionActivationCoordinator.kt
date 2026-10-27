@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.riccardopinato.phoneguard.PhoneGuardApp
+import com.riccardopinato.phoneguard.accessory.AccessoryStateMonitor
 import com.riccardopinato.phoneguard.charging.ChargingStateMonitor
 import com.riccardopinato.phoneguard.data.SecurityHealth
 import com.riccardopinato.phoneguard.model.ProtectionMode
@@ -22,7 +23,8 @@ enum class ActivationSource {
     WIDGET,
     SHORTCUT,
     AUTO_CHARGER,
-    PRESET
+    PRESET,
+    SMART
 }
 
 enum class ActivationBlockReason {
@@ -31,6 +33,7 @@ enum class ActivationBlockReason {
     SECURITY_NOT_READY,
     MODE_UNSUPPORTED,
     CHARGER_NOT_CONNECTED,
+    ACCESSORY_NOT_CONNECTED,
     NOTIFICATION_PERMISSION,
     CAMERA_PERMISSION
 }
@@ -41,6 +44,17 @@ sealed interface ActivationOutcome {
     data class Blocked(
         val reason: ActivationBlockReason
     ) : ActivationOutcome
+}
+
+sealed interface SmartActivationOutcome {
+    data class Started(
+        val decision: SmartArmDecision
+    ) : SmartActivationOutcome
+
+    data class Blocked(
+        val reason: ActivationBlockReason,
+        val decision: SmartArmDecision? = null
+    ) : SmartActivationOutcome
 }
 
 object ProtectionActivationCoordinator {
@@ -129,6 +143,16 @@ object ProtectionActivationCoordinator {
         }
 
         if (
+            mode == ProtectionMode.ACCESSORY &&
+            !AccessoryStateMonitor(context)
+                .hasConnectedAccessory()
+        ) {
+            return ActivationOutcome.Blocked(
+                ActivationBlockReason.ACCESSORY_NOT_CONNECTED
+            )
+        }
+
+        if (
             Build.VERSION.SDK_INT >=
             Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(
@@ -180,5 +204,48 @@ object ProtectionActivationCoordinator {
         }
 
         return outcome
+    }
+
+    suspend fun requestSmartArm(
+        context: Context
+    ): SmartActivationOutcome {
+        val app =
+            context.applicationContext as PhoneGuardApp
+
+        val settings =
+            app.container
+                .settingsRepository
+                .settings
+                .first()
+
+        val decision =
+            SmartArmContextResolver(
+                context
+            ).resolve(
+                fallbackMode =
+                    settings.selectedMode
+            )
+
+        return when (
+            val outcome =
+                requestArm(
+                    context = context,
+                    mode = decision.mode,
+                    source = ActivationSource.SMART
+                )
+        ) {
+            ActivationOutcome.Started ->
+                SmartActivationOutcome.Started(
+                    decision
+                )
+
+            is ActivationOutcome.Blocked ->
+                SmartActivationOutcome.Blocked(
+                    reason =
+                        outcome.reason,
+                    decision =
+                        decision
+                )
+        }
     }
 }
