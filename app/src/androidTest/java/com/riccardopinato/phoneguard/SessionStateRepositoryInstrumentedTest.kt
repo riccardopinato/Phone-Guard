@@ -17,6 +17,55 @@ import org.junit.runner.RunWith
 class SessionStateRepositoryInstrumentedTest {
 
     @Test
+    fun accessoryIdentityPersistsWithinBoot() {
+        val context =
+            ApplicationProvider
+                .getApplicationContext<Context>()
+
+        val repository =
+            SessionStateRepository(
+                context
+            )
+
+        repository.clear()
+
+        try {
+            repository.saveState(
+                mode =
+                    ProtectionMode.ACCESSORY,
+                phase =
+                    AlarmPhase.ARMED
+            )
+
+            repository
+                .saveAccessoryFingerprints(
+                    setOf(
+                        "4|usb headset",
+                        "8|train buds"
+                    )
+                )
+
+            val restored =
+                repository.read()
+
+            assertNotNull(
+                restored
+            )
+
+            assertEquals(
+                setOf(
+                    "4|usb headset",
+                    "8|train buds"
+                ),
+                restored
+                    ?.accessoryFingerprints
+            )
+        } finally {
+            repository.clear()
+        }
+    }
+
+    @Test
     fun journeyPersistsWallAndMonotonicDeadlinesWithinBoot() {
         val context =
             ApplicationProvider
