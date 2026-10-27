@@ -386,4 +386,5 @@
     <string name="live_test_instruction_charging">Mantenha a alimentação conectada, inicie o teste e depois desconecte o carregador.</string>
     <string name="live_test_instruction_accessory">Mantenha um acessório de áudio compatível conectado, inicie o teste e depois desconecte-o.</string>
 
+    <string name="alarm_custom_sound_access_failed">Esta fonte de áudio não pode conceder acesso persistente. A sirene integrada permanece selecionada.</string>
 </resources>
