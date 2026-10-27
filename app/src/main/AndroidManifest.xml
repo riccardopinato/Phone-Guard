@@ -19,6 +19,14 @@
         android:required="false" />
 
     <uses-feature
+        android:name="android.hardware.sensor.proximity"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.sensor.light"
+        android:required="false" />
+
+    <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
 
@@ -48,13 +56,13 @@
         </activity>
 
         <service
-            android:name=".service.AlarmForegroundService"
+            android:name=".service.ProtectionForegroundService"
             android:exported="false"
             android:foregroundServiceType="specialUse"
             android:stopWithTask="false">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-initiated anti-theft protection monitoring. The foreground service reads device sensors only while the user explicitly arms Phone Guard and stops when the user disarms it." />
+                android:value="User-initiated anti-theft protection monitoring. Phone Guard reads motion, proximity and light sensors only while the user explicitly arms a protection mode and stops when the user disarms it." />
         </service>
 
     </application>

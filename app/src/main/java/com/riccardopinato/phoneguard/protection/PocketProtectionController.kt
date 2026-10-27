@@ -118,7 +118,6 @@ class PocketProtectionController(
             SamplingMode.NORMAL
         )
 
-        onDecision(decision)
         return decision
     }
 
@@ -139,7 +138,6 @@ class PocketProtectionController(
             SamplingMode.ALERT
         )
 
-        onDecision(decision)
         return decision
     }
 
