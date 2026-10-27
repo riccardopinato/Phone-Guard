@@ -33,3 +33,30 @@ Reusable Phone Guard-owned engines created in this release:
 - per-mode `AlarmOutputProfile`;
 - structured `AlarmEventEvidence`.
 
+
+
+## 0.9.4 Market Value Pack 2
+
+Clean-room / official-API implementation:
+- Android `AudioManager`, `AudioDeviceInfo` and `AudioDeviceCallback`: Accessory Guard audio-device presence/removal;
+- existing Phone Guard sensor controller plus deterministic policy: Smart Arm and Sensitivity Advisor;
+- Android dynamic power broadcast handling: Live Charging Guard test;
+- Android `ApplicationExitInfo`: last-process-exit diagnostics;
+- Android Storage Access Framework document URI: custom alarm audio;
+- existing Phone Guard event evidence: derived Incident Sessions and local share reports.
+
+External repositories/services inspected only as product or reliability references:
+- `urbandroid-team/dont-kill-my-app` — OEM background-reliability problem/reference; no content or source copied into runtime code;
+- `tharunbirla/IntruderSelfie` — product reference from audit only; no source or selfie feature incorporated;
+- `drb101005/Blue-Trigger` — Bluetooth-disconnect product/pattern reference; no source copied and no dependency introduced.
+
+Reusable Phone Guard-owned engines created or extended:
+- `AccessoryStateMonitor`;
+- `SmartArmDecisionEngine` / `SmartArmContextResolver`;
+- `LiveProtectionTestEngine`;
+- `SensitivityRecommendationEngine` / `SensitivityAdvisor`;
+- `ProtectionReliabilityDiagnostics`;
+- advanced `AlarmOutputProfile`;
+- `IncidentSessionEngine`.
+
+No third-party runtime dependency was added for the 0.9.4 feature pack.
