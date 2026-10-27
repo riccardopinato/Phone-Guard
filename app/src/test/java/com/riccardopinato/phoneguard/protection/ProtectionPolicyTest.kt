@@ -117,6 +117,20 @@ class ProtectionPolicyTest {
     }
 
     @Test
+    fun accessoryDoesNotRequireMotionSensors() {
+        assertTrue(
+            ProtectionPolicy.isSupported(
+                mode =
+                    ProtectionMode.ACCESSORY,
+                journeyGuardMode =
+                    GuardMode.POCKET,
+                capabilities =
+                    caps()
+            )
+        )
+    }
+
+    @Test
     fun journeyUsesSelectedStorageProfileCapabilities() {
         assertFalse(
             ProtectionPolicy.isSupported(
@@ -244,6 +258,17 @@ class ProtectionPolicyTest {
             ProtectionPolicy
                 .pendingTriggerOwnerAction(
                     ProtectionMode.CHARGING
+                )
+        )
+    }
+
+    @Test
+    fun ownerVerifiedPendingAccessoryEndsSession() {
+        assertEquals(
+            PendingTriggerOwnerAction.END_ACCESSORY_SESSION,
+            ProtectionPolicy
+                .pendingTriggerOwnerAction(
+                    ProtectionMode.ACCESSORY
                 )
         )
     }
