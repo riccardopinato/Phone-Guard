@@ -57,31 +57,99 @@ class FlashStrobeController(context: Context) : AutoCloseable {
                 .coerceIn(MIN_PHASE_MS, MAX_PHASE_MS)
 
         stopLocked()
-        val myGeneration = generation.incrementAndGet()
+
+        if (!setTorch(cameraId, true)) {
+            running.set(false)
+            return false
+        }
+
+        val myGeneration =
+            generation.incrementAndGet()
+
         running.set(true)
 
         return try {
             currentTask = executor.submit {
                 try {
-                    while (isCurrent(myGeneration)) {
-                        setTorch(cameraId, true)
-                        if (!sleepInterruptibly(halfPeriodMs, myGeneration)) break
-                        setTorch(cameraId, false)
-                        if (!sleepInterruptibly(halfPeriodMs, myGeneration)) break
+                    if (
+                        !sleepInterruptibly(
+                            halfPeriodMs,
+                            myGeneration
+                        )
+                    ) {
+                        return@submit
                     }
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
+
+                    while (
+                        isCurrent(
+                            myGeneration
+                        )
+                    ) {
+                        if (
+                            !setTorch(
+                                cameraId,
+                                false
+                            )
+                        ) {
+                            break
+                        }
+
+                        if (
+                            !sleepInterruptibly(
+                                halfPeriodMs,
+                                myGeneration
+                            )
+                        ) {
+                            break
+                        }
+
+                        if (
+                            !setTorch(
+                                cameraId,
+                                true
+                            )
+                        ) {
+                            break
+                        }
+
+                        if (
+                            !sleepInterruptibly(
+                                halfPeriodMs,
+                                myGeneration
+                            )
+                        ) {
+                            break
+                        }
+                    }
+                } catch (
+                    _: InterruptedException
+                ) {
+                    Thread.currentThread()
+                        .interrupt()
                 } finally {
-                    setTorch(cameraId, false)
-                    if (generation.get() == myGeneration) {
+                    setTorch(
+                        cameraId,
+                        false
+                    )
+
+                    if (
+                        generation.get() ==
+                        myGeneration
+                    ) {
                         running.set(false)
                     }
                 }
             }
+
             true
-        } catch (_: RejectedExecutionException) {
+        } catch (
+            _: RejectedExecutionException
+        ) {
             running.set(false)
-            setTorch(cameraId, false)
+            setTorch(
+                cameraId,
+                false
+            )
             false
         }
     }
@@ -174,16 +242,44 @@ class FlashStrobeController(context: Context) : AutoCloseable {
     private fun setTorch(
         id: String?,
         enabled: Boolean
-    ) {
-        if (id == null || cameraManager == null) return
-        try {
-            cameraManager.setTorchMode(id, enabled)
-        } catch (_: CameraAccessException) {
-            Log.d(tag, "Camera busy or unavailable")
-        } catch (_: SecurityException) {
-            Log.d(tag, "Camera permission unavailable")
-        } catch (_: IllegalArgumentException) {
-            Log.d(tag, "Invalid camera id")
+    ): Boolean {
+        if (
+            id == null ||
+            cameraManager == null
+        ) {
+            return false
+        }
+
+        return try {
+            cameraManager.setTorchMode(
+                id,
+                enabled
+            )
+            true
+        } catch (
+            _: CameraAccessException
+        ) {
+            Log.d(
+                tag,
+                "Camera busy or unavailable"
+            )
+            false
+        } catch (
+            _: SecurityException
+        ) {
+            Log.d(
+                tag,
+                "Camera permission unavailable"
+            )
+            false
+        } catch (
+            _: IllegalArgumentException
+        ) {
+            Log.d(
+                tag,
+                "Invalid camera id"
+            )
+            false
         }
     }
 
