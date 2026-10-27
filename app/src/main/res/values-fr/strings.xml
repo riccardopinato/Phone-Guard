@@ -399,4 +399,7 @@
     <string name="auto_guard_table">Détection sur table</string>
     <string name="auto_guard_table_body">Nécessite un appareil stable et la durée d’inactivité définie.</string>
     <string name="auto_guard_start_failed">Android a empêché le démarrage du service. Auto Guard a été désactivé.</string>
+    <string name="auto_guard_mobility">Contexte marche et transport</string>
+    <string name="auto_guard_mobility_body">Transitions d’activité facultatives (marche, course, vélo, véhicule) pour aider les capteurs. Autorisation séparée, sans GPS.</string>
+    <string name="auto_guard_mobility_permission_denied">Autorisation refusée ; les capteurs locaux fonctionnent toujours.</string>
 </resources>
