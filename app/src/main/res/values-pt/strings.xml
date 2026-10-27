@@ -399,4 +399,7 @@
     <string name="auto_guard_table">Deteção de mesa</string>
     <string name="auto_guard_table_body">Requer telefone estável e o intervalo de inatividade definido.</string>
     <string name="auto_guard_start_failed">O Android impediu o início do serviço. Auto Guard foi desativado.</string>
+    <string name="auto_guard_mobility">Contexto de caminhada e transporte</string>
+    <string name="auto_guard_mobility_body">Transições de atividade opcionais (caminhada, corrida, bicicleta, veículo) para auxiliar os sensores. Permissão separada, sem GPS.</string>
+    <string name="auto_guard_mobility_permission_denied">Permissão de atividade negada; os sensores locais continuam ativos.</string>
 </resources>
