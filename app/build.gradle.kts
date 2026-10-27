@@ -98,6 +98,7 @@ dependencies {
 
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("androidx.biometric:biometric:1.1.0")
+    implementation("com.google.android.gms:play-services-location:21.4.0")
 
 
     debugImplementation("androidx.compose.ui:ui-tooling")
