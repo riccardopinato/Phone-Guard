@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,6 +51,9 @@ fun EventsScreen(
 ) {
     val context =
         LocalContext.current
+
+    val resources =
+        LocalResources.current
 
     val events by
         eventRepository.events
@@ -254,7 +258,7 @@ fun EventsScreen(
                                                     Intent.EXTRA_TEXT,
                                                     report
                                                 ),
-                                            context.getString(
+                                            resources.getString(
                                                 R.string
                                                     .incident_share_title
                                             )
