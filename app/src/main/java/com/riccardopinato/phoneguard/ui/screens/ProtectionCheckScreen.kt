@@ -1,6 +1,10 @@
 package com.riccardopinato.phoneguard.ui.screens
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -35,12 +39,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.SettingsRepository
+import com.riccardopinato.phoneguard.diagnostics.LiveProtectionTestEngine
 import com.riccardopinato.phoneguard.diagnostics.ProtectionCheckEngine
 import com.riccardopinato.phoneguard.diagnostics.ProtectionCheckId
 import com.riccardopinato.phoneguard.diagnostics.ProtectionCheckItem
 import com.riccardopinato.phoneguard.diagnostics.ProtectionCheckReport
+import com.riccardopinato.phoneguard.diagnostics.SensitivityAdvisor
+import com.riccardopinato.phoneguard.diagnostics.SensitivityRecommendation
 import com.riccardopinato.phoneguard.hardware.HardwareDiagnostics
 import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.model.ProtectionMode
+import com.riccardopinato.phoneguard.model.Sensitivity
+import com.riccardopinato.phoneguard.pocket.model.GuardMode
+import com.riccardopinato.phoneguard.pocket.model.PocketSensitivity
 import com.riccardopinato.phoneguard.ui.components.UtilityPanel
 import com.riccardopinato.phoneguard.ui.components.UtilitySecondaryAction
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
@@ -70,6 +81,20 @@ fun ProtectionCheckScreen(
             )
         }
 
+    val liveTestEngine =
+        remember {
+            LiveProtectionTestEngine(
+                context
+            )
+        }
+
+    val sensitivityAdvisor =
+        remember {
+            SensitivityAdvisor(
+                context
+            )
+        }
+
     val settings by
         settingsRepository.settings
             .collectAsStateWithLifecycle(
@@ -91,6 +116,20 @@ fun ProtectionCheckScreen(
             )
         }
 
+    var sensitivityRecommendation by
+        remember {
+            mutableStateOf<
+                SensitivityRecommendation?
+                >(null)
+        }
+
+    var busy by
+        remember {
+            mutableStateOf(
+                false
+            )
+        }
+
     fun refresh() {
         scope.launch {
             report =
@@ -100,13 +139,47 @@ fun ProtectionCheckScreen(
         }
     }
 
+    fun openBatterySettings() {
+        val intent =
+            Intent(
+                Settings
+                    .ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS
+            )
+
+        try {
+            context.startActivity(
+                intent
+            )
+        } catch (
+            _: ActivityNotFoundException
+        ) {
+            context.startActivity(
+                Intent(
+                    Settings
+                        .ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse(
+                        "package:" +
+                            context.packageName
+                    )
+                )
+            )
+        }
+    }
+
     LaunchedEffect(
-        settings.selectedMode
+        settings.selectedMode,
+        settings.journeyGuardMode
     ) {
         report =
             engine.run(
                 settings.selectedMode
             )
+
+        sensitivityRecommendation =
+            null
+
+        statusMessage =
+            null
     }
 
     val flashPermissionLauncher =
@@ -114,7 +187,8 @@ fun ProtectionCheckScreen(
             contract =
                 ActivityResultContracts
                     .RequestPermission()
-        ) { granted ->
+        ) {
+            granted ->
             if (!granted) {
                 statusMessage =
                     resources.getString(
@@ -145,26 +219,29 @@ fun ProtectionCheckScreen(
         }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(
-                rememberScrollState()
-            )
-            .padding(
-                horizontal = 18.dp,
-                vertical = 14.dp
-            ),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(
+                    rememberScrollState()
+                )
+                .padding(
+                    horizontal = 18.dp,
+                    vertical = 14.dp
+                ),
         verticalArrangement =
             Arrangement.spacedBy(
                 12.dp
             )
     ) {
         TextButton(
-            onClick = onBack
+            onClick =
+                onBack
         ) {
             Text(
                 stringResource(
-                    R.string.common_back
+                    R.string
+                        .common_back
                 )
             )
         }
@@ -179,7 +256,7 @@ fun ProtectionCheckScreen(
                 text =
                     stringResource(
                         R.string
-                            .protection_check_kicker
+                            .protection_center_kicker
                     ),
                 style =
                     MaterialTheme
@@ -195,7 +272,7 @@ fun ProtectionCheckScreen(
                 text =
                     stringResource(
                         R.string
-                            .protection_check_title
+                            .protection_center_title
                     ),
                 style =
                     MaterialTheme
@@ -206,7 +283,6 @@ fun ProtectionCheckScreen(
 
         report?.let {
             current ->
-
             UtilityPanel {
                 Column(
                     modifier =
@@ -223,10 +299,8 @@ fun ProtectionCheckScreen(
                             stringResource(
                                 R.string
                                     .protection_check_score,
-                                current
-                                    .readyCount,
-                                current
-                                    .totalCount
+                                current.readyCount,
+                                current.totalCount
                             ),
                         style =
                             MaterialTheme
@@ -291,6 +365,262 @@ fun ProtectionCheckScreen(
                     text =
                         stringResource(
                             R.string
+                                .protection_center_live_test
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    text =
+                        stringResource(
+                            R.string
+                                .protection_center_live_test_body
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+
+                Text(
+                    text =
+                        liveTestInstruction(
+                            settings.selectedMode,
+                            settings.journeyGuardMode
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    fontWeight =
+                        FontWeight.SemiBold
+                )
+
+                UtilitySecondaryAction(
+                    label =
+                        stringResource(
+                            R.string
+                                .protection_center_live_test_run
+                        ),
+                    enabled =
+                        !alarmRunning &&
+                            !busy,
+                    onClick = {
+                        busy =
+                            true
+
+                        statusMessage =
+                            resources
+                                .getString(
+                                    R.string
+                                        .protection_center_live_test_running
+                                )
+
+                        scope.launch {
+                            val result =
+                                liveTestEngine
+                                    .run(
+                                        mode =
+                                            settings
+                                                .selectedMode,
+                                        journeyGuardMode =
+                                            settings
+                                                .journeyGuardMode
+                                    )
+
+                            statusMessage =
+                                result.detail
+
+                            busy =
+                                false
+
+                            refresh()
+                        }
+                    }
+                )
+            }
+        }
+
+        UtilityPanel {
+            Column(
+                modifier =
+                    Modifier.padding(
+                        16.dp
+                    ),
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        8.dp
+                    )
+            ) {
+                Text(
+                    text =
+                        stringResource(
+                            R.string
+                                .protection_center_sensitivity
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    text =
+                        stringResource(
+                            R.string
+                                .protection_center_sensitivity_body
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+
+                UtilitySecondaryAction(
+                    label =
+                        stringResource(
+                            R.string
+                                .protection_center_sensitivity_run
+                        ),
+                    enabled =
+                        !alarmRunning &&
+                            !busy,
+                    onClick = {
+                        busy =
+                            true
+
+                        scope.launch {
+                            sensitivityRecommendation =
+                                sensitivityAdvisor
+                                    .analyze()
+
+                            busy =
+                                false
+                        }
+                    }
+                )
+
+                sensitivityRecommendation
+                    ?.let {
+                        recommendation ->
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string
+                                        .protection_center_sensitivity_result,
+                                    sensitivityLabel(
+                                        recommendation
+                                            .tableSensitivity
+                                    ),
+                                    pocketSensitivityLabel(
+                                        recommendation
+                                            .pocketSensitivity
+                                    ),
+                                    recommendation
+                                        .sampleCount
+                                ),
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium,
+                            fontWeight =
+                                FontWeight.SemiBold
+                        )
+
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string
+                                        .protection_center_sensitivity_noise,
+                                    recommendation
+                                        .motionNoise,
+                                    recommendation
+                                        .rotationNoise
+                                ),
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall
+                        )
+
+                        Text(
+                            text =
+                                recommendation
+                                    .explanation,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall,
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurfaceVariant
+                        )
+
+                        UtilitySecondaryAction(
+                            label =
+                                stringResource(
+                                    R.string
+                                        .protection_center_sensitivity_apply
+                                ),
+                            enabled =
+                                !alarmRunning &&
+                                    !busy,
+                            onClick = {
+                                scope.launch {
+                                    settingsRepository
+                                        .setSensitivity(
+                                            recommendation
+                                                .tableSensitivity
+                                        )
+
+                                    settingsRepository
+                                        .setPocketSensitivity(
+                                            recommendation
+                                                .pocketSensitivity
+                                        )
+
+                                    sensitivityRecommendation =
+                                        null
+
+                                    refresh()
+                                }
+                            }
+                        )
+                    }
+            }
+        }
+
+        UtilityPanel {
+            Column(
+                modifier =
+                    Modifier.padding(
+                        16.dp
+                    ),
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        8.dp
+                    )
+            ) {
+                Text(
+                    text =
+                        stringResource(
+                            R.string
                                 .protection_check_manual
                         ),
                     style =
@@ -316,10 +646,12 @@ fun ProtectionCheckScreen(
                                     .test_audio
                             ),
                         enabled =
-                            !alarmRunning,
+                            !alarmRunning &&
+                                !busy,
                         onClick = {
                             diagnostics
                                 .testSound()
+
                             statusMessage =
                                 resources
                                     .getString(
@@ -340,7 +672,8 @@ fun ProtectionCheckScreen(
                                     .test_vibrate
                             ),
                         enabled =
-                            !alarmRunning,
+                            !alarmRunning &&
+                                !busy,
                         onClick = {
                             statusMessage =
                                 if (
@@ -373,7 +706,8 @@ fun ProtectionCheckScreen(
                                     .test_flash
                             ),
                         enabled =
-                            !alarmRunning,
+                            !alarmRunning &&
+                                !busy,
                         onClick = {
                             flashPermissionLauncher
                                 .launch(
@@ -396,34 +730,112 @@ fun ProtectionCheckScreen(
                                 .protection_check_refresh
                         ),
                     enabled =
-                        !alarmRunning,
-                    onClick = ::refresh
+                        !busy,
+                    onClick =
+                        ::refresh
                 )
             }
         }
 
-        statusMessage?.let {
-            message ->
-            UtilityPanel(
-                containerColor =
-                    MaterialTheme
-                        .colorScheme
-                        .primaryContainer
+        UtilityPanel {
+            Column(
+                modifier =
+                    Modifier.padding(
+                        16.dp
+                    ),
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        8.dp
+                    )
             ) {
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    UtilitySecondaryAction(
+                        label =
+                            stringResource(
+                                R.string
+                                    .protection_center_battery_settings
+                            ),
+                        enabled =
+                            !busy,
+                        onClick =
+                            ::openBatterySettings,
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            )
+                    )
+
+                    UtilitySecondaryAction(
+                        label =
+                            stringResource(
+                                R.string
+                                    .protection_center_security_settings
+                            ),
+                        enabled =
+                            !busy,
+                        onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Settings
+                                        .ACTION_SECURITY_SETTINGS
+                                )
+                            )
+                        },
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            )
+                    )
+                }
+
                 Text(
                     text =
-                        message,
-                    modifier =
-                        Modifier.padding(
-                            14.dp
+                        stringResource(
+                            R.string
+                                .protection_center_external_note
                         ),
                     style =
                         MaterialTheme
                             .typography
-                            .bodySmall
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
                 )
             }
         }
+
+        statusMessage
+            ?.let {
+                message ->
+                UtilityPanel(
+                    containerColor =
+                        MaterialTheme
+                            .colorScheme
+                            .primaryContainer
+                ) {
+                    Text(
+                        text =
+                            message,
+                        modifier =
+                            Modifier.padding(
+                                14.dp
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall
+                    )
+                }
+            }
     }
 }
 
@@ -433,11 +845,12 @@ private fun CheckRow(
 ) {
     UtilityPanel {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    14.dp
-                ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        14.dp
+                    ),
             horizontalArrangement =
                 Arrangement.spacedBy(
                     12.dp
@@ -446,22 +859,23 @@ private fun CheckRow(
                 Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(
-                        9.dp
-                    )
-                    .clip(
-                        CircleShape
-                    )
-                    .background(
-                        if (
-                            item.ready
-                        ) {
-                            OmniAccent
-                        } else {
-                            OmniDanger
-                        }
-                    )
+                modifier =
+                    Modifier
+                        .size(
+                            9.dp
+                        )
+                        .clip(
+                            CircleShape
+                        )
+                        .background(
+                            if (
+                                item.ready
+                            ) {
+                                OmniAccent
+                            } else {
+                                OmniDanger
+                            }
+                        )
             )
 
             Column(
@@ -545,38 +959,146 @@ private fun checkLabel(
             ProtectionCheckId.SECURITY ->
                 R.string
                     .protection_check_security
+
             ProtectionCheckId.SELECTED_MODE ->
                 R.string
                     .protection_check_mode
+
             ProtectionCheckId.ACCELEROMETER ->
                 R.string
                     .status_accelerometer
+
             ProtectionCheckId.PROXIMITY ->
                 R.string
                     .status_proximity
+
             ProtectionCheckId.AUXILIARY_SENSOR ->
                 R.string
                     .protection_check_aux
+
             ProtectionCheckId.FLASH ->
                 R.string
                     .status_flash
+
             ProtectionCheckId.VIBRATION ->
                 R.string
                     .status_vibration
+
             ProtectionCheckId.NOTIFICATIONS ->
                 R.string
                     .protection_check_notifications
+
             ProtectionCheckId.ALARM_VOLUME ->
                 R.string
                     .alarm_volume
+
             ProtectionCheckId.DO_NOT_DISTURB ->
                 R.string
                     .dnd_label
+
             ProtectionCheckId.BATTERY_OPTIMIZATION ->
                 R.string
                     .battery_optimization
+
             ProtectionCheckId.POWER_CONNECTION ->
                 R.string
                     .protection_check_power
+
+            ProtectionCheckId.ACCESSORY_CONNECTION ->
+                R.string
+                    .protection_check_accessory
+
+            ProtectionCheckId.OEM_RELIABILITY ->
+                R.string
+                    .protection_check_oem
+
+            ProtectionCheckId.LAST_EXIT ->
+                R.string
+                    .protection_check_last_exit
+
+            ProtectionCheckId.SYSTEM_THEFT_PROTECTION ->
+                R.string
+                    .protection_check_system_theft
+        }
+    )
+
+@Composable
+private fun liveTestInstruction(
+    mode: ProtectionMode,
+    journeyGuardMode: GuardMode
+): String =
+    stringResource(
+        when (mode) {
+            ProtectionMode.TABLE ->
+                R.string
+                    .live_test_instruction_table
+
+            ProtectionMode.POCKET ->
+                R.string
+                    .live_test_instruction_pocket
+
+            ProtectionMode.BAG ->
+                R.string
+                    .live_test_instruction_bag
+
+            ProtectionMode.CHARGING ->
+                R.string
+                    .live_test_instruction_charging
+
+            ProtectionMode.ACCESSORY ->
+                R.string
+                    .live_test_instruction_accessory
+
+            ProtectionMode.JOURNEY ->
+                if (
+                    journeyGuardMode ==
+                    GuardMode.POCKET
+                ) {
+                    R.string
+                        .live_test_instruction_pocket
+                } else {
+                    R.string
+                        .live_test_instruction_bag
+                }
+        }
+    )
+
+@Composable
+private fun sensitivityLabel(
+    value: Sensitivity
+): String =
+    stringResource(
+        when (value) {
+            Sensitivity.LOW ->
+                R.string
+                    .sensitivity_low
+
+            Sensitivity.MEDIUM ->
+                R.string
+                    .sensitivity_normal
+
+            Sensitivity.HIGH ->
+                R.string
+                    .sensitivity_high
+        }
+    )
+
+@Composable
+private fun pocketSensitivityLabel(
+    value: PocketSensitivity
+): String =
+    stringResource(
+        when (value) {
+            PocketSensitivity.LOW ->
+                R.string
+                    .sensitivity_low
+
+            PocketSensitivity.NORMAL ->
+                R.string
+                    .sensitivity_normal
+
+            PocketSensitivity.HIGH ->
+                R.string
+                    .sensitivity_high
         }
     )
