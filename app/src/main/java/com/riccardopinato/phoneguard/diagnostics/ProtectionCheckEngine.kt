@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
 import com.riccardopinato.phoneguard.PhoneGuardApp
+import com.riccardopinato.phoneguard.accessory.AccessoryStateMonitor
 import com.riccardopinato.phoneguard.charging.ChargingStateMonitor
 import com.riccardopinato.phoneguard.data.SecurityHealth
 import com.riccardopinato.phoneguard.model.ProtectionMode
@@ -27,7 +28,11 @@ enum class ProtectionCheckId {
     ALARM_VOLUME,
     DO_NOT_DISTURB,
     BATTERY_OPTIMIZATION,
-    POWER_CONNECTION
+    POWER_CONNECTION,
+    ACCESSORY_CONNECTION,
+    OEM_RELIABILITY,
+    LAST_EXIT,
+    SYSTEM_THEFT_PROTECTION
 }
 
 data class ProtectionCheckItem(
@@ -109,6 +114,14 @@ class ProtectionCheckEngine(
                     hardware.hasGyroscope
             )
 
+        val chargingConnected =
+            ChargingStateMonitor(context)
+                .isPowerConnected()
+
+        val accessoryConnected =
+            AccessoryStateMonitor(context)
+                .hasConnectedAccessory()
+
         val modeReady =
             ProtectionPolicy.isSupported(
                 selectedMode,
@@ -118,9 +131,18 @@ class ProtectionCheckEngine(
                 (
                     selectedMode !=
                         ProtectionMode.CHARGING ||
-                        ChargingStateMonitor(context)
-                            .isPowerConnected()
+                        chargingConnected
+                    ) &&
+                (
+                    selectedMode !=
+                        ProtectionMode.ACCESSORY ||
+                        accessoryConnected
                     )
+
+        val reliability =
+            ProtectionReliabilityDiagnostics(
+                context
+            ).snapshot()
 
         val profile =
             settings.alarmProfile(
@@ -159,7 +181,9 @@ class ProtectionCheckEngine(
                             hardware.hasAccelerometer,
                         blocking =
                             selectedMode !=
-                                ProtectionMode.CHARGING,
+                                ProtectionMode.CHARGING &&
+                                selectedMode !=
+                                    ProtectionMode.ACCESSORY,
                         detail =
                             if (hardware.hasAccelerometer) {
                                 "available"
@@ -320,18 +344,17 @@ class ProtectionCheckEngine(
                     selectedMode ==
                     ProtectionMode.CHARGING
                 ) {
-                    val connected =
-                        ChargingStateMonitor(context)
-                            .isPowerConnected()
-
                     add(
                         ProtectionCheckItem(
                             id =
                                 ProtectionCheckId.POWER_CONNECTION,
-                            ready = connected,
+                            ready =
+                                chargingConnected,
                             blocking = true,
                             detail =
-                                if (connected) {
+                                if (
+                                    chargingConnected
+                                ) {
                                     "connected"
                                 } else {
                                     "disconnected"
@@ -339,6 +362,87 @@ class ProtectionCheckEngine(
                         )
                     )
                 }
+
+                if (
+                    selectedMode ==
+                    ProtectionMode.ACCESSORY
+                ) {
+                    add(
+                        ProtectionCheckItem(
+                            id =
+                                ProtectionCheckId.ACCESSORY_CONNECTION,
+                            ready =
+                                accessoryConnected,
+                            blocking = true,
+                            detail =
+                                if (
+                                    accessoryConnected
+                                ) {
+                                    "protected audio accessory detected"
+                                } else {
+                                    "connect wired, USB or Bluetooth audio first"
+                                }
+                        )
+                    )
+                }
+
+                add(
+                    ProtectionCheckItem(
+                        id =
+                            ProtectionCheckId.OEM_RELIABILITY,
+                        ready = true,
+                        blocking = false,
+                        detail =
+                            reliability.manufacturerAdvice
+                    )
+                )
+
+                val lastExitIssue =
+                    reliability.lastExitReason
+                        ?.let {
+                            reason ->
+                            reason.contains(
+                                "crash",
+                                ignoreCase = true
+                            ) ||
+                                reason.contains(
+                                    "ANR",
+                                    ignoreCase = true
+                                ) ||
+                                reason.contains(
+                                    "low memory",
+                                    ignoreCase = true
+                                ) ||
+                                reason.contains(
+                                    "resource",
+                                    ignoreCase = true
+                                )
+                        }
+                        ?: false
+
+                add(
+                    ProtectionCheckItem(
+                        id =
+                            ProtectionCheckId.LAST_EXIT,
+                        ready =
+                            !lastExitIssue,
+                        blocking = false,
+                        detail =
+                            reliability.lastExitReason
+                                ?: "no previous exit reason reported by Android"
+                    )
+                )
+
+                add(
+                    ProtectionCheckItem(
+                        id =
+                            ProtectionCheckId.SYSTEM_THEFT_PROTECTION,
+                        ready = true,
+                        blocking = false,
+                        detail =
+                            reliability.systemTheftProtectionGuidance
+                    )
+                )
             }
 
         return ProtectionCheckReport(
