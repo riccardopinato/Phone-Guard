@@ -1746,6 +1746,14 @@ class ProtectionForegroundService : Service() {
         detectorState: String,
         sensorSummary: String? = null
     ) {
+        if (
+            AlarmStateStore.state
+                .value.phase ==
+                AlarmPhase.TRIGGERED
+        ) {
+            return
+        }
+
         protectionWakeLock.forceRequired()
         val settings =
             activeSettings ?: return
