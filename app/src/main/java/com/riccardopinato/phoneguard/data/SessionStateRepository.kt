@@ -47,6 +47,20 @@ internal object SessionRecoveryPolicy {
             BOOT_MARKER_TOLERANCE_MS
     }
 
+    fun recoveryTriggeredAt(
+        session: PersistedProtectionSession,
+        now: Long
+    ): Long =
+        if (
+            session.phase ==
+            AlarmPhase.OWNER_CHECK
+        ) {
+            now
+        } else {
+            session.triggeredAtWallClock
+                ?: session.updatedAtWallClock
+        }
+
     fun recoveryAction(
         session: PersistedProtectionSession,
         now: Long,
