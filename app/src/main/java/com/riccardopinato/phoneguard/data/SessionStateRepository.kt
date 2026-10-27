@@ -18,7 +18,8 @@ data class PersistedProtectionSession(
     val tableCalibration: MotionCalibration?,
     val pocketCalibration: CalibrationProfile?,
     val journeyEndsAtElapsedRealtime: Long? = null,
-    val accessoryFingerprints: Set<String> = emptySet()
+    val accessoryFingerprints: Set<String> = emptySet(),
+    val triggeredAtWallClock: Long? = null
 )
 
 internal enum class RecoveryAction {
@@ -132,7 +133,8 @@ class SessionStateRepository(
         phase: AlarmPhase,
         pocketGuardMode: GuardMode? = null,
         journeyEndsAt: Long? = null,
-        journeyEndsAtElapsedRealtime: Long? = null
+        journeyEndsAtElapsedRealtime: Long? = null,
+        triggeredAtWallClock: Long? = null
     ) {
         if (
             phase == AlarmPhase.DISARMED ||
@@ -142,12 +144,40 @@ class SessionStateRepository(
             return
         }
 
+        val now =
+            System.currentTimeMillis()
+
         val editor =
             prefs.edit()
                 .putString(KEY_PHASE, phase.name)
                 .putString(KEY_MODE, mode.name)
-                .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
+                .putLong(KEY_UPDATED_AT, now)
                 .putLong(KEY_BOOT_MARKER, currentBootMarker())
+
+        if (
+            phase ==
+            AlarmPhase.TRIGGERED
+        ) {
+            val persistedTrigger =
+                prefs.getLong(
+                    KEY_TRIGGERED_AT,
+                    0L
+                )
+                    .takeIf {
+                        it > 0L
+                    }
+
+            editor.putLong(
+                KEY_TRIGGERED_AT,
+                triggeredAtWallClock
+                    ?: persistedTrigger
+                    ?: now
+            )
+        } else {
+            editor.remove(
+                KEY_TRIGGERED_AT
+            )
+        }
 
         if (pocketGuardMode == null) {
             editor.remove(KEY_POCKET_GUARD_MODE)
@@ -443,7 +473,15 @@ class SessionStateRepository(
                     emptySet()
                 )
                     ?.toSet()
-                    ?: emptySet()
+                    ?: emptySet(),
+            triggeredAtWallClock =
+                prefs.getLong(
+                    KEY_TRIGGERED_AT,
+                    0L
+                )
+                    .takeIf {
+                        it > 0L
+                    }
         )
     }
 
@@ -496,6 +534,8 @@ class SessionStateRepository(
             "journey_ends_at_elapsed"
         const val KEY_ACCESSORY_FINGERPRINTS =
             "accessory_fingerprints"
+        const val KEY_TRIGGERED_AT =
+            "triggered_at_wall_clock"
 
         const val KEY_HAS_TABLE_CALIBRATION = "has_table_calibration"
         const val KEY_BASELINE_X = "baseline_x"
