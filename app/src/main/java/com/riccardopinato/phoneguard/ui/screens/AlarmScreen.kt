@@ -1,7 +1,6 @@
 package com.riccardopinato.phoneguard.ui.screens
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -81,6 +80,80 @@ fun AlarmScreen(
         settingsRepository.settings.collectAsStateWithLifecycle(
             initialValue = AppSettings()
         )
+
+    val permissionRequiredMessage =
+        stringResource(
+            R.string
+                .permission_required_message
+        )
+
+    val securityNotReadyMessage =
+        stringResource(
+            R.string
+                .security_not_ready
+        )
+
+    val modeNotSupportedMessage =
+        stringResource(
+            R.string
+                .mode_not_supported_message
+        )
+
+    val activationAlreadyActiveMessage =
+        stringResource(
+            R.string
+                .activation_block_active
+        )
+
+    val activationRecoveryMessage =
+        stringResource(
+            R.string
+                .activation_block_recovery
+        )
+
+    val activationNotificationsMessage =
+        stringResource(
+            R.string
+                .activation_block_notifications
+        )
+
+    val activationCameraMessage =
+        stringResource(
+            R.string
+                .activation_block_camera
+        )
+
+    val chargingConnectFirstMessage =
+        stringResource(
+            R.string
+                .charging_connect_first
+        )
+
+    fun activationMessage(
+        reason: ActivationBlockReason
+    ): String =
+        when (reason) {
+            ActivationBlockReason.ALREADY_ACTIVE ->
+                activationAlreadyActiveMessage
+
+            ActivationBlockReason.RECOVERY_PENDING ->
+                activationRecoveryMessage
+
+            ActivationBlockReason.SECURITY_NOT_READY ->
+                securityNotReadyMessage
+
+            ActivationBlockReason.MODE_UNSUPPORTED ->
+                modeNotSupportedMessage
+
+            ActivationBlockReason.CHARGER_NOT_CONNECTED ->
+                chargingConnectFirstMessage
+
+            ActivationBlockReason.NOTIFICATION_PERMISSION ->
+                activationNotificationsMessage
+
+            ActivationBlockReason.CAMERA_PERMISSION ->
+                activationCameraMessage
+        }
 
     val hasPin by
         securityRepository.hasPin.collectAsStateWithLifecycle(
@@ -172,8 +245,7 @@ fun AlarmScreen(
 
                 is ActivationOutcome.Blocked -> {
                     armMessage =
-                        activationBlockMessage(
-                            context,
+                        activationMessage(
                             outcome.reason
                         )
                 }
@@ -196,10 +268,7 @@ fun AlarmScreen(
                 startSelectedMode()
             } else {
                 armMessage =
-                    context.getString(
-                        R.string
-                            .permission_required_message
-                    )
+                    permissionRequiredMessage
             }
         }
 
@@ -246,19 +315,13 @@ fun AlarmScreen(
             SecurityHealth.READY
         ) {
             armMessage =
-                context.getString(
-                    R.string
-                        .security_not_ready
-                )
+                securityNotReadyMessage
             return
         }
 
         if (!modeSupported) {
             armMessage =
-                context.getString(
-                    R.string
-                        .mode_not_supported_message
-                )
+                modeNotSupportedMessage
             return
         }
 
@@ -1603,42 +1666,6 @@ private fun modeDescription(
 
             ProtectionMode.JOURNEY ->
                 R.string.mode_journey_description
-        }
-    )
-
-private fun activationBlockMessage(
-    context: Context,
-    reason: ActivationBlockReason
-): String =
-    context.getString(
-        when (reason) {
-            ActivationBlockReason.ALREADY_ACTIVE ->
-                R.string
-                    .activation_block_active
-
-            ActivationBlockReason.RECOVERY_PENDING ->
-                R.string
-                    .activation_block_recovery
-
-            ActivationBlockReason.SECURITY_NOT_READY ->
-                R.string
-                    .security_not_ready
-
-            ActivationBlockReason.MODE_UNSUPPORTED ->
-                R.string
-                    .mode_not_supported_message
-
-            ActivationBlockReason.CHARGER_NOT_CONNECTED ->
-                R.string
-                    .charging_connect_first
-
-            ActivationBlockReason.NOTIFICATION_PERMISSION ->
-                R.string
-                    .activation_block_notifications
-
-            ActivationBlockReason.CAMERA_PERMISSION ->
-                R.string
-                    .activation_block_camera
         }
     )
 
