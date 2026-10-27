@@ -172,7 +172,7 @@ Status: **APPROVED FOR ROADMAP — NOT IMPLEMENTED**
 Priority: **P0 product investment**, after the already shipped 0.9.4 software candidate. This is a planned enhancement, NOT a certification claim or a 0.9.4 capability.
 
 ### Product goal and definition of done
-User explicitly enables a visible, local-only, low-power auto-arm standby. While protection is **not already armed**, the app observes screen-off/inactivity and compatible physical context. After a user-configured idle delay or strong evidence of a pocket/bag insertion, it may arm an already supported Table/Pocket/Bag mode via the existing \`ProtectionActivationCoordinator\`. Motion classification can support the decision but is not proof of pocket placement. No automatic disarm, authentication bypass, or unverified protection claim is permitted.
+User explicitly enables a visible, local-only, low-power auto-arm standby. While protection is **not already armed**, the app observes screen-off/inactivity and compatible physical context. After a user-configured idle delay or strong evidence of a pocket/bag insertion, it may arm an already supported Table/Pocket/Bag mode via the existing `ProtectionActivationCoordinator`. Motion classification can support the decision but is not proof of pocket placement. No automatic disarm, authentication bypass, or unverified protection claim is permitted.
 
 Default proposal for product testing:
 - Auto Guard **OFF by default**, explicit informed opt-in and foreground notification while active.
@@ -184,11 +184,11 @@ Default proposal for product testing:
 
 ### 0.9.5-A — Auto Guard contract / lifecycle / opt-in (P0, prerequisite)
 Status: **PLANNED — NOT IMPLEMENTED**
-- Extend the **existing single** \`ProtectionForegroundService\`; do not create a second independent anti-theft background service.
-- Introduce explicit states: \`OFF\`, \`STANDBY\`, \`CANDIDATE\`, \`ARMED\` (existing protection remains authoritative), \`PAUSED\`, \`BLOCKED\`; distinguish detection confidence from successfully armed state in UI, notification and events.
+- Extend the **existing single** `ProtectionForegroundService`; do not create a second independent anti-theft background service.
+- Introduce explicit states: `OFF`, `STANDBY`, `CANDIDATE`, `ARMED` (existing protection remains authoritative), `PAUSED`, `BLOCKED`; distinguish detection confidence from successfully armed state in UI, notification and events.
 - An owner-enabled visible standby is required before background sensing. Reconcile it with existing charging auto-arm standby without duplicate monitors or competing activation sessions.
 - Auto Guard setting OFF or a deliberate pause stops auto-arm evaluation; **never disarms an already active protected session**. After owner-authenticated manual disarm, suppress immediate rearm until a fresh qualifying screen-off/placement cycle (plus configurable pause/cooldown).
-- Screen unlock/use cancels a pending standby/candidate decision; it does **not** authenticate, silence, or disarm \`OWNER_CHECK\`/\`TRIGGERED\`.
+- Screen unlock/use cancels a pending standby/candidate decision; it does **not** authenticate, silence, or disarm `OWNER_CHECK`/`TRIGGERED`.
 - Use elapsed-realtime-based deadlines within a boot, generation IDs and idempotent callbacks. Ignore stale callbacks after cancellation/restart; do not rely on wall-clock time for security.
 - On reboot/process recovery, restore only the user-approved standby when OS policy permits; never assume a pre-reboot pending timer is valid or advertise monitoring when runtime is unavailable. Force-stop/OEM suppression cannot be bypassed.
 - Define exact event evidence (source=AUTO_GUARD, reason, detector snapshot, confidence band, settings/permission state, outcome) with local privacy-preserving, bounded retention.
@@ -212,7 +212,7 @@ Status: **PLANNED — NOT IMPLEMENTED**
 
 ### 0.9.5-D — Mobility / journey context (P1)
 Status: **PLANNED — NOT IMPLEMENTED**
-- Prefer Android/Google Play services **Activity Recognition Transition API** for walking/running/cycling/in-vehicle/still **as optional supporting evidence** when available; request \`ACTIVITY_RECOGNITION\` only after explaining the value and obtaining user permission on applicable OS versions.
+- Prefer Android/Google Play services **Activity Recognition Transition API** for walking/running/cycling/in-vehicle/still **as optional supporting evidence** when available; request `ACTIVITY_RECOGNITION` only after explaining the value and obtaining user permission on applicable OS versions.
 - Google Play services absence, permission denial and unavailable transition data must fall back to supported local sensors; never require account sign-in.
 - Vehicle motion is evidence of transport, not proof of pocket vs bag. Combine with coverage/position before suggesting Pocket/Bag; retain user choice for Journey behavior.
 - Evaluate passive hardware step counter/detector only when available and justified; do not add indiscriminate high-rate continuous polling.
@@ -225,12 +225,12 @@ Status: **PLANNED — NOT IMPLEMENTED**
 - Explain auto-arm source and reason in Incident Sessions; do not log raw activity traces, routes, GPS coordinates or sensitive motion streams.
 - Make Auto Guard/Charging standby arbitration explicit (single service and serialized activations). Preserve Charging/Accessory/Smart Arm priority and all owner-security invariants.
 - Update EN/IT/ES/FR/PT strings and accessibility, with no mandatory third-party analytics/cloud dependency.
-- Update \`PROPERTY_SPECIAL_USE_FGS_SUBTYPE\` and Play reviewer evidence **only if implementation changes foreground behavior**, then independently verify Play policy acceptability; existing specialUse status is not blanket authorization.
+- Update `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` and Play reviewer evidence **only if implementation changes foreground behavior**, then independently verify Play policy acceptability; existing specialUse status is not blanket authorization.
 
 ### 0.9.5-F — Automated + physical QA / rollout gate (P0)
 Status: **PLANNED — NOT IMPLEMENTED**
 - Unit tests for decision-table coverage, confidence/hysteresis, monotonic deadlines, debounce, cancellation, owner-confirmed disarm cooldown, charging-standby arbitration, permission denial, sensor absence and recovery.
-- Instrumentation for screen-off/unlock, multiple events, lifecycle, notification state, no duplicate arming, persistence/reboot and \`OWNER_CHECK\`/\`TRIGGERED\` priority.
+- Instrumentation for screen-off/unlock, multiple events, lifecycle, notification state, no duplicate arming, persistence/reboot and `OWNER_CHECK`/`TRIGGERED` priority.
 - Mandatory real-device matrix: Pixel, Samsung One UI, Xiaomi/Redmi HyperOS/MIUI; daylight/darkness; pockets (loose/tight); bags; upside-down/face-down tables; stationary, walking, running, bicycle, passenger vehicle; wake/Doze/30-min screen-off and reboot.
 - Measure **precision, recall and false alarms separately** for Auto Pocket and Auto Table. Aspirational Pocket precision >=99% on a **predefined representative physical dataset**, not an assertion of current accuracy; record sample count, test protocol, confidence intervals and failure modes before advertising any percentage.
 - Battery acceptance requires comparison of identical eight-hour standby scenarios with Auto Guard ON versus OFF on each OEM, with the measured delta and limitations documented; no pre-claimed power percentage.
@@ -248,7 +248,7 @@ Do not increment the published version or mark any 0.9.5 task IMPLEMENTED until 
 ### Platform references (design-time, not proof of implementation)
 - Android sensor foreground-service/background restrictions: https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview
 - Activity Recognition Transition API and permission: https://developers.google.com/android/reference/com/google/android/gms/location/ActivityRecognitionClient
-- Android 14+ foreground service types / \`specialUse\`: https://developer.android.com/about/versions/14/changes/fgs-types-required
+- Android 14+ foreground service types / `specialUse`: https://developer.android.com/about/versions/14/changes/fgs-types-required
 
 ## 1.0 physical certification
 Status: **PENDING EXTERNAL EVIDENCE**
