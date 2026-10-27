@@ -88,18 +88,10 @@ class AccessoryStateMonitor(
             connectedAccessories()
 
         val initial =
-            if (
+            selectProtectedAccessories(
+                connected,
                 protectedFingerprints
-                    .isNullOrEmpty()
-            ) {
-                connected
-            } else {
-                connected
-                    .filter {
-                        it.stableFingerprint() in
-                            protectedFingerprints
-                    }
-            }
+            )
 
         protectedIds =
             initial
@@ -187,6 +179,24 @@ class AccessoryStateMonitor(
     }
 
     companion object {
+        fun selectProtectedAccessories(
+            connected: List<ProtectedAccessory>,
+            protectedFingerprints:
+                Set<String>?
+        ): List<ProtectedAccessory> =
+            if (
+                protectedFingerprints
+                    .isNullOrEmpty()
+            ) {
+                connected
+            } else {
+                connected
+                    .filter {
+                        it.stableFingerprint() in
+                            protectedFingerprints
+                    }
+            }
+
         fun isProtectedType(
             type: Int
         ): Boolean =
