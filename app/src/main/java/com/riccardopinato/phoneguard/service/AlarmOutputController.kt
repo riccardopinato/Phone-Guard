@@ -422,9 +422,12 @@ class AlarmOutputController(
                                 null
                         }
 
-                        if (
+                        val wasActiveCustom =
                             mediaPlayer ===
-                            failed
+                                failed
+
+                        if (
+                            wasActiveCustom
                         ) {
                             mediaPlayer =
                                 null
@@ -433,6 +436,39 @@ class AlarmOutputController(
                         releaseMediaPlayerAsync(
                             failed
                         )
+
+                        if (
+                            wasActiveCustom &&
+                            token ==
+                                customRequestToken
+                        ) {
+                            val fallbackStarted =
+                                startGeneratedSiren(
+                                    attributes
+                                )
+
+                            val current =
+                                AlarmOutputHealthStore
+                                    .state
+                                    .value
+
+                            AlarmOutputHealthStore
+                                .update(
+                                    current.copy(
+                                        soundActive =
+                                            fallbackStarted,
+                                        effectiveVolumePercent =
+                                            effectiveAlarmVolumePercent()
+                                    )
+                                )
+
+                            if (
+                                !fallbackStarted
+                            ) {
+                                volumeLease
+                                    .restoreIfOwned()
+                            }
+                        }
                     }
                     true
                 }
