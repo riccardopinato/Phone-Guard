@@ -51,6 +51,10 @@ class SensorController(
     private var proximityNear: Boolean? = null
     private var registered = false
     private var samplingMode = SamplingMode.NORMAL
+    private var accelerometerObserved = false
+    private var proximityObserved = false
+    private var lightObserved = false
+    private var gyroscopeObserved = false
 
     val capabilities = detectCapabilities(appContext)
 
@@ -71,6 +75,10 @@ class SensorController(
         rotationDetector.reset()
         currentLux = if (light == null) null else Float.POSITIVE_INFINITY
         proximityNear = null
+        accelerometerObserved = false
+        proximityObserved = false
+        lightObserved = false
+        gyroscopeObserved = false
         registered = false
     }
 
@@ -118,16 +126,20 @@ class SensorController(
         val now = SystemClock.elapsedRealtime()
 
         when (event.sensor.type) {
-            Sensor.TYPE_LIGHT ->
+            Sensor.TYPE_LIGHT -> {
+                lightObserved = true
                 currentLux = event.values.firstOrNull()
+            }
 
             Sensor.TYPE_PROXIMITY -> {
                 val distance = event.values.firstOrNull() ?: return
+                proximityObserved = true
                 proximityNear = distance < event.sensor.maximumRange
             }
 
             Sensor.TYPE_ACCELEROMETER -> {
                 if (event.values.size < 3) return
+                accelerometerObserved = true
                 motionDetector.update(
                     event.values[0],
                     event.values[1],
@@ -138,6 +150,7 @@ class SensorController(
 
             Sensor.TYPE_GYROSCOPE -> {
                 if (event.values.size < 3) return
+                gyroscopeObserved = true
                 rotationDetector.update(
                     event.values[0],
                     event.values[1],
@@ -153,7 +166,11 @@ class SensorController(
                 proximityNear = proximityNear,
                 motionScore = motionDetector.current(now),
                 rotationScore = rotationDetector.current(now),
-                timestampMs = now
+                timestampMs = now,
+                accelerometerObserved = accelerometerObserved,
+                proximityObserved = proximityObserved,
+                lightObserved = lightObserved,
+                gyroscopeObserved = gyroscopeObserved
             )
         )
     }

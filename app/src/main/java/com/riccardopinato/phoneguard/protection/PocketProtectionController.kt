@@ -1,6 +1,7 @@
 package com.riccardopinato.phoneguard.protection
 
 import android.content.Context
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.pocket.calibration.CalibrationCollector
 import com.riccardopinato.phoneguard.pocket.detection.SmartProtectionEngine
 import com.riccardopinato.phoneguard.pocket.model.CalibrationProfile
@@ -22,6 +23,9 @@ class PocketProtectionController(
     private val scope: CoroutineScope,
     private val onDecision: (DetectionDecision) -> Unit
 ) {
+    private val appContext =
+        context.applicationContext
+
     private val sensors =
         SensorController(
             context = context,
@@ -49,7 +53,10 @@ class PocketProtectionController(
 
         if (!capabilities.canRun(mode)) {
             onError(
-                "Sensori insufficienti per la modalità ${mode.name}."
+                appContext.getString(
+                    R.string.svc_sensors_insufficient,
+                    mode.name
+                )
             )
             return
         }
@@ -60,7 +67,11 @@ class PocketProtectionController(
                 hasLightSensor =
                     capabilities.hasLight,
                 hasGyroscopeSensor =
-                    capabilities.hasGyroscope
+                    capabilities.hasGyroscope,
+                hasAccelerometerSensor =
+                    capabilities.hasAccelerometer,
+                hasProximitySensor =
+                    capabilities.hasProximity
             )
 
         sensors.start(SamplingMode.NORMAL)
@@ -73,6 +84,9 @@ class PocketProtectionController(
                     calibrationCollector
                         ?: return@launch
 
+                val evidenceReady =
+                    collector.hasRequiredEvidence()
+
                 val profile =
                     collector.build(
                         System.currentTimeMillis()
@@ -81,6 +95,17 @@ class PocketProtectionController(
                 calibrationCollector = null
                 calibrationJob = null
                 sensors.stop()
+
+                if (!evidenceReady) {
+                    onError(
+                        appContext.getString(
+                            R.string.svc_calibration_evidence_insufficient,
+                            mode.name
+                        )
+                    )
+                    return@launch
+                }
+
                 onComplete(profile)
             }
     }

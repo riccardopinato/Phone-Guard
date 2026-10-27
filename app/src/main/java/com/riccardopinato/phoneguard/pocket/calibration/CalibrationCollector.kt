@@ -7,27 +7,71 @@ import com.riccardopinato.phoneguard.pocket.model.SensorSnapshot
 class CalibrationCollector(
     private val mode: GuardMode,
     private val hasLightSensor: Boolean,
-    private val hasGyroscopeSensor: Boolean
+    private val hasGyroscopeSensor: Boolean,
+    private val hasAccelerometerSensor: Boolean = true,
+    private val hasProximitySensor: Boolean = true
 ) {
     private val luxValues = mutableListOf<Float>()
     private val motionValues = mutableListOf<Float>()
     private val rotationValues = mutableListOf<Float>()
+    private var proximitySamples = 0
 
     fun add(snapshot: SensorSnapshot) {
-        if (hasLightSensor) {
+        if (
+            hasLightSensor &&
+            snapshot.lightObserved
+        ) {
             snapshot.lux
                 ?.takeIf { it.isFinite() && it >= 0f }
                 ?.let(luxValues::add)
         }
 
-        motionValues +=
-            snapshot.motionScore
-                .coerceAtLeast(0f)
+        if (
+            hasAccelerometerSensor &&
+            snapshot.accelerometerObserved
+        ) {
+            motionValues +=
+                snapshot.motionScore
+                    .coerceAtLeast(0f)
+        }
 
-        if (hasGyroscopeSensor) {
+        if (
+            hasGyroscopeSensor &&
+            snapshot.gyroscopeObserved
+        ) {
             rotationValues +=
                 snapshot.rotationScore
                     .coerceAtLeast(0f)
+        }
+
+        if (
+            hasProximitySensor &&
+            snapshot.proximityObserved &&
+            snapshot.proximityNear != null
+        ) {
+            proximitySamples++
+        }
+    }
+
+    fun hasRequiredEvidence(): Boolean {
+        val motionReady =
+            motionValues.size >=
+                MIN_PRIMARY_SAMPLES
+
+        return when (mode) {
+            GuardMode.POCKET ->
+                motionReady &&
+                    proximitySamples >=
+                        MIN_PRIMARY_SAMPLES
+
+            GuardMode.BAG ->
+                motionReady &&
+                    (
+                        luxValues.size >=
+                            MIN_AUXILIARY_SAMPLES ||
+                            rotationValues.size >=
+                                MIN_AUXILIARY_SAMPLES
+                        )
         }
     }
 
@@ -69,16 +113,13 @@ class CalibrationCollector(
             exitLux = exitLux,
             motionNoise = motionNoise,
             rotationNoise = rotationNoise,
-            sampleCount = maxOf(
-                luxValues.size,
-                motionValues.size,
-                rotationValues.size
-            ),
+            sampleCount = motionValues.size,
             hasLightData =
                 hasLightSensor &&
                     luxValues.isNotEmpty(),
             hasGyroscopeData =
-                hasGyroscopeSensor
+                hasGyroscopeSensor &&
+                    rotationValues.isNotEmpty()
         )
     }
 
@@ -99,5 +140,10 @@ class CalibrationCollector(
                 )
 
         return sorted[index]
+    }
+
+    private companion object {
+        const val MIN_PRIMARY_SAMPLES = 5
+        const val MIN_AUXILIARY_SAMPLES = 3
     }
 }

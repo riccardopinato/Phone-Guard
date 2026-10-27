@@ -245,4 +245,5 @@
     <string name="svc_wait_journey_pocket">Journey active: waiting for pocket.</string>
     <string name="svc_wait_journey_bag">Journey active: waiting for bag.</string>
     <string name="svc_wait_table">Table protection active.</string>
+    <string name="svc_calibration_evidence_insufficient">Calibration did not receive enough live sensor evidence for %1$s. Try again with the phone in the intended protected position.</string>
 </resources>
