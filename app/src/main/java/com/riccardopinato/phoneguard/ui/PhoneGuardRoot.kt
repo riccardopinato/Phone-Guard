@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.resources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -74,7 +73,7 @@ fun PhoneGuardRoot(
     biometricAuthManager: BiometricAuthManager
 ) {
     val context = LocalContext.current
-    val resources = resources
+    val resources = context.resources
     val scope = rememberCoroutineScope()
     val navController = rememberNavController()
 
