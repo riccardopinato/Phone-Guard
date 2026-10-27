@@ -63,6 +63,10 @@
         </activity>
 
         <receiver
+            android:name=".autoguard.MobilityTransitionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".recovery.BootReconcileReceiver"
             android:exported="false">
             <intent-filter>
