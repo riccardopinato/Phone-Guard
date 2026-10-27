@@ -57,9 +57,7 @@ object ProtectionActivationCoordinator {
 
         if (
             AlarmStateStore.state.value.phase !=
-                AlarmPhase.DISARMED ||
-            container.sessionStateRepository
-                .read() != null
+            AlarmPhase.DISARMED
         ) {
             return ActivationOutcome.Blocked(
                 ActivationBlockReason.ALREADY_ACTIVE
