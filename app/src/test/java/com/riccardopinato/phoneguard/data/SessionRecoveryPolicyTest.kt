@@ -51,6 +51,7 @@ class SessionRecoveryPolicyTest {
                 pocketGuardMode = null,
                 updatedAtWallClock = 1L,
                 journeyEndsAt = null,
+                previousAlarmVolume = 4,
                 tableCalibration =
                     MotionCalibration(
                         baselineX = 0f,
@@ -79,6 +80,7 @@ class SessionRecoveryPolicyTest {
                 pocketGuardMode = GuardMode.POCKET,
                 updatedAtWallClock = 1L,
                 journeyEndsAt = null,
+                previousAlarmVolume = 4,
                 tableCalibration = null,
                 pocketCalibration =
                     pocketProfile(
@@ -104,6 +106,7 @@ class SessionRecoveryPolicyTest {
                 pocketGuardMode = GuardMode.POCKET,
                 updatedAtWallClock = 1L,
                 journeyEndsAt = null,
+                previousAlarmVolume = 4,
                 tableCalibration = null,
                 pocketCalibration =
                     pocketProfile(
@@ -129,6 +132,7 @@ class SessionRecoveryPolicyTest {
                 pocketGuardMode = GuardMode.BAG,
                 updatedAtWallClock = 1L,
                 journeyEndsAt = 9_000L,
+                previousAlarmVolume = 4,
                 tableCalibration = null,
                 pocketCalibration =
                     pocketProfile(

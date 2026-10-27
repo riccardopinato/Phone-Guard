@@ -218,6 +218,14 @@ class ProtectionForegroundService : Service() {
 
                 activeSettings = settings
 
+                val previousAlarmVolume =
+                    outputController.prepare(settings)
+
+                container.sessionStateRepository
+                    .savePreviousAlarmVolume(
+                        previousAlarmVolume
+                    )
+
                 container.eventRepository.add(
                     AlarmEventType.ARMING_STARTED,
                     "Mode=${mode.name}; countdown=" +
@@ -984,6 +992,11 @@ class ProtectionForegroundService : Service() {
                     .settings.first()
 
             activeSettings = settings
+
+            outputController.adoptPreviousAlarmVolume(
+                persisted.previousAlarmVolume
+            )
+            outputController.prepare(settings)
 
             when (
                 SessionRecoveryPolicy

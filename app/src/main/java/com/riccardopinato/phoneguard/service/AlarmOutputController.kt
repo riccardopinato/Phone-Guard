@@ -32,11 +32,23 @@ class AlarmOutputController(
     private var audioTrack: AudioTrack? = null
     private var audioFocusRequest: AudioFocusRequest? = null
 
+    fun prepare(settings: AppSettings): Int? {
+        return if (settings.soundEnabled) {
+            volumeController.applyTarget(settings.alarmVolumePercent)
+        } else {
+            null
+        }
+    }
+
+    fun adoptPreviousAlarmVolume(level: Int?) {
+        volumeController.adoptPreviousVolume(level)
+    }
+
     fun start(settings: AppSettings) {
-        stop()
+        stopSignals()
+        prepare(settings)
 
         if (settings.soundEnabled) {
-            volumeController.applyTarget(settings.alarmVolumePercent)
             startSiren()
         }
 
@@ -52,10 +64,14 @@ class AlarmOutputController(
     }
 
     fun stop() {
+        stopSignals()
+        volumeController.restore()
+    }
+
+    private fun stopSignals() {
         flashController.stop()
         stopVibration()
         stopSiren()
-        volumeController.restore()
     }
 
     fun effectiveAlarmVolumePercent(): Int =
