@@ -2291,7 +2291,12 @@ class ProtectionForegroundService : Service() {
                         break
                     }
                 }
-                delay(14_000L)
+                val idleMs = now - adaptiveScreenOffAt
+                delay(when {
+                    idleMs < 60_000L -> 14_000L
+                    idleMs < 600_000L -> 29_000L
+                    else -> 60_000L
+                })
             }
         }
     }
