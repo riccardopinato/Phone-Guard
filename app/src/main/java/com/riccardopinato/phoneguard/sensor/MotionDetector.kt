@@ -70,10 +70,20 @@ class MotionDetector(
         context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
     private val accelerometer =
-        sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        sensorManager.getDefaultSensor(
+            Sensor.TYPE_ACCELEROMETER,
+            true
+        ) ?: sensorManager.getDefaultSensor(
+            Sensor.TYPE_ACCELEROMETER
+        )
 
     private val gyroscope =
-        sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        sensorManager.getDefaultSensor(
+            Sensor.TYPE_GYROSCOPE,
+            true
+        ) ?: sensorManager.getDefaultSensor(
+            Sensor.TYPE_GYROSCOPE
+        )
 
     private val calibrationSamples =
         mutableListOf<FloatArray>()

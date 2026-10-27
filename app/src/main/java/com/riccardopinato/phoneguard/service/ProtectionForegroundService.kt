@@ -12,7 +12,6 @@ import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -29,6 +28,8 @@ import com.riccardopinato.phoneguard.pocket.model.DetectionDecision
 import com.riccardopinato.phoneguard.pocket.model.GuardMode
 import com.riccardopinato.phoneguard.pocket.model.GuardSettings
 import com.riccardopinato.phoneguard.pocket.model.GuardState
+import com.riccardopinato.phoneguard.power.ProtectionWakeLock
+import com.riccardopinato.phoneguard.power.ProtectionWakePolicy
 import com.riccardopinato.phoneguard.protection.PocketProtectionController
 import com.riccardopinato.phoneguard.protection.ProtectionPolicy
 import com.riccardopinato.phoneguard.sensor.MotionCalibration
@@ -73,8 +74,8 @@ class ProtectionForegroundService : Service() {
     private var tableDetector:
         MotionDetector? = null
 
-    private var wakeLock:
-        PowerManager.WakeLock? = null
+    private lateinit var protectionWakeLock:
+        ProtectionWakeLock
 
     private var activeSettings:
         AppSettings? = null
@@ -125,6 +126,12 @@ class ProtectionForegroundService : Service() {
                 context = applicationContext,
                 scope = serviceScope,
                 onDecision = ::handlePocketDecision
+            )
+
+        protectionWakeLock =
+            ProtectionWakeLock(
+                context = applicationContext,
+                scope = serviceScope
             )
 
         ContextCompat.registerReceiver(
@@ -207,7 +214,7 @@ class ProtectionForegroundService : Service() {
             text = armingInstruction(mode)
         )
 
-        acquireWakeLock()
+        protectionWakeLock.forceRequired()
 
         armingJob?.cancel()
 
@@ -410,6 +417,11 @@ class ProtectionForegroundService : Service() {
                         getString(R.string.svc_table_title),
                         getString(R.string.svc_table_alarm_hint)
                     )
+
+                    updateMonitoringWakeLock(
+                        mode = ProtectionMode.TABLE,
+                        guardMode = null
+                    )
                 },
                 onMovement = {
                     trigger ->
@@ -485,6 +497,11 @@ class ProtectionForegroundService : Service() {
             )
             return
         }
+
+        updateMonitoringWakeLock(
+            mode = mode,
+            guardMode = guardMode
+        )
 
         val endAt =
             if (mode == ProtectionMode.JOURNEY) {
@@ -622,6 +639,7 @@ class ProtectionForegroundService : Service() {
     private fun beginOwnerCheck(
         decision: DetectionDecision
     ) {
+        protectionWakeLock.forceRequired()
         ownerCheckJob?.cancel()
         journeyJob?.cancel()
         journeyJob = null
@@ -846,6 +864,7 @@ class ProtectionForegroundService : Service() {
         lastMotionDelta: Float,
         confidence: Int
     ) {
+        protectionWakeLock.forceRequired()
         val settings =
             activeSettings ?: return
 
@@ -996,7 +1015,7 @@ class ProtectionForegroundService : Service() {
         pocketController.stop()
 
         outputController.stop()
-        releaseWakeLock()
+        protectionWakeLock.release()
 
         when {
             previous == AlarmPhase.ARMING ||
@@ -1075,7 +1094,7 @@ class ProtectionForegroundService : Service() {
                 getString(R.string.svc_restore_body)
         )
 
-        acquireWakeLock()
+        protectionWakeLock.forceRequired()
 
         serviceScope.launch {
             val settings =
@@ -1104,7 +1123,7 @@ class ProtectionForegroundService : Service() {
 
                     outputController.stop()
                     container.sessionStateRepository.clear()
-                    releaseWakeLock()
+                    protectionWakeLock.release()
                     ServiceCompat.stopForeground(
                         this@ProtectionForegroundService,
                         ServiceCompat
@@ -1367,39 +1386,18 @@ class ProtectionForegroundService : Service() {
             )
     }
 
-    private fun acquireWakeLock() {
-        if (
-            wakeLock?.isHeld == true
-        ) {
-            return
-        }
-
-        val powerManager =
-            getSystemService(
-                Context.POWER_SERVICE
-            ) as PowerManager
-
-        wakeLock =
-            powerManager.newWakeLock(
-                PowerManager
-                    .PARTIAL_WAKE_LOCK,
-                "PhoneGuard:ProtectionMonitoring"
-            ).apply {
-                setReferenceCounted(false)
-                acquire()
-            }
-    }
-
-    private fun releaseWakeLock() {
-        wakeLock?.let {
-            if (it.isHeld) {
-                runCatching {
-                    it.release()
-                }
-            }
-        }
-
-        wakeLock = null
+    private fun updateMonitoringWakeLock(
+        mode: ProtectionMode,
+        guardMode: GuardMode?
+    ) {
+        protectionWakeLock.setRequired(
+            ProtectionWakePolicy.requiresCpuLease(
+                mode = mode,
+                guardMode = guardMode,
+                capabilities =
+                    pocketController.capabilities
+            )
+        )
     }
 
     private fun armingInstruction(
@@ -1465,7 +1463,7 @@ class ProtectionForegroundService : Service() {
         tableDetector?.stop()
         pocketController.stop()
         outputController.stop()
-        releaseWakeLock()
+        protectionWakeLock.close()
 
         runCatching {
             unregisterReceiver(ownerReceiver)
