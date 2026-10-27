@@ -5,6 +5,7 @@ package com.riccardopinato.phoneguard.autoguard
  * A recommendation does not arm protection: activation policy and live calibration remain required.
  */
 enum class AutoGuardCandidate { NONE, TABLE, POCKET }
+enum class MobilityType { UNKNOWN, STILL, WALKING, RUNNING, BICYCLE, VEHICLE }
 
 data class AutoGuardObservation(
     val lightObserved: Boolean,
@@ -14,7 +15,8 @@ data class AutoGuardObservation(
     val accelerometerObserved: Boolean,
     val motionScore: Float,
     val gyroscopeObserved: Boolean,
-    val rotationScore: Float
+    val rotationScore: Float,
+    val mobility: MobilityType = MobilityType.UNKNOWN
 )
 
 data class AutoGuardAssessment(
@@ -42,9 +44,16 @@ object AutoGuardDecisionEngine {
             observation.lux != null && observation.lux.isFinite() &&
             observation.lux in 0f..8f &&
             observation.proximityObserved && observation.proximityNear == true &&
-            observation.motionScore >= 0.055f
+            observation.motionScore >= if (observation.mobility == MobilityType.VEHICLE) 0.085f else 0.055f
         ) {
-            return AutoGuardAssessment(AutoGuardCandidate.POCKET, "covered_and_moving", 90)
+            return AutoGuardAssessment(
+                AutoGuardCandidate.POCKET,
+                if (observation.mobility == MobilityType.VEHICLE) {
+                    "covered_and_moving_vehicle"
+                } else {
+                    "covered_and_moving"
+                }, 90
+            )
         }
 
         if (allowTable && observation.proximityNear != true &&
