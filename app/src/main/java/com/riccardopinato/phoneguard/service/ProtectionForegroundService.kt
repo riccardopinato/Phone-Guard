@@ -1485,6 +1485,9 @@ class ProtectionForegroundService : Service() {
         ownerCheckJob?.cancel()
         ownerCheckJob = null
 
+        outputController
+            .stopPreAlarm()
+
         val pending =
             pendingAlarmTrigger
 
