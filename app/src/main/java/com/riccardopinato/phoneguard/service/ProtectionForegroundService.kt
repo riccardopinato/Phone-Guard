@@ -410,11 +410,31 @@ class ProtectionForegroundService : Service() {
         pocketController.stop()
 
         if (!chargingController.start()) {
-            failAndStop(
-                getString(
-                    R.string.svc_charger_required
+            if (recordArmedEvent) {
+                failAndStop(
+                    getString(
+                        R.string.svc_charger_required
+                    )
                 )
-            )
+            } else {
+                activeMode =
+                    ProtectionMode.CHARGING
+                activeGuardMode = null
+
+                triggerAlarm(
+                    detail =
+                        "Mode=CHARGING; power absent during session recovery",
+                    lastMotionDelta = 0f,
+                    confidence = 100,
+                    metadata =
+                        mapOf(
+                            "mode" to "CHARGING",
+                            "trigger" to
+                                "power_missing_on_recovery",
+                            "confidence" to "100"
+                        )
+                )
+            }
             return
         }
 

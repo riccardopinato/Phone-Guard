@@ -82,7 +82,7 @@ Play Console declarations, privacy-policy URL, Data Safety, Play App Signing and
 
 
 ## Step 8A — Commercial feature expansion
-Status: **IMPLEMENTED — validation pending**
+Status: **IMPLEMENTED — exact-head CI and physical validation remain separate gates**
 - Charging Guard;
 - configurable owner grace / pre-alarm;
 - Protection Check mode readiness;

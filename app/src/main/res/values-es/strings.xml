@@ -261,7 +261,7 @@
     <string name="sound_profile_warning">Aviso</string>
     <string name="sound_profile_beep">Pitido</string>
     <string name="auto_arm_charge_title">Activar al conectar la corriente</string>
-    <string name="auto_arm_charge_subtitle">Phone Guard intenta activar Charging Guard al conectar la corriente. Si Android bloquea el inicio en segundo plano, se usa una notificación que debes tocar.</string>
+    <string name="auto_arm_charge_subtitle">Phone Guard intenta activar Charging Guard al conectar la corriente. Si Android bloquea el inicio en segundo plano, se usa una notificación que debes tocar cuando las notificaciones están permitidas.</string>
     <string name="svc_security_not_ready">Configura un PIN válido antes de activar la protección.</string>
     <string name="svc_charger_required">Conecta el teléfono a la corriente antes de activar Charging Guard.</string>
     <string name="svc_charging_protected">Cable de carga protegido.</string>

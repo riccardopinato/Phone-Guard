@@ -261,7 +261,7 @@
     <string name="sound_profile_warning">Warning</string>
     <string name="sound_profile_beep">Beep</string>
     <string name="auto_arm_charge_title">Auto-arm on power connection</string>
-    <string name="auto_arm_charge_subtitle">Phone Guard tries to arm Charging Guard when power connects. If Android blocks a background start, a tap-to-arm notification is used instead.</string>
+    <string name="auto_arm_charge_subtitle">Phone Guard tries to arm Charging Guard when power connects. If Android blocks a background start, a tap-to-arm notification is used when notifications are allowed.</string>
     <string name="svc_security_not_ready">Configure a valid PIN before arming protection.</string>
     <string name="svc_charger_required">Connect the phone to power before arming Charging Guard.</string>
     <string name="svc_charging_protected">Charging cable protected.</string>
