@@ -10,6 +10,9 @@ import android.media.MediaPlayer
 import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -32,6 +35,27 @@ class AlarmOutputController(
 
     private val flashController =
         FlashStrobeController(context)
+
+    private val mainHandler =
+        Handler(
+            Looper.getMainLooper()
+        )
+
+    private val customAudioThread =
+        HandlerThread(
+            "PhoneGuardCustomAudio"
+        ).apply {
+            start()
+        }
+
+    private val customAudioHandler =
+        Handler(
+            customAudioThread.looper
+        )
+
+    @Volatile
+    private var customRequestToken =
+        0L
 
     private var audioTrack: AudioTrack? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -180,33 +204,31 @@ class AlarmOutputController(
             attributes
         )
 
-        val customStarted =
-            customSoundUri
-                ?.takeIf {
-                    it.isNotBlank()
-                }
-                ?.let {
-                    startCustomSound(
-                        uriString = it,
-                        attributes = attributes
-                    )
-                }
-                ?: false
+        val fallbackStarted =
+            startGeneratedSiren(
+                attributes
+            )
 
-        val started =
-            if (customStarted) {
-                true
-            } else {
-                startGeneratedSiren(
-                    attributes
+        customSoundUri
+            ?.takeIf {
+                it.isNotBlank()
+            }
+            ?.let {
+                prepareCustomSoundAsync(
+                    uriString = it,
+                    attributes = attributes
                 )
             }
 
-        if (!started) {
+        if (
+            !fallbackStarted &&
+            customSoundUri
+                .isNullOrBlank()
+        ) {
             stopSiren()
         }
 
-        return started
+        return fallbackStarted
     }
 
     private fun requestAudioFocus(
@@ -235,45 +257,164 @@ class AlarmOutputController(
             false
         )
 
-    private fun startCustomSound(
+    private fun prepareCustomSoundAsync(
         uriString: String,
         attributes: AudioAttributes
-    ): Boolean {
-        var candidate:
-            MediaPlayer? = null
+    ) {
+        val token =
+            ++customRequestToken
 
-        return runCatching {
-            val player =
-                MediaPlayer()
+        customAudioHandler.post {
+            var candidate:
+                MediaPlayer? = null
 
-            candidate =
-                player
+            try {
+                if (
+                    token !=
+                    customRequestToken
+                ) {
+                    return@post
+                }
 
-            player.setAudioAttributes(
-                attributes
-            )
-            player.setDataSource(
-                context,
-                Uri.parse(
-                    uriString
+                val player =
+                    MediaPlayer()
+
+                candidate =
+                    player
+
+                player.setAudioAttributes(
+                    attributes
                 )
-            )
-            player.isLooping =
-                true
-            player.prepare()
-            player.start()
+                player.setDataSource(
+                    context,
+                    Uri.parse(
+                        uriString
+                    )
+                )
+                player.isLooping =
+                    true
 
-            mediaPlayer =
-                player
+                player.setOnPreparedListener {
+                    prepared ->
+                    mainHandler.post {
+                        if (
+                            token !=
+                            customRequestToken
+                        ) {
+                            releaseMediaPlayerAsync(
+                                prepared
+                            )
+                            return@post
+                        }
 
-            true
-        }.getOrElse {
-            runCatching {
+                        val started =
+                            runCatching {
+                                prepared.start()
+                                true
+                            }.getOrDefault(
+                                false
+                            )
+
+                        if (
+                            started
+                        ) {
+                            mediaPlayer =
+                                prepared
+
+                            stopGeneratedSiren()
+
+                            val current =
+                                AlarmOutputHealthStore
+                                    .state
+                                    .value
+
+                            if (
+                                current
+                                    .soundRequested
+                            ) {
+                                AlarmOutputHealthStore
+                                    .update(
+                                        current.copy(
+                                            soundActive =
+                                                true,
+                                            effectiveVolumePercent =
+                                                effectiveAlarmVolumePercent()
+                                        )
+                                    )
+                            }
+                        } else {
+                            releaseMediaPlayerAsync(
+                                prepared
+                            )
+                        }
+                    }
+                }
+
+                player.setOnErrorListener {
+                    failed,
+                    _,
+                    _ ->
+                    mainHandler.post {
+                        if (
+                            mediaPlayer ===
+                            failed
+                        ) {
+                            mediaPlayer =
+                                null
+                        }
+
+                        releaseMediaPlayerAsync(
+                            failed
+                        )
+                    }
+                    true
+                }
+
+                player.prepareAsync()
+
+                mainHandler.postDelayed(
+                    {
+                        if (
+                            token ==
+                                customRequestToken &&
+                            mediaPlayer ==
+                                null
+                        ) {
+                            customRequestToken +=
+                                1L
+
+                            candidate
+                                ?.let(
+                                    ::releaseMediaPlayerAsync
+                                )
+                        }
+                    },
+                    CUSTOM_PREPARE_TIMEOUT_MS
+                )
+            } catch (
+                _: Exception
+            ) {
                 candidate
-                    ?.release()
+                    ?.let(
+                        ::releaseMediaPlayerAsync
+                    )
             }
-            mediaPlayer = null
-            false
+        }
+    }
+
+    private fun releaseMediaPlayerAsync(
+        player: MediaPlayer
+    ) {
+        customAudioHandler.post {
+            runCatching {
+                player.stop()
+            }
+            runCatching {
+                player.reset()
+            }
+            runCatching {
+                player.release()
+            }
         }
     }
 
@@ -348,21 +489,17 @@ class AlarmOutputController(
     }
 
     private fun stopSiren() {
-        runCatching {
-            mediaPlayer?.stop()
-        }
-        runCatching {
-            mediaPlayer?.reset()
-        }
-        runCatching {
-            mediaPlayer?.release()
-        }
-        mediaPlayer = null
+        customRequestToken +=
+            1L
 
-        runCatching { audioTrack?.stop() }
-        runCatching { audioTrack?.flush() }
-        runCatching { audioTrack?.release() }
-        audioTrack = null
+        mediaPlayer
+            ?.let(
+                ::releaseMediaPlayerAsync
+            )
+        mediaPlayer =
+            null
+
+        stopGeneratedSiren()
 
         audioFocusRequest?.let {
             runCatching {
@@ -370,6 +507,25 @@ class AlarmOutputController(
             }
         }
         audioFocusRequest = null
+    }
+
+    private fun stopGeneratedSiren() {
+        runCatching {
+            audioTrack?.stop()
+        }
+        runCatching {
+            audioTrack?.flush()
+        }
+        runCatching {
+            audioTrack?.release()
+        }
+        audioTrack = null
+    }
+
+    fun release() {
+        stop()
+        customAudioThread
+            .quitSafely()
     }
 
     private fun createSirenSamples(): ShortArray {
@@ -562,5 +718,7 @@ class AlarmOutputController(
         const val SAMPLE_RATE = 44_100
         const val PRE_ALARM_TONE_VOLUME = 55
         const val PRE_ALARM_BEEP_MS = 700
+        const val CUSTOM_PREPARE_TIMEOUT_MS =
+            1_500L
     }
 }
