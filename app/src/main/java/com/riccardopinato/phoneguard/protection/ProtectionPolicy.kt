@@ -14,6 +14,7 @@ data class ProtectionCapabilities(
 enum class PendingTriggerOwnerAction {
     RESTART_TABLE,
     END_CHARGING_SESSION,
+    END_ACCESSORY_SESSION,
     RESUME_ARMED
 }
 
@@ -25,7 +26,8 @@ object ProtectionPolicy {
     ): GuardMode? =
         when (mode) {
             ProtectionMode.TABLE,
-            ProtectionMode.CHARGING -> null
+            ProtectionMode.CHARGING,
+            ProtectionMode.ACCESSORY -> null
             ProtectionMode.POCKET -> GuardMode.POCKET
             ProtectionMode.BAG -> GuardMode.BAG
             ProtectionMode.JOURNEY -> journeyGuardMode
@@ -36,7 +38,10 @@ object ProtectionPolicy {
         journeyGuardMode: GuardMode,
         capabilities: ProtectionCapabilities
     ): Boolean {
-        if (mode == ProtectionMode.CHARGING) {
+        if (
+            mode == ProtectionMode.CHARGING ||
+            mode == ProtectionMode.ACCESSORY
+        ) {
             return true
         }
 
@@ -71,6 +76,9 @@ object ProtectionPolicy {
 
             ProtectionMode.CHARGING ->
                 PendingTriggerOwnerAction.END_CHARGING_SESSION
+
+            ProtectionMode.ACCESSORY ->
+                PendingTriggerOwnerAction.END_ACCESSORY_SESSION
 
             ProtectionMode.POCKET,
             ProtectionMode.BAG,
