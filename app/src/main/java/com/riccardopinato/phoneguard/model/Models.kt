@@ -77,6 +77,7 @@ data class AppSettings(
     val adaptiveAutoGuardIdleMinutes: Int = 3,
     val adaptiveAutoGuardPocket: Boolean = true,
     val adaptiveAutoGuardTable: Boolean = true,
+    val adaptiveAutoGuardMobility: Boolean = false,
     val alarmProfiles:
         Map<ProtectionMode, AlarmOutputProfile> =
         emptyMap()
