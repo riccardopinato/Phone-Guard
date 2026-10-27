@@ -385,4 +385,11 @@
     <string name="event_pre_alarm">Pre-alarm started</string>
     <string name="event_alarm_outputs_timeout">Alarm outputs timed out</string>
 
+
+    <string name="live_test_instruction_table">Lift or move the phone during the test.</string>
+    <string name="live_test_instruction_pocket">Cover the proximity sensor, then uncover it as if taking the phone out of a pocket.</string>
+    <string name="live_test_instruction_bag">Put the phone in a dark/enclosed position, then remove or move it.</string>
+    <string name="live_test_instruction_charging">Keep power connected, start the test, then unplug the charger.</string>
+    <string name="live_test_instruction_accessory">Keep a supported audio accessory connected, start the test, then disconnect it.</string>
+
 </resources>
