@@ -321,4 +321,68 @@
     <string name="widget_status_attention">Attention required · open Phone Guard</string>
     <string name="widget_status_recovery">Restoring an existing protection session</string>
     <string name="widget_status_error">Protection error · open Phone Guard</string>
+
+    <!-- Market Value Pack 2 -->
+    <string name="mode_accessory_description">Protect connected wired, USB or Bluetooth audio. Removing a protected accessory starts the owner-check path.</string>
+    <string name="activation_block_accessory">Connect a supported wired, USB or Bluetooth audio accessory before arming Accessory Guard.</string>
+    <string name="smart_arm_action">SMART ARM</string>
+    <string name="smart_arm_body">Phone Guard checks power, connected audio accessories and a short local sensor sample, then chooses the most suitable protection mode.</string>
+    <string name="smart_arm_selected">Smart Arm selected %1$s.</string>
+
+    <string name="svc_accessory_requires_device">Connect a supported audio accessory before arming Accessory Guard.</string>
+    <string name="svc_accessory_protected">Accessory Guard active. Disconnecting the protected audio accessory will require owner verification.</string>
+    <string name="svc_accessory_title">Accessory protected</string>
+    <string name="svc_accessory_alarm_hint">Removing the protected audio accessory can trigger the alarm.</string>
+    <string name="svc_instruction_accessory">Keep the audio accessory connected while protection is being armed.</string>
+    <string name="svc_calibration_accessory">Checking connected audio accessory…</string>
+    <string name="svc_wait_accessory">Accessory protection active.</string>
+    <string name="svc_alarm_outputs_stopped">Alarm outputs stopped after the configured duration. Owner authentication is still required to end the incident.</string>
+
+    <string name="alarm_custom_sound_title">Alarm sound</string>
+    <string name="alarm_custom_sound_builtin">Built-in siren</string>
+    <string name="alarm_custom_sound_custom">Custom audio selected</string>
+    <string name="alarm_custom_sound_choose">Choose audio</string>
+    <string name="alarm_custom_sound_reset">Use built-in</string>
+    <string name="pre_alarm_style_title">PRE-ALARM SIGNAL</string>
+    <string name="pre_alarm_silent">Silent</string>
+    <string name="pre_alarm_vibration">Vibrate</string>
+    <string name="pre_alarm_beep">Beep</string>
+    <string name="alarm_duration_title">ALARM OUTPUT DURATION</string>
+    <string name="alarm_duration_30s">30s</string>
+    <string name="alarm_duration_1m">1m</string>
+    <string name="alarm_duration_3m">3m</string>
+    <string name="alarm_duration_until_disarmed">Until disarmed</string>
+    <string name="alarm_duration_note">The timer stops siren, vibration and flash only. The incident stays triggered until the owner authenticates.</string>
+
+    <string name="protection_center_action">Open Protection Center</string>
+    <string name="protection_center_kicker">RELIABILITY</string>
+    <string name="protection_center_title">Protection Center</string>
+    <string name="protection_check_accessory">Audio accessory</string>
+    <string name="protection_check_oem">OEM reliability guidance</string>
+    <string name="protection_check_last_exit">Last app exit</string>
+    <string name="protection_check_system_theft">Android theft protection</string>
+    <string name="protection_center_live_test">Live Guard Test</string>
+    <string name="protection_center_live_test_body">Test the selected detector with a real gesture without arming the full alarm.</string>
+    <string name="protection_center_live_test_run">Run live test</string>
+    <string name="protection_center_live_test_running">Watching for the expected trigger…</string>
+    <string name="protection_center_sensitivity">Sensitivity Advisor</string>
+    <string name="protection_center_sensitivity_body">Measure local motion noise and recommend safer Table and Pocket/Bag sensitivity levels.</string>
+    <string name="protection_center_sensitivity_run">Analyze environment</string>
+    <string name="protection_center_sensitivity_apply">Apply recommendation</string>
+    <string name="protection_center_sensitivity_result">Table: %1$s · Pocket/Bag: %2$s · samples: %3$d</string>
+    <string name="protection_center_sensitivity_noise">Motion noise %1$.3f · rotation noise %2$.3f</string>
+    <string name="protection_center_battery_settings">Battery settings</string>
+    <string name="protection_center_security_settings">Android security settings</string>
+    <string name="protection_center_external_note">OEM and Android theft-protection controls are managed by the operating system. Phone Guard can guide you but cannot guarantee or change every vendor policy.</string>
+
+    <string name="incident_sessions_title">INCIDENT SESSIONS</string>
+    <string name="incident_share_title">Share Phone Guard incident report</string>
+    <string name="event_evidence_title">EVENT EVIDENCE</string>
+    <string name="incident_unknown_mode">Unknown mode</string>
+    <string name="incident_share">Share</string>
+    <string name="incident_triggered">Triggered · %1$d events</string>
+    <string name="incident_not_triggered">No full alarm · %1$d events</string>
+    <string name="event_pre_alarm">Pre-alarm started</string>
+    <string name="event_alarm_outputs_timeout">Alarm outputs timed out</string>
+
 </resources>
