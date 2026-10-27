@@ -6,9 +6,9 @@ Application ID: `com.riccardopinato.phoneguard`
 
 Expected INTERNAL certificate SHA-256:
 
-`0E:CA:F9:20:E1:14:03:7C:DC:09:0E:30:95:0A:13:04:39:A3:F2:E4:FF:E6:6F:48:6E:E4:17:39:F2:BB:A6:54`
+`A7:82:F8:57:EE:88:05:D3:D7:BA:B8:46:E1:0F:C5:4E:56:4C:EB:FC:8B:AD:14:DF:67:8E:A5:A2:58:CF:5E:C6`
 
-The private keystore and passwords are never stored in this repository. The GitHub INTERNAL workflow reconstructs the keystore only from repository secrets and verifies the APK and AAB certificate before uploading artifacts.
+The private PKCS#12 keystore and passwords are never stored in this repository. The GitHub INTERNAL workflow reconstructs the keystore only from repository secrets and verifies the APK and AAB certificate before uploading artifacts.
 
 ## Google Play decision
 
