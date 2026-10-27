@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.app.ApplicationExitInfo
 import android.content.Context
 import android.os.Build
+import androidx.annotation.RequiresApi
 import java.util.Locale
 
 data class ProtectionReliabilitySnapshot(
@@ -12,6 +13,11 @@ data class ProtectionReliabilitySnapshot(
     val lastExitReason: String?,
     val lastExitTimestamp: Long?,
     val systemTheftProtectionGuidance: String
+)
+
+private data class ExitSnapshot(
+    val reason: String,
+    val timestamp: Long
 )
 
 class ProtectionReliabilityDiagnostics(
@@ -29,21 +35,12 @@ class ProtectionReliabilityDiagnostics(
                     "Android"
                 }
 
-        val exitInfo =
+        val exitSnapshot =
             if (
                 Build.VERSION.SDK_INT >=
                 Build.VERSION_CODES.R
             ) {
-                appContext
-                    .getSystemService(
-                        ActivityManager::class.java
-                    )
-                    ?.getHistoricalProcessExitReasons(
-                        appContext.packageName,
-                        0,
-                        1
-                    )
-                    ?.firstOrNull()
+                readExitSnapshot()
             } else {
                 null
             }
@@ -56,16 +53,42 @@ class ProtectionReliabilityDiagnostics(
                     manufacturer
                 ),
             lastExitReason =
-                exitInfo
-                    ?.let(
-                        ::exitReasonLabel
-                    ),
+                exitSnapshot
+                    ?.reason,
             lastExitTimestamp =
-                exitInfo?.timestamp,
+                exitSnapshot
+                    ?.timestamp,
             systemTheftProtectionGuidance =
                 "Review Android Theft Protection, Remote Lock and Find Hub in system settings. These complement Phone Guard and are not controlled by this app."
         )
     }
+
+    @RequiresApi(
+        Build.VERSION_CODES.R
+    )
+    private fun readExitSnapshot():
+        ExitSnapshot? =
+        appContext
+            .getSystemService(
+                ActivityManager::class.java
+            )
+            ?.getHistoricalProcessExitReasons(
+                appContext.packageName,
+                0,
+                1
+            )
+            ?.firstOrNull()
+            ?.let {
+                info ->
+                ExitSnapshot(
+                    reason =
+                        exitReasonLabel(
+                            info
+                        ),
+                    timestamp =
+                        info.timestamp
+                )
+            }
 
     private fun manufacturerAdvice(
         manufacturer: String
@@ -122,6 +145,9 @@ class ProtectionReliabilityDiagnostics(
         }
     }
 
+    @RequiresApi(
+        Build.VERSION_CODES.R
+    )
     private fun exitReasonLabel(
         info: ApplicationExitInfo
     ): String =
