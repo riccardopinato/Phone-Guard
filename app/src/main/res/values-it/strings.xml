@@ -405,4 +405,7 @@
     <string name="auto_guard_table">Rilevamento tavolo</string>
     <string name="auto_guard_table_body">Richiede telefono stabile e inattività per il tempo impostato.</string>
     <string name="auto_guard_start_failed">Android ha impedito di avviare il servizio. Auto Guard è stato disabilitato.</string>
+    <string name="auto_guard_mobility">Contesto camminata e mezzi</string>
+    <string name="auto_guard_mobility_body">Transizioni di attività opzionali (camminata, corsa, bici, veicolo) a supporto dei sensori. Richiede permesso separato; nessun GPS.</string>
+    <string name="auto_guard_mobility_permission_denied">Permesso attività negato: i sensori locali funzionano comunque.</string>
 </resources>
