@@ -2719,7 +2719,7 @@ class ProtectionForegroundService : Service() {
         tableDetector?.stop()
         pocketController.stop()
         accessoryMonitor.stop()
-        outputController.stop()
+        outputController.release()
         protectionWakeLock.close()
 
         runCatching {
