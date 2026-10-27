@@ -27,6 +27,7 @@ enum class ActivationSource {
 
 enum class ActivationBlockReason {
     ALREADY_ACTIVE,
+    RECOVERY_PENDING,
     SECURITY_NOT_READY,
     MODE_UNSUPPORTED,
     CHARGER_NOT_CONNECTED,
@@ -62,6 +63,16 @@ object ProtectionActivationCoordinator {
 
         val container =
             app.container
+
+        if (
+            container
+                .sessionStateRepository
+                .read() != null
+        ) {
+            return ActivationOutcome.Blocked(
+                ActivationBlockReason.RECOVERY_PENDING
+            )
+        }
 
         val security =
             container.securityRepository

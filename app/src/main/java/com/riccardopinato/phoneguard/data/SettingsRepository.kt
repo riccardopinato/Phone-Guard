@@ -17,7 +17,6 @@ import com.riccardopinato.phoneguard.pocket.model.GuardMode
 import com.riccardopinato.phoneguard.pocket.model.JourneyDuration
 import com.riccardopinato.phoneguard.pocket.model.PocketSensitivity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONObject
 
@@ -362,14 +361,41 @@ class SettingsRepository(private val context: Context) {
             AlarmOutputProfile.() ->
                 AlarmOutputProfile
     ) {
-        val current =
-            settings
-                .first()
-                .alarmProfile(mode)
-                .transform()
-
         context.settingsDataStore.edit {
-            it[
+            prefs ->
+
+            val legacyProfile =
+                AlarmOutputProfile(
+                    soundEnabled =
+                        prefs[Keys.sound] ?: true,
+                    vibrationEnabled =
+                        prefs[Keys.vibration] ?: true,
+                    flashEnabled =
+                        prefs[Keys.flash] ?: true,
+                    flashFrequencyHz =
+                        (prefs[Keys.flashFrequency] ?: 2.5f)
+                            .coerceIn(0.5f, 3f),
+                    alarmVolumePercent =
+                        (prefs[Keys.alarmVolume] ?: 100)
+                            .coerceIn(0, 100),
+                    warningScreenEnabled =
+                        prefs[Keys.warningScreen] ?: true
+                )
+
+            val current =
+                (
+                    decodeAlarmProfile(
+                        prefs[
+                            Keys.alarmProfile(
+                                mode
+                            )
+                        ]
+                    )
+                        ?: legacyProfile
+                    )
+                    .transform()
+
+            prefs[
                 Keys.alarmProfile(
                     mode
                 )

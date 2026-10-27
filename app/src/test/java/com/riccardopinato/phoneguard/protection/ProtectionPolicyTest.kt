@@ -224,4 +224,27 @@ class ProtectionPolicyTest {
             hasGyroscope =
                 gyroscope
         )
+
+
+    @Test
+    fun ownerVerifiedPendingTableRestartsDetector() {
+        assertEquals(
+            PendingTriggerOwnerAction.RESTART_TABLE,
+            ProtectionPolicy
+                .pendingTriggerOwnerAction(
+                    ProtectionMode.TABLE
+                )
+        )
+    }
+
+    @Test
+    fun ownerVerifiedPendingChargingEndsSession() {
+        assertEquals(
+            PendingTriggerOwnerAction.END_CHARGING_SESSION,
+            ProtectionPolicy
+                .pendingTriggerOwnerAction(
+                    ProtectionMode.CHARGING
+                )
+        )
+    }
 }

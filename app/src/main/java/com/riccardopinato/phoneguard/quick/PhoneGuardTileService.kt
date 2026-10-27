@@ -11,7 +11,6 @@ import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.activation.ActivationOutcome
 import com.riccardopinato.phoneguard.activation.ActivationSource
 import com.riccardopinato.phoneguard.activation.ProtectionActivationCoordinator
-import com.riccardopinato.phoneguard.service.AlarmPhase
 import com.riccardopinato.phoneguard.service.AlarmStateStore
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -35,15 +34,12 @@ class PhoneGuardTileService :
         val app =
             application as PhoneGuardApp
 
-        val active =
-            AlarmStateStore.state
-                .value.phase !=
-                AlarmPhase.DISARMED ||
-                app.container
-                    .sessionStateRepository
-                    .read() != null
+        val status =
+            currentStatus(app)
 
-        if (active) {
+        if (
+            status.hasExistingSession
+        ) {
             openAppSecurely()
             return
         }
@@ -75,6 +71,19 @@ class PhoneGuardTileService :
         }
     }
 
+    private fun currentStatus(
+        app: PhoneGuardApp
+    ): QuickSurfaceStatus =
+        QuickSurfaceStatusPolicy.status(
+            phase =
+                AlarmStateStore.state
+                    .value.phase,
+            hasPersistedSession =
+                app.container
+                    .sessionStateRepository
+                    .read() != null
+        )
+
     private fun refreshTile() {
         val tile =
             qsTile ?: return
@@ -82,19 +91,19 @@ class PhoneGuardTileService :
         val app =
             application as PhoneGuardApp
 
-        val active =
-            AlarmStateStore.state
-                .value.phase !=
-                AlarmPhase.DISARMED ||
-                app.container
-                    .sessionStateRepository
-                    .read() != null
+        val status =
+            currentStatus(app)
 
         tile.state =
-            if (active) {
-                Tile.STATE_ACTIVE
-            } else {
-                Tile.STATE_INACTIVE
+            when (status) {
+                QuickSurfaceStatus.IDLE ->
+                    Tile.STATE_INACTIVE
+
+                QuickSurfaceStatus.ERROR ->
+                    Tile.STATE_UNAVAILABLE
+
+                else ->
+                    Tile.STATE_ACTIVE
             }
 
         tile.label =
@@ -108,12 +117,30 @@ class PhoneGuardTileService :
         ) {
             tile.subtitle =
                 getString(
-                    if (active) {
-                        R.string
-                            .tile_subtitle_active
-                    } else {
-                        R.string
-                            .tile_subtitle_ready
+                    when (status) {
+                        QuickSurfaceStatus.IDLE ->
+                            R.string
+                                .tile_subtitle_ready
+
+                        QuickSurfaceStatus.PREPARING ->
+                            R.string
+                                .tile_subtitle_preparing
+
+                        QuickSurfaceStatus.PROTECTED ->
+                            R.string
+                                .tile_subtitle_active
+
+                        QuickSurfaceStatus.ATTENTION ->
+                            R.string
+                                .tile_subtitle_attention
+
+                        QuickSurfaceStatus.RECOVERY_PENDING ->
+                            R.string
+                                .tile_subtitle_recovery
+
+                        QuickSurfaceStatus.ERROR ->
+                            R.string
+                                .tile_subtitle_error
                     }
                 )
         }
@@ -135,24 +162,24 @@ class PhoneGuardTileService :
         val launch =
             Runnable {
                 if (
-                Build.VERSION.SDK_INT >=
-                Build.VERSION_CODES
-                    .UPSIDE_DOWN_CAKE
-            ) {
-                val pending =
-                    PendingIntent.getActivity(
-                        this,
-                        710,
-                        intent,
-                        PendingIntent
-                            .FLAG_UPDATE_CURRENT or
+                    Build.VERSION.SDK_INT >=
+                    Build.VERSION_CODES
+                        .UPSIDE_DOWN_CAKE
+                ) {
+                    val pending =
+                        PendingIntent.getActivity(
+                            this,
+                            710,
+                            intent,
                             PendingIntent
-                                .FLAG_IMMUTABLE
-                    )
+                                .FLAG_UPDATE_CURRENT or
+                                PendingIntent
+                                    .FLAG_IMMUTABLE
+                        )
 
-                startActivityAndCollapse(
-                    pending
-                )
+                    startActivityAndCollapse(
+                        pending
+                    )
                 } else {
                     @Suppress("DEPRECATION")
                     startActivityAndCollapse(

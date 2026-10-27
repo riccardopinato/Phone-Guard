@@ -231,7 +231,10 @@ class ProtectionCheckEngine(
                                     hardware.hasFlash &&
                                         flashPermission
                                     ),
-                        blocking = false,
+                        blocking =
+                            profile.flashEnabled &&
+                                hardware.hasFlash &&
+                                !flashPermission,
                         detail =
                             "requested=${profile.flashEnabled}; hardware=${hardware.hasFlash}"
                     )

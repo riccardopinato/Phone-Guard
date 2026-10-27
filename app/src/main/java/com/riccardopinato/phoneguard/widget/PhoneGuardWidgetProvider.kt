@@ -10,7 +10,8 @@ import android.widget.RemoteViews
 import com.riccardopinato.phoneguard.MainActivity
 import com.riccardopinato.phoneguard.PhoneGuardApp
 import com.riccardopinato.phoneguard.R
-import com.riccardopinato.phoneguard.service.AlarmPhase
+import com.riccardopinato.phoneguard.quick.QuickSurfaceStatus
+import com.riccardopinato.phoneguard.quick.QuickSurfaceStatusPolicy
 import com.riccardopinato.phoneguard.service.AlarmStateStore
 
 class PhoneGuardWidgetProvider :
@@ -70,13 +71,19 @@ class PhoneGuardWidgetProvider :
                 context.applicationContext
                     as PhoneGuardApp
 
-            val active =
-                AlarmStateStore.state
-                    .value.phase !=
-                    AlarmPhase.DISARMED ||
-                    app.container
-                        .sessionStateRepository
-                        .read() != null
+            val status =
+                QuickSurfaceStatusPolicy
+                    .status(
+                        phase =
+                            AlarmStateStore
+                                .state
+                                .value
+                                .phase,
+                        hasPersistedSession =
+                            app.container
+                                .sessionStateRepository
+                                .read() != null
+                    )
 
             val views =
                 RemoteViews(
@@ -87,12 +94,30 @@ class PhoneGuardWidgetProvider :
             views.setTextViewText(
                 R.id.widget_status,
                 context.getString(
-                    if (active) {
-                        R.string
-                            .widget_status_active
-                    } else {
-                        R.string
-                            .widget_status_ready
+                    when (status) {
+                        QuickSurfaceStatus.IDLE ->
+                            R.string
+                                .widget_status_ready
+
+                        QuickSurfaceStatus.PREPARING ->
+                            R.string
+                                .widget_status_preparing
+
+                        QuickSurfaceStatus.PROTECTED ->
+                            R.string
+                                .widget_status_active
+
+                        QuickSurfaceStatus.ATTENTION ->
+                            R.string
+                                .widget_status_attention
+
+                        QuickSurfaceStatus.RECOVERY_PENDING ->
+                            R.string
+                                .widget_status_recovery
+
+                        QuickSurfaceStatus.ERROR ->
+                            R.string
+                                .widget_status_error
                     }
                 )
             )
@@ -148,20 +173,26 @@ class PhoneGuardWidgetProvider :
             views.setTextViewText(
                 R.id.widget_arm,
                 context.getString(
-                    if (active) {
-                        R.string.widget_open
-                    } else {
+                    if (
+                        status ==
+                        QuickSurfaceStatus.IDLE
+                    ) {
                         R.string.widget_arm
+                    } else {
+                        R.string.widget_open
                     }
                 )
             )
 
             views.setOnClickPendingIntent(
                 R.id.widget_arm,
-                if (active) {
-                    openPending
-                } else {
+                if (
+                    status ==
+                    QuickSurfaceStatus.IDLE
+                ) {
                     armPending
+                } else {
+                    openPending
                 }
             )
 

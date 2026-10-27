@@ -11,6 +11,12 @@ data class ProtectionCapabilities(
     val hasGyroscope: Boolean
 )
 
+enum class PendingTriggerOwnerAction {
+    RESTART_TABLE,
+    END_CHARGING_SESSION,
+    RESUME_ARMED
+}
+
 object ProtectionPolicy {
 
     fun effectiveGuardMode(
@@ -55,6 +61,22 @@ object ProtectionPolicy {
                         )
         }
     }
+
+    fun pendingTriggerOwnerAction(
+        mode: ProtectionMode
+    ): PendingTriggerOwnerAction =
+        when (mode) {
+            ProtectionMode.TABLE ->
+                PendingTriggerOwnerAction.RESTART_TABLE
+
+            ProtectionMode.CHARGING ->
+                PendingTriggerOwnerAction.END_CHARGING_SESSION
+
+            ProtectionMode.POCKET,
+            ProtectionMode.BAG,
+            ProtectionMode.JOURNEY ->
+                PendingTriggerOwnerAction.RESUME_ARMED
+        }
 
     fun journeyEndAt(
         now: Long,

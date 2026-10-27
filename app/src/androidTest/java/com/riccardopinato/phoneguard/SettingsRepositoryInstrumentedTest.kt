@@ -7,8 +7,11 @@ import com.riccardopinato.phoneguard.data.SettingsRepository
 import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.model.ProtectionPreset
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -119,6 +122,64 @@ class SettingsRepositoryInstrumentedTest {
             assertEquals(
                 2,
                 settings.gracePeriodSeconds
+            )
+        }
+
+
+    @Test
+    fun concurrentModeProfileUpdatesPreserveIndependentFields() =
+        runBlocking {
+            val context =
+                ApplicationProvider
+                    .getApplicationContext<Context>()
+
+            val repository =
+                SettingsRepository(
+                    context
+                )
+
+            repository
+                .setSoundEnabled(
+                    ProtectionMode.CHARGING,
+                    true
+                )
+            repository
+                .setVibrationEnabled(
+                    ProtectionMode.CHARGING,
+                    true
+                )
+
+            coroutineScope {
+                launch {
+                    repository
+                        .setSoundEnabled(
+                            ProtectionMode.CHARGING,
+                            false
+                        )
+                }
+
+                launch {
+                    repository
+                        .setVibrationEnabled(
+                            ProtectionMode.CHARGING,
+                            false
+                        )
+                }
+            }
+
+            val profile =
+                repository
+                    .settings
+                    .first()
+                    .alarmProfile(
+                        ProtectionMode.CHARGING
+                    )
+
+            assertFalse(
+                profile.soundEnabled
+            )
+            assertFalse(
+                profile.vibrationEnabled
             )
         }
 }

@@ -39,6 +39,7 @@ import com.riccardopinato.phoneguard.pocket.model.GuardState
 import com.riccardopinato.phoneguard.power.ProtectionWakeLock
 import com.riccardopinato.phoneguard.quick.PhoneGuardTileService
 import com.riccardopinato.phoneguard.power.ProtectionWakePolicy
+import com.riccardopinato.phoneguard.protection.PendingTriggerOwnerAction
 import com.riccardopinato.phoneguard.protection.PocketProtectionController
 import com.riccardopinato.phoneguard.protection.ProtectionPolicy
 import com.riccardopinato.phoneguard.sensor.MotionCalibration
@@ -497,6 +498,8 @@ class ProtectionForegroundService : Service() {
             )
         )
 
+        refreshQuickSurfaces()
+
         val guardMode =
             ProtectionPolicy.effectiveGuardMode(
                 mode,
@@ -619,6 +622,8 @@ class ProtectionForegroundService : Service() {
             )
         )
 
+        refreshQuickSurfaces()
+
         container.sessionStateRepository
             .saveState(
                 mode =
@@ -698,6 +703,8 @@ class ProtectionForegroundService : Service() {
                                 getString(R.string.svc_table_protected)
                         )
                     )
+
+                    refreshQuickSurfaces()
 
                     container.sessionStateRepository.saveState(
                         mode = ProtectionMode.TABLE,
@@ -865,6 +872,8 @@ class ProtectionForegroundService : Service() {
             )
         )
 
+        refreshQuickSurfaces()
+
         container.sessionStateRepository.saveState(
             mode = mode,
             phase = AlarmPhase.ARMED,
@@ -1019,6 +1028,8 @@ class ProtectionForegroundService : Service() {
             )
         )
 
+        refreshQuickSurfaces()
+
         container.sessionStateRepository.saveState(
             mode = activeMode,
             phase = AlarmPhase.OWNER_CHECK,
@@ -1071,6 +1082,8 @@ class ProtectionForegroundService : Service() {
                     activeJourneyEndAt
             )
         )
+
+        refreshQuickSurfaces()
 
         container.sessionStateRepository
             .saveState(
@@ -1249,15 +1262,55 @@ class ProtectionForegroundService : Service() {
                 )
         )
 
-        if (
-            pending != null &&
-            activeMode ==
-                ProtectionMode.CHARGING
-        ) {
-            disarm(
-                addDisarmEvent = false
-            )
-            return
+        if (pending != null) {
+            when (
+                ProtectionPolicy
+                    .pendingTriggerOwnerAction(
+                        activeMode
+                    )
+            ) {
+                PendingTriggerOwnerAction
+                    .END_CHARGING_SESSION -> {
+                    disarm(
+                        addDisarmEvent = false
+                    )
+                    return
+                }
+
+                PendingTriggerOwnerAction
+                    .RESTART_TABLE -> {
+                    val settings =
+                        activeSettings
+                            ?: return
+
+                    val calibration =
+                        container
+                            .sessionStateRepository
+                            .read()
+                            ?.tableCalibration
+
+                    if (calibration != null) {
+                        startTableMonitoring(
+                            settings = settings,
+                            initialCalibration =
+                                calibration,
+                            recordArmedEvent =
+                                false
+                        )
+                    } else {
+                        beginCalibration(
+                            settings = settings,
+                            mode =
+                                ProtectionMode.TABLE
+                        )
+                    }
+                    return
+                }
+
+                PendingTriggerOwnerAction
+                    .RESUME_ARMED ->
+                    Unit
+            }
         }
 
         AlarmStateStore.update(
@@ -1273,6 +1326,8 @@ class ProtectionForegroundService : Service() {
                     activeJourneyEndAt
             )
         )
+
+        refreshQuickSurfaces()
 
         container.sessionStateRepository.saveState(
             mode = activeMode,
@@ -1442,6 +1497,8 @@ class ProtectionForegroundService : Service() {
                     System.currentTimeMillis()
             )
         )
+
+        refreshQuickSurfaces()
 
         container.sessionStateRepository.saveState(
             mode = activeMode,
@@ -1817,6 +1874,8 @@ class ProtectionForegroundService : Service() {
                         )
                     )
 
+                    refreshQuickSurfaces()
+
                     outputController.start(
                         settings.alarmProfile(
                             persisted.mode
@@ -1892,6 +1951,8 @@ class ProtectionForegroundService : Service() {
                 message = message
             )
         )
+
+        refreshQuickSurfaces()
 
         updateNotification(
             AlarmPhase.ERROR,

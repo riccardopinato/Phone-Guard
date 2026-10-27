@@ -311,4 +311,14 @@
     <string name="events_evidence_sensors">Evidencia: %1$s</string>
     <string name="events_evidence_outputs">Salidas: %1$s</string>
     <string name="events_evidence_grace">Ventana de prealarma: %1$ds</string>
+
+    <string name="activation_block_recovery">Se está recuperando una sesión de protección existente. Abre Phone Guard antes de iniciar otra.</string>
+    <string name="tile_subtitle_preparing">Preparando protección…</string>
+    <string name="tile_subtitle_attention">Se requiere atención · abre la app</string>
+    <string name="tile_subtitle_recovery">Restaurando sesión · abre la app</string>
+    <string name="tile_subtitle_error">Error de protección · abre la app</string>
+    <string name="widget_status_preparing">Preparando protección…</string>
+    <string name="widget_status_attention">Se requiere atención · abre Phone Guard</string>
+    <string name="widget_status_recovery">Restaurando una sesión de protección existente</string>
+    <string name="widget_status_error">Error de protección · abre Phone Guard</string>
 </resources>

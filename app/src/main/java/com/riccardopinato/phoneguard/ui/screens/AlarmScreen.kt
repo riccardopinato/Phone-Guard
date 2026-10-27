@@ -1616,6 +1616,10 @@ private fun activationBlockMessage(
                 R.string
                     .activation_block_active
 
+            ActivationBlockReason.RECOVERY_PENDING ->
+                R.string
+                    .activation_block_recovery
+
             ActivationBlockReason.SECURITY_NOT_READY ->
                 R.string
                     .security_not_ready

@@ -311,4 +311,14 @@
     <string name="events_evidence_sensors">Evidence: %1$s</string>
     <string name="events_evidence_outputs">Outputs: %1$s</string>
     <string name="events_evidence_grace">Grace window: %1$ds</string>
+
+    <string name="activation_block_recovery">An existing protection session is being recovered. Open Phone Guard before starting another session.</string>
+    <string name="tile_subtitle_preparing">Preparing protection…</string>
+    <string name="tile_subtitle_attention">Attention required · open app</string>
+    <string name="tile_subtitle_recovery">Restoring session · open app</string>
+    <string name="tile_subtitle_error">Protection error · open app</string>
+    <string name="widget_status_preparing">Preparing protection…</string>
+    <string name="widget_status_attention">Attention required · open Phone Guard</string>
+    <string name="widget_status_recovery">Restoring an existing protection session</string>
+    <string name="widget_status_error">Protection error · open Phone Guard</string>
 </resources>
