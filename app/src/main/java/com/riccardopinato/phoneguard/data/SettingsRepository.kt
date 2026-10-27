@@ -48,6 +48,11 @@ class SettingsRepository(private val context: Context) {
             intPreferencesKey("grace_period_seconds")
         val autoArmCharging =
             booleanPreferencesKey("auto_arm_charging")
+        val adaptiveEnabled = booleanPreferencesKey("adaptive_auto_guard_enabled")
+        val adaptiveIdleMinutes = intPreferencesKey("adaptive_auto_guard_idle_minutes")
+        val adaptivePocket = booleanPreferencesKey("adaptive_auto_guard_pocket")
+        val adaptiveTable = booleanPreferencesKey("adaptive_auto_guard_table")
+        val adaptiveMobility = booleanPreferencesKey("adaptive_auto_guard_mobility")
 
         fun alarmProfile(
             mode: ProtectionMode
@@ -137,6 +142,14 @@ class SettingsRepository(private val context: Context) {
                         ?: 5,
                 autoArmCharging =
                     prefs[Keys.autoArmCharging] ?: false,
+                adaptiveAutoGuardEnabled = prefs[Keys.adaptiveEnabled] ?: false,
+                adaptiveAutoGuardIdleMinutes =
+                    (prefs[Keys.adaptiveIdleMinutes] ?: 3).takeIf {
+                        it in ALLOWED_AUTO_IDLE_MINUTES
+                    } ?: 3,
+                adaptiveAutoGuardPocket = prefs[Keys.adaptivePocket] ?: true,
+                adaptiveAutoGuardTable = prefs[Keys.adaptiveTable] ?: true,
+                adaptiveAutoGuardMobility = prefs[Keys.adaptiveMobility] ?: false,
                 alarmProfiles =
                     profiles
             )
@@ -200,6 +213,27 @@ class SettingsRepository(private val context: Context) {
             it[Keys.autoArmCharging] =
                 enabled
         }
+    }
+
+    suspend fun setAdaptiveAutoGuardEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.adaptiveEnabled] = enabled }
+    }
+
+    suspend fun setAdaptiveAutoGuardIdleMinutes(minutes: Int) {
+        require(minutes in ALLOWED_AUTO_IDLE_MINUTES)
+        context.settingsDataStore.edit { it[Keys.adaptiveIdleMinutes] = minutes }
+    }
+
+    suspend fun setAdaptiveAutoGuardPocket(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.adaptivePocket] = enabled }
+    }
+
+    suspend fun setAdaptiveAutoGuardTable(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.adaptiveTable] = enabled }
+    }
+
+    suspend fun setAdaptiveAutoGuardMobility(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.adaptiveMobility] = enabled }
     }
 
     suspend fun setSoundEnabled(enabled: Boolean) {
@@ -587,6 +621,7 @@ class SettingsRepository(private val context: Context) {
         }.getOrDefault(fallback)
 
     private companion object {
+        val ALLOWED_AUTO_IDLE_MINUTES = setOf(1, 3, 5, 10, 15)
         val ALLOWED_GRACE_SECONDS =
             setOf(
                 0,

@@ -243,7 +243,12 @@ fun PhoneGuardRoot(
                             diagnostics = container.hardwareDiagnostics,
                             hardware = hardware,
                             alarmRunning =
-                                runtime.phase != AlarmPhase.DISARMED
+                                runtime.phase != AlarmPhase.DISARMED,
+                            protectionArmed = runtime.phase in setOf(
+                                AlarmPhase.ARMED,
+                                AlarmPhase.OWNER_CHECK,
+                                AlarmPhase.TRIGGERED
+                            )
                         )
                     }
 

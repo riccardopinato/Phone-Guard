@@ -1,6 +1,6 @@
 # RELEASE_CHECKLIST.md — Phone Guard
 
-Version truth: 0.9.4 / versionCode 6
+Version truth: 0.9.5 / versionCode 7
 
 ## Exact-SHA automated gate
 The release SHA must show all of the following green:
@@ -89,3 +89,15 @@ Phone Guard must not be labelled fully CERTIFIED until the physical gate is comp
 - [ ] 30s/1m/3m output timeout stops outputs only and never disarms.
 - [ ] Incident Sessions and shared local reports verified.
 - [ ] EN/IT/ES/FR/PT key parity and UI sanity checked.
+
+## 0.9.5 Adaptive Auto Guard physical/reliability gate
+- [ ] explicit opt-in notification and OS permission behavior on Pixel/Samsung/Redmi;
+- [ ] rearm after 1/3/5/10/15 minutes only if stable, supported and calibrated;
+- [ ] screen-on cancels pending automatic activation but NEVER disarms ARMED/OWNER_CHECK/TRIGGERED;
+- [ ] covered and moving pocket, moving bag, table, face-down and dark counterexamples;
+- [ ] walking/running/bicycling/vehicle transition classification with optional permission;
+- [ ] sensor-only fallback with Play services missing or denied;
+- [ ] coexistence with charging auto-arm standby and correct reboot/recovery precedence;
+- [ ] precision, recall, false alerts, latency and false alarm count measured per OEM;
+- [ ] eight-hour battery drain ON versus OFF per OEM;
+- [ ] foreground specialUse and Play declarations reviewed before publication.

@@ -236,4 +236,33 @@ class SettingsRepositoryInstrumentedTest {
                 profile.vibrationEnabled
             )
         }
+    @Test
+    fun adaptiveAutoGuardSettingsPersistAndStayOptIn() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val repository = SettingsRepository(context)
+        val before = repository.settings.first()
+        try {
+            repository.setAdaptiveAutoGuardEnabled(false)
+            repository.setAdaptiveAutoGuardIdleMinutes(5)
+            repository.setAdaptiveAutoGuardPocket(true)
+            repository.setAdaptiveAutoGuardTable(false)
+            repository.setAdaptiveAutoGuardMobility(false)
+            val disabled = repository.settings.first()
+            assertFalse(disabled.adaptiveAutoGuardEnabled)
+            assertEquals(5, disabled.adaptiveAutoGuardIdleMinutes)
+            assertFalse(disabled.adaptiveAutoGuardTable)
+            assertFalse(disabled.adaptiveAutoGuardMobility)
+
+            repository.setAdaptiveAutoGuardEnabled(true)
+            val enabled = repository.settings.first()
+            org.junit.Assert.assertTrue(enabled.adaptiveAutoGuardEnabled)
+        } finally {
+            repository.setAdaptiveAutoGuardEnabled(before.adaptiveAutoGuardEnabled)
+            repository.setAdaptiveAutoGuardIdleMinutes(before.adaptiveAutoGuardIdleMinutes)
+            repository.setAdaptiveAutoGuardPocket(before.adaptiveAutoGuardPocket)
+            repository.setAdaptiveAutoGuardTable(before.adaptiveAutoGuardTable)
+            repository.setAdaptiveAutoGuardMobility(before.adaptiveAutoGuardMobility)
+        }
+    }
+
 }

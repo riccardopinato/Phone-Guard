@@ -387,4 +387,26 @@
     <string name="live_test_instruction_accessory">Laissez un accessoire audio compatible connecté, lancez le test puis déconnectez-le.</string>
 
     <string name="alarm_custom_sound_access_failed">Cette source audio ne peut pas accorder un accès persistant. La sirène intégrée reste sélectionnée.</string>
+    <string name="svc_auto_guard_title">Auto Guard en attente</string>
+    <string name="svc_auto_guard_waiting">En attente de repos ou de déplacement avec téléphone couvert</string>
+    <string name="auto_guard_title">Adaptive Auto Guard</string>
+    <string name="auto_guard_description">Réarmement automatique après inactivité ou indices de poche. Vérifications locales des capteurs, sans GPS.</string>
+    <string name="auto_guard_toggle">Protection automatique</string>
+    <string name="auto_guard_consent">Activation volontaire avec notification permanente. Vous pouvez arrêter sans désarmer une protection active.</string>
+    <string name="auto_guard_delay">Évaluer après extinction de l’écran</string>
+    <string name="auto_guard_pocket">Détection de poche et sac</string>
+    <string name="auto_guard_pocket_body">Proximité, obscurité et mouvement doivent coïncider sur plusieurs mesures.</string>
+    <string name="auto_guard_table">Détection sur table</string>
+    <string name="auto_guard_table_body">Nécessite un appareil stable et la durée d’inactivité définie.</string>
+    <string name="auto_guard_start_failed">Android a empêché le démarrage du service. Auto Guard a été désactivé.</string>
+    <string name="auto_guard_mobility">Contexte marche et transport</string>
+    <string name="auto_guard_mobility_body">Transitions d’activité facultatives (marche, course, vélo, véhicule) pour aider les capteurs. Autorisation séparée, sans GPS.</string>
+    <string name="auto_guard_mobility_permission_denied">Autorisation refusée ; les capteurs locaux fonctionnent toujours.</string>
+    <string name="auto_guard_state_off">Désactivé</string>
+    <string name="auto_guard_state_waiting">En attente de repos</string>
+    <string name="auto_guard_state_checking">Vérification des capteurs</string>
+    <string name="auto_guard_state_paused">En pause jusqu’à la prochaine extinction</string>
+    <string name="auto_guard_state_unavailable">Veille indisponible</string>
+    <string name="auto_guard_state_protection">Protection active (manuelle ou automatique)</string>
+    <string name="auto_guard_state_activating">Activation ou calibrage de la protection en cours</string>
 </resources>

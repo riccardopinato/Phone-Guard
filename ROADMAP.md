@@ -1,6 +1,6 @@
 # ROADMAP.md — Phone Guard pre-1.0
 
-Version truth: 0.9.4 / versionCode 6
+Version truth: 0.9.5 / versionCode 7
 
 ## Foundation inherited from 0.9.2
 
@@ -168,8 +168,8 @@ Status: **IN VALIDATION**
 - full development CI and signed INTERNAL exact-SHA gates remain mandatory.
 
 ## 0.9.5 — Adaptive Auto Guard (next priority)
-Status: **APPROVED FOR ROADMAP — NOT IMPLEMENTED**
-Priority: **P0 product investment**, after the already shipped 0.9.4 software candidate. This is a planned enhancement, NOT a certification claim or a 0.9.4 capability.
+Status: **SOURCE IMPLEMENTED IN FEATURE PR #9 — VALIDATION AND PHYSICAL CERTIFICATION PENDING**
+Priority: **P0 product investment**, after the already shipped 0.9.4 software candidate. This is a feature-branch software implementation, NOT a physical certification claim or a 0.9.4 capability.
 
 ### Product goal and definition of done
 User explicitly enables a visible, local-only, low-power auto-arm standby. While protection is **not already armed**, the app observes screen-off/inactivity and compatible physical context. After a user-configured idle delay or strong evidence of a pocket/bag insertion, it may arm an already supported Table/Pocket/Bag mode via the existing `ProtectionActivationCoordinator`. Motion classification can support the decision but is not proof of pocket placement. No automatic disarm, authentication bypass, or unverified protection claim is permitted.
@@ -177,13 +177,13 @@ User explicitly enables a visible, local-only, low-power auto-arm standby. While
 Default proposal for product testing:
 - Auto Guard **OFF by default**, explicit informed opt-in and foreground notification while active.
 - General idle delay: **3 minutes** default, selectable **1/3/5/10/15 minutes**.
-- Fast pocket candidate: **15–30 seconds** of stable, concordant evidence (tunable via physical QA), not a guaranteed arming deadline.
+- Fast pocket candidate: **repeated stable windows** of concordant evidence (tunable via physical QA), not a guaranteed arming deadline.
 - Table: must be stable, supported and successfully calibrated; inactivity alone never overrides mode capability gates.
 - GPS/location: **not requested or used in the baseline**. No continuous GPS, location history, account, microphone or cloud processing.
 - User may separately enable/disable pocket, table and travel-assisted classification; offer a visible pause/stop and clear explanation of why arming did or did not happen.
 
 ### 0.9.5-A — Auto Guard contract / lifecycle / opt-in (P0, prerequisite)
-Status: **PLANNED — NOT IMPLEMENTED**
+Status: **SOURCE IMPLEMENTED — PHYSICAL/OEM QA PENDING**
 - Extend the **existing single** `ProtectionForegroundService`; do not create a second independent anti-theft background service.
 - Introduce explicit states: `OFF`, `STANDBY`, `CANDIDATE`, `ARMED` (existing protection remains authoritative), `PAUSED`, `BLOCKED`; distinguish detection confidence from successfully armed state in UI, notification and events.
 - An owner-enabled visible standby is required before background sensing. Reconcile it with existing charging auto-arm standby without duplicate monitors or competing activation sessions.
@@ -194,7 +194,7 @@ Status: **PLANNED — NOT IMPLEMENTED**
 - Define exact event evidence (source=AUTO_GUARD, reason, detector snapshot, confidence band, settings/permission state, outcome) with local privacy-preserving, bounded retention.
 
 ### 0.9.5-B — Inactivity Auto Rearm + Auto Table (P0)
-Status: **PLANNED — NOT IMPLEMENTED**
+Status: **SOURCE IMPLEMENTED — PHYSICAL/OEM QA PENDING**
 - Screen-off and foreground-service lifecycle drive the monotonic inactivity timer; no broad Usage Access permission merely to infer non-use.
 - Sample accelerometer/orientation briefly on demand or in bounded windows; require stable orientation, motion and Table detector readiness before proposing Table.
 - Auto Table must follow the existing live-calibration contract. If placement/calibration evidence is missing, remain waiting or ask the owner; never silently claim ARMED.
@@ -202,7 +202,7 @@ Status: **PLANNED — NOT IMPLEMENTED**
 - Expose timer, reason and status in Protection Center; respect notification permission and foreground-service restrictions.
 
 ### 0.9.5-C — Auto Pocket/Bag sensor-fusion classifier (P0)
-Status: **PLANNED — NOT IMPLEMENTED**
+Status: **SOURCE IMPLEMENTED — 99% UNPROVEN; PHYSICAL QA PENDING**
 - Fuse ambient-light darkness, proximity, accelerometer gait/vibration, gyroscope/orientation and insertion/removal transitions **only where sensors are genuinely supported**.
 - Example high-evidence pocket candidate: near-zero light + covered proximity + sustained motion consistent with carrying the device. These signals are correlated and **do not justify a claimed 99% accuracy** without measured data.
 - Require stabilization, hysteresis, debouncing and repeated supporting windows; distinguish pocket, bag, covered-on-table, face-down, vehicle vibration and low-light edge cases.
@@ -211,7 +211,7 @@ Status: **PLANNED — NOT IMPLEMENTED**
 - No auto mode-switch while already ARMED; existing owner-check/alarm state always wins.
 
 ### 0.9.5-D — Mobility / journey context (P1)
-Status: **PLANNED — NOT IMPLEMENTED**
+Status: **SOURCE IMPLEMENTED (OPTIONAL GMS TRANSITIONS) — PHYSICAL QA PENDING**
 - Prefer Android/Google Play services **Activity Recognition Transition API** for walking/running/cycling/in-vehicle/still **as optional supporting evidence** when available; request `ACTIVITY_RECOGNITION` only after explaining the value and obtaining user permission on applicable OS versions.
 - Google Play services absence, permission denial and unavailable transition data must fall back to supported local sensors; never require account sign-in.
 - Vehicle motion is evidence of transport, not proof of pocket vs bag. Combine with coverage/position before suggesting Pocket/Bag; retain user choice for Journey behavior.
@@ -219,7 +219,7 @@ Status: **PLANNED — NOT IMPLEMENTED**
 - GPS/location remains an **optional later experiment** requiring a separate privacy, battery and Android background-location permission/policy review; excluded from 0.9.5 baseline and not a hidden dependency.
 
 ### 0.9.5-E — Power, UX and safety integration (P0)
-Status: **PLANNED — NOT IMPLEMENTED**
+Status: **PARTIALLY IMPLEMENTED — BATTERY, POLICY AND OEM REVIEW PENDING**
 - Bounded duty-cycle sensing and event-driven resampling; unregister listeners promptly, track CPU/foreground runtime and measure standby battery overhead by OEM.
 - Show: Auto Guard OFF / Waiting / Checking / Protected / Paused / Unavailable. A protection notification can only say Protected after the activation policy and detector actually reach ARMED.
 - Explain auto-arm source and reason in Incident Sessions; do not log raw activity traces, routes, GPS coordinates or sensitive motion streams.
@@ -228,7 +228,7 @@ Status: **PLANNED — NOT IMPLEMENTED**
 - Update `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` and Play reviewer evidence **only if implementation changes foreground behavior**, then independently verify Play policy acceptability; existing specialUse status is not blanket authorization.
 
 ### 0.9.5-F — Automated + physical QA / rollout gate (P0)
-Status: **PLANNED — NOT IMPLEMENTED**
+Status: **AUTOMATED REGRESSIONS ADDED — REAL-DEVICE AND SIGNED RELEASE EVIDENCE PENDING**
 - Unit tests for decision-table coverage, confidence/hysteresis, monotonic deadlines, debounce, cancellation, owner-confirmed disarm cooldown, charging-standby arbitration, permission denial, sensor absence and recovery.
 - Instrumentation for screen-off/unlock, multiple events, lifecycle, notification state, no duplicate arming, persistence/reboot and `OWNER_CHECK`/`TRIGGERED` priority.
 - Mandatory real-device matrix: Pixel, Samsung One UI, Xiaomi/Redmi HyperOS/MIUI; daylight/darkness; pockets (loose/tight); bags; upside-down/face-down tables; stationary, walking, running, bicycle, passenger vehicle; wake/Doze/30-min screen-off and reboot.
@@ -243,7 +243,7 @@ Status: **PLANNED — NOT IMPLEMENTED**
 3. **D + E:** optional activity transitions, vehicle differentiation, battery/UX hardening.
 4. **F:** three-OEM real-world tuning, software RC and signed INTERNAL candidate; then Play compliance/public 1.0 decision.
 
-Do not increment the published version or mark any 0.9.5 task IMPLEMENTED until actual code, tests and evidence exist. 0.9.4 signed artifacts are unaffected by roadmap-only commits.
+0.9.5 software source exists in PR #9; software tests, signed INTERNAL and physical OEM measurements determine release readiness. The older signed 0.9.4 artifacts remain unaffected.
 
 ### Platform references (design-time, not proof of implementation)
 - Android sensor foreground-service/background restrictions: https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview

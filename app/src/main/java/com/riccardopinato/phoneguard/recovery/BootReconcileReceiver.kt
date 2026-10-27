@@ -56,15 +56,17 @@ class BootReconcileReceiver :
                         .settings
                         .first()
 
-                if (
-                    settings
-                        .autoArmCharging
-                ) {
-                    ProtectionForegroundService
-                        .setChargingAutoArm(
-                            context,
-                            true
-                        )
+                if (active != null) {
+                    // Security-critical protection sessions outrank either standby preference.
+                    ProtectionForegroundService.restore(context)
+                } else if (settings.autoArmCharging || settings.adaptiveAutoGuardEnabled) {
+                    // One foreground owner reconciles both approved standby modes.
+                    // No stale pre-reboot auto-arm timer is carried over.
+                    if (settings.autoArmCharging) {
+                        ProtectionForegroundService.setChargingAutoArm(context, true)
+                    } else {
+                        ProtectionForegroundService.setAdaptiveAutoGuard(context, true)
+                    }
                 }
             } finally {
                 pending.finish()

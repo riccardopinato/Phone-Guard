@@ -23,6 +23,7 @@ enum class ActivationSource {
     WIDGET,
     SHORTCUT,
     AUTO_CHARGER,
+    AUTO_GUARD,
     PRESET,
     SMART
 }
