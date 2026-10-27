@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.AtomicFile
 import com.riccardopinato.phoneguard.model.AlarmEvent
 import com.riccardopinato.phoneguard.model.AlarmEventType
+import java.io.File
+import kotlin.math.max
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,8 +17,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
-import kotlin.math.max
 
 class EventRepository(context: Context) {
 
@@ -49,7 +49,9 @@ class EventRepository(context: Context) {
 
     fun add(
         type: AlarmEventType,
-        detail: String = ""
+        detail: String = "",
+        metadata: Map<String, String> =
+            emptyMap()
     ) {
         scope.launch {
             mutex.withLock {
@@ -67,7 +69,9 @@ class EventRepository(context: Context) {
                         type =
                             type,
                         detail =
-                            detail
+                            detail,
+                        metadata =
+                            metadata
                     )
 
                 val updated =
@@ -152,6 +156,34 @@ class EventRepository(context: Context) {
                                 i
                             )
 
+                    val metadata =
+                        item
+                            .optJSONObject(
+                                "metadata"
+                            )
+                            ?.let {
+                                obj ->
+                                buildMap {
+                                    val keys =
+                                        obj.keys()
+
+                                    while (
+                                        keys.hasNext()
+                                    ) {
+                                        val key =
+                                            keys.next()
+
+                                        put(
+                                            key,
+                                            obj.optString(
+                                                key
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                            ?: emptyMap()
+
                     add(
                         AlarmEvent(
                             id =
@@ -182,7 +214,9 @@ class EventRepository(context: Context) {
                                 item
                                     .optString(
                                         "detail"
-                                    )
+                                    ),
+                            metadata =
+                                metadata
                         )
                     )
                 }
@@ -202,6 +236,17 @@ class EventRepository(context: Context) {
         events.forEach {
             event ->
 
+            val metadata =
+                JSONObject()
+
+            event.metadata.forEach {
+                (key, value) ->
+                metadata.put(
+                    key,
+                    value
+                )
+            }
+
             array.put(
                 JSONObject()
                     .put(
@@ -219,6 +264,10 @@ class EventRepository(context: Context) {
                     .put(
                         "detail",
                         event.detail
+                    )
+                    .put(
+                        "metadata",
+                        metadata
                     )
             )
         }

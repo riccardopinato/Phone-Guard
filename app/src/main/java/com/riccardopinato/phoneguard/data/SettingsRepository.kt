@@ -7,12 +7,15 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.riccardopinato.phoneguard.model.AlarmSoundProfile
 import com.riccardopinato.phoneguard.model.AppSettings
 import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.model.Sensitivity
 import com.riccardopinato.phoneguard.pocket.model.GuardMode
 import com.riccardopinato.phoneguard.pocket.model.JourneyDuration
 import com.riccardopinato.phoneguard.pocket.model.PocketSensitivity
+import com.riccardopinato.phoneguard.protection.ProtectionPreset
+import com.riccardopinato.phoneguard.protection.ProtectionPresetCatalog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -25,6 +28,7 @@ class SettingsRepository(private val context: Context) {
     private object Keys {
         val selectedMode = stringPreferencesKey("selected_mode")
         val countdown = intPreferencesKey("countdown_seconds")
+        val preAlarmSeconds = intPreferencesKey("pre_alarm_seconds")
         val sensitivity = stringPreferencesKey("sensitivity")
         val pocketSensitivity = stringPreferencesKey("pocket_sensitivity")
         val journeyDuration = stringPreferencesKey("journey_duration")
@@ -36,6 +40,12 @@ class SettingsRepository(private val context: Context) {
         val alarmVolume = intPreferencesKey("alarm_volume_percent")
         val warningScreen = booleanPreferencesKey("warning_screen_enabled")
         val biometric = booleanPreferencesKey("biometric_enabled")
+        val chargeAutoArm = booleanPreferencesKey("charge_auto_arm_enabled")
+        val tableSoundProfile = stringPreferencesKey("table_sound_profile")
+        val pocketSoundProfile = stringPreferencesKey("pocket_sound_profile")
+        val bagSoundProfile = stringPreferencesKey("bag_sound_profile")
+        val chargingSoundProfile = stringPreferencesKey("charging_sound_profile")
+        val journeySoundProfile = stringPreferencesKey("journey_sound_profile")
         val onboardingCompleted =
             booleanPreferencesKey("onboarding_completed")
     }
@@ -48,6 +58,9 @@ class SettingsRepository(private val context: Context) {
                     ProtectionMode.TABLE
                 ),
                 countdownSeconds = prefs[Keys.countdown] ?: 5,
+                preAlarmSeconds =
+                    (prefs[Keys.preAlarmSeconds] ?: 5)
+                        .coerceIn(0, 8),
                 sensitivity = enumOrDefault(
                     prefs[Keys.sensitivity],
                     Sensitivity.MEDIUM
@@ -76,6 +89,28 @@ class SettingsRepository(private val context: Context) {
                 warningScreenEnabled =
                     prefs[Keys.warningScreen] ?: true,
                 biometricEnabled = prefs[Keys.biometric] ?: false,
+                chargeAutoArmEnabled =
+                    prefs[Keys.chargeAutoArm] ?: false,
+                tableSoundProfile = enumOrDefault(
+                    prefs[Keys.tableSoundProfile],
+                    AlarmSoundProfile.SIREN
+                ),
+                pocketSoundProfile = enumOrDefault(
+                    prefs[Keys.pocketSoundProfile],
+                    AlarmSoundProfile.SIREN
+                ),
+                bagSoundProfile = enumOrDefault(
+                    prefs[Keys.bagSoundProfile],
+                    AlarmSoundProfile.SIREN
+                ),
+                chargingSoundProfile = enumOrDefault(
+                    prefs[Keys.chargingSoundProfile],
+                    AlarmSoundProfile.SIREN
+                ),
+                journeySoundProfile = enumOrDefault(
+                    prefs[Keys.journeySoundProfile],
+                    AlarmSoundProfile.SIREN
+                ),
                 onboardingCompleted =
                     prefs[Keys.onboardingCompleted] ?: false
             )
@@ -91,6 +126,13 @@ class SettingsRepository(private val context: Context) {
         require(seconds in setOf(3, 5, 10, 15))
         context.settingsDataStore.edit {
             it[Keys.countdown] = seconds
+        }
+    }
+
+    suspend fun setPreAlarmSeconds(seconds: Int) {
+        require(seconds in setOf(0, 2, 5, 8))
+        context.settingsDataStore.edit {
+            it[Keys.preAlarmSeconds] = seconds
         }
     }
 
@@ -159,6 +201,66 @@ class SettingsRepository(private val context: Context) {
     suspend fun setBiometricEnabled(enabled: Boolean) {
         context.settingsDataStore.edit {
             it[Keys.biometric] = enabled
+        }
+    }
+
+    suspend fun setChargeAutoArmEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit {
+            it[Keys.chargeAutoArm] = enabled
+        }
+    }
+
+    suspend fun setAlarmSoundProfile(
+        mode: ProtectionMode,
+        profile: AlarmSoundProfile
+    ) {
+        context.settingsDataStore.edit {
+            prefs ->
+            prefs[
+                when (mode) {
+                    ProtectionMode.TABLE -> Keys.tableSoundProfile
+                    ProtectionMode.POCKET -> Keys.pocketSoundProfile
+                    ProtectionMode.BAG -> Keys.bagSoundProfile
+                    ProtectionMode.CHARGING -> Keys.chargingSoundProfile
+                    ProtectionMode.JOURNEY -> Keys.journeySoundProfile
+                }
+            ] = profile.name
+        }
+    }
+
+    suspend fun applyPreset(
+        preset: ProtectionPreset
+    ) {
+        val spec =
+            ProtectionPresetCatalog.spec(
+                preset
+            )
+
+        context.settingsDataStore.edit {
+            prefs ->
+            prefs[Keys.selectedMode] =
+                spec.mode.name
+            prefs[Keys.countdown] =
+                spec.countdownSeconds
+            prefs[Keys.preAlarmSeconds] =
+                spec.preAlarmSeconds
+            prefs[Keys.sensitivity] =
+                spec.tableSensitivity.name
+            prefs[Keys.pocketSensitivity] =
+                spec.pocketSensitivity.name
+            prefs[Keys.journeyDuration] =
+                spec.journeyDuration.name
+            prefs[Keys.journeyGuardMode] =
+                spec.journeyGuardMode.name
+            prefs[
+                when (spec.mode) {
+                    ProtectionMode.TABLE -> Keys.tableSoundProfile
+                    ProtectionMode.POCKET -> Keys.pocketSoundProfile
+                    ProtectionMode.BAG -> Keys.bagSoundProfile
+                    ProtectionMode.CHARGING -> Keys.chargingSoundProfile
+                    ProtectionMode.JOURNEY -> Keys.journeySoundProfile
+                }
+            ] = spec.soundProfile.name
         }
     }
 

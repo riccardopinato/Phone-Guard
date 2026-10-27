@@ -1,8 +1,8 @@
 # Phone Guard
 
-Phone Guard is a standalone native Android anti-theft / anti-tampering utility with four protection modes: Table, Pocket, Bag and Journey.
+Phone Guard is a standalone native Android anti-theft / anti-tampering utility with five protection modes: Table, Pocket, Bag, Charging and Journey.
 
-**Version truth: 0.9.2 / versionCode 4**
+**Version truth: 0.9.8 / versionCode 5**
 
 ## Factory baseline
 
@@ -20,6 +20,7 @@ Donors are provenance only. Phone Guard has no runtime dependency on donor apps.
 - **Table** — calibrated motion protection for a phone left on a surface.
 - **Pocket** — proximity + accelerometer protection, with optional light/rotation corroboration.
 - **Bag** — accelerometer plus real light or gyroscope evidence.
+- **Charging** — power-disconnect protection for public or unattended charging.
 - **Journey** — time-bounded Pocket or Bag protection.
 
 All modes run through one authoritative `ProtectionForegroundService`.
@@ -84,7 +85,7 @@ The signed INTERNAL lane additionally verifies the APK/AAB signing certificate a
 
 ## Certification boundary
 
-0.9.2 is the pre-1.0 software-hardening candidate.
+0.9.8 is the pre-1.0 commercial-expansion candidate. It adds Charging Guard, configurable grace before alarm, quick presets, per-mode generated sound profiles, Quick Settings / widget / launcher quick-arm surfaces, best-effort charging auto-arm while the app process is available, Android-compliant notification fallback, and structured trigger evidence.
 
 Software can be accepted only when the exact candidate SHA passes all automated gates and the signed INTERNAL lane. Physical Pixel/Samsung/Xiaomi certification remains a separate evidence gate. Google Play Console work is intentionally deferred until the product is otherwise ready.
 

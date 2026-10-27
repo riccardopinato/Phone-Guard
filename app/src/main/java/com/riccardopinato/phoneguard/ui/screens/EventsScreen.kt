@@ -277,6 +277,40 @@ private fun EventPanel(
                                 .onSurfaceVariant
                     )
                 }
+
+                if (
+                    event.metadata
+                        .isNotEmpty()
+                ) {
+                    Column(
+                        verticalArrangement =
+                            Arrangement.spacedBy(
+                                2.dp
+                            )
+                    ) {
+                        event.metadata
+                            .entries
+                            .sortedBy {
+                                it.key
+                            }
+                            .take(10)
+                            .forEach {
+                                entry ->
+                                Text(
+                                    text =
+                                        "${metadataLabel(entry.key)}: ${entry.value}",
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .labelSmall,
+                                    color =
+                                        MaterialTheme
+                                            .colorScheme
+                                            .onSurfaceVariant
+                                )
+                            }
+                    }
+                }
             }
         }
     }
@@ -334,6 +368,26 @@ private fun eventLabel(
                 R.string.event_error
         }
     )
+
+private fun metadataLabel(
+    key: String
+): String =
+    key
+        .replace(
+            "_",
+            " "
+        )
+        .replaceFirstChar {
+            if (
+                it.isLowerCase()
+            ) {
+                it.titlecase(
+                    Locale.getDefault()
+                )
+            } else {
+                it.toString()
+            }
+        }
 
 private fun formatEventTimestamp(
     timestamp: Long

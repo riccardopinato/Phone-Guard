@@ -246,4 +246,40 @@
     <string name="svc_wait_journey_bag">Journey active: waiting for bag.</string>
     <string name="svc_wait_table">Table protection active.</string>
     <string name="svc_calibration_evidence_insufficient">Calibration did not receive enough live sensor evidence for %1$s. Try again with the phone in the intended protected position.</string>
+
+    <string name="mode_charging_description">Protects the phone while it is charging. Disconnecting power starts owner verification and then the alarm.</string>
+    <string name="presets_title">Quick presets</string>
+    <string name="preset_cafe">Cafe</string>
+    <string name="preset_commute">Commute</string>
+    <string name="preset_backpack">Backpack</string>
+    <string name="preset_public_charging">Public charge</string>
+    <string name="preset_trip">Trip</string>
+    <string name="prealarm_title">Grace before alarm</string>
+    <string name="prealarm_immediate">Now</string>
+    <string name="sound_profile_title">Sound for this mode</string>
+    <string name="sound_profile_siren">Siren</string>
+    <string name="sound_profile_warning">Warning</string>
+    <string name="sound_profile_beep">Beep</string>
+    <string name="auto_arm_charge_title">Auto-arm on power connection</string>
+    <string name="auto_arm_charge_subtitle">While Phone Guard is available in memory, it tries to arm Charging Guard when power connects. If Android blocks a background start, a tap-to-arm notification is used when notifications are allowed.</string>
+    <string name="svc_security_not_ready">Configure a valid PIN before arming protection.</string>
+    <string name="svc_charger_required">Connect the phone to power before arming Charging Guard.</string>
+    <string name="svc_charging_protected">Charging cable protected.</string>
+    <string name="svc_charging_title">Charging Guard active</string>
+    <string name="svc_charging_hint">Disconnecting power starts owner verification and then the alarm.</string>
+    <string name="svc_instruction_charging">Keep the charger connected while protection arms.</string>
+    <string name="svc_calibration_charging">Verifying the power connection.</string>
+    <string name="protection_check_title">Protection Check</string>
+    <string name="protection_check_summary">%1$d of %2$d modes are ready on this device.</string>
+    <string name="protection_ready">Ready</string>
+    <string name="protection_check_needed">Check requirements</string>
+    <string name="auto_arm_channel_name">Charging Guard quick arm</string>
+    <string name="auto_arm_notification_title">Charging Guard is ready</string>
+    <string name="auto_arm_notification_body">Tap to arm protection for this charging session.</string>
+    <string name="quick_tile_active">Protected</string>
+    <string name="quick_tile_inactive">Tap to arm</string>
+    <string name="widget_arm">Arm Phone Guard</string>
+    <string name="shortcut_arm_short">Arm guard</string>
+    <string name="shortcut_arm_long">Arm the last Phone Guard mode</string>
+
 </resources>

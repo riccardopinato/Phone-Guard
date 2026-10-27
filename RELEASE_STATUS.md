@@ -1,11 +1,17 @@
 # RELEASE_STATUS.md
 
-**Version truth: 0.9.2 / versionCode 4**
+**Version truth: 0.9.8 / versionCode 5**
 
 This file separates software implementation from certification evidence.
 
 ## Software hardening implemented
-- unified Table/Pocket/Bag/Journey runtime;
+- unified Table/Pocket/Bag/Charging/Journey runtime;
+- Charging Guard with power-disconnect trigger and recovery;
+- configurable pre-alarm owner grace;
+- quick presets and per-mode generated alarm sound profiles;
+- Quick Settings tile, widget and launcher shortcut quick-arm surfaces;
+- guided charging auto-arm with notification fallback;
+- structured local trigger evidence in event history;
 - capability-truth gating;
 - live-sample calibration evidence;
 - monotonic Journey expiry within one boot;

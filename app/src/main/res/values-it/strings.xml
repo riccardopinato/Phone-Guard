@@ -246,4 +246,40 @@
     <string name="svc_wait_journey_bag">Journey attivo: in attesa della borsa.</string>
     <string name="svc_wait_table">Protezione Table attiva.</string>
     <string name="svc_calibration_evidence_insufficient">La calibrazione non ha ricevuto abbastanza dati reali dai sensori per %1$s. Riprova con il telefono nella posizione da proteggere.</string>
+
+    <string name="mode_charging_description">Protegge il telefono mentre è in carica. Scollegare l’alimentazione avvia la verifica del proprietario e poi l’allarme.</string>
+    <string name="presets_title">Preset rapidi</string>
+    <string name="preset_cafe">Bar</string>
+    <string name="preset_commute">Mezzi</string>
+    <string name="preset_backpack">Zaino</string>
+    <string name="preset_public_charging">Ricarica pubblica</string>
+    <string name="preset_trip">Viaggio</string>
+    <string name="prealarm_title">Tolleranza prima dell’allarme</string>
+    <string name="prealarm_immediate">Subito</string>
+    <string name="sound_profile_title">Suono per questa modalità</string>
+    <string name="sound_profile_siren">Sirena</string>
+    <string name="sound_profile_warning">Avviso</string>
+    <string name="sound_profile_beep">Beep</string>
+    <string name="auto_arm_charge_title">Attiva automaticamente alla ricarica</string>
+    <string name="auto_arm_charge_subtitle">Quando Phone Guard è disponibile in memoria, prova ad attivare Charging Guard quando colleghi l’alimentazione. Se Android blocca l’avvio in background, usa una notifica da toccare quando le notifiche sono consentite.</string>
+    <string name="svc_security_not_ready">Configura un PIN valido prima di attivare la protezione.</string>
+    <string name="svc_charger_required">Collega il telefono all’alimentazione prima di attivare Charging Guard.</string>
+    <string name="svc_charging_protected">Cavo di ricarica protetto.</string>
+    <string name="svc_charging_title">Charging Guard attivo</string>
+    <string name="svc_charging_hint">Scollegare l’alimentazione avvia la verifica del proprietario e poi l’allarme.</string>
+    <string name="svc_instruction_charging">Mantieni il caricatore collegato durante l’attivazione.</string>
+    <string name="svc_calibration_charging">Verifica del collegamento all’alimentazione.</string>
+    <string name="protection_check_title">Controllo protezione</string>
+    <string name="protection_check_summary">%1$d modalità su %2$d sono pronte su questo dispositivo.</string>
+    <string name="protection_ready">Pronta</string>
+    <string name="protection_check_needed">Controlla requisiti</string>
+    <string name="auto_arm_channel_name">Attivazione rapida Charging Guard</string>
+    <string name="auto_arm_notification_title">Charging Guard è pronto</string>
+    <string name="auto_arm_notification_body">Tocca per proteggere questa sessione di ricarica.</string>
+    <string name="quick_tile_active">Protetto</string>
+    <string name="quick_tile_inactive">Tocca per attivare</string>
+    <string name="widget_arm">Attiva Phone Guard</string>
+    <string name="shortcut_arm_short">Attiva guardia</string>
+    <string name="shortcut_arm_long">Attiva l’ultima modalità di Phone Guard</string>
+
 </resources>

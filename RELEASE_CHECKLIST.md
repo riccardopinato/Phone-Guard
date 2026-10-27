@@ -1,6 +1,6 @@
 # RELEASE_CHECKLIST.md — Phone Guard
 
-Version truth: 0.9.2 / versionCode 4
+Version truth: 0.9.8 / versionCode 5
 
 ## Exact-SHA automated gate
 The release SHA must show all of the following green:
@@ -41,7 +41,16 @@ For the exact release SHA:
 - [x] EN/IT/ES/FR/PT have complete string-key parity;
 - [x] obsolete donor wake-lock/settings removed;
 - [x] custom primary/secondary choices meet 48dp+ touch targets;
-- [x] small bare-text click targets replaced by Material buttons.
+- [x] small bare-text click targets replaced by Material buttons;
+- [x] Charging Guard shares the authoritative protection service and alarm controller;
+- [x] Charging start requires real power; recovery without power fails closed;
+- [x] configurable pre-alarm grace reuses OWNER_CHECK without treating ACTION_USER_PRESENT as authentication;
+- [x] Quick Settings, widget and shortcut never directly bypass owner authentication for disarm;
+- [x] charging auto-arm uses a context-registered power receiver while the app process is alive and has an Android background-start fallback instead of claiming guaranteed process-dead/background launch;
+- [x] trigger history is local and backward-compatible with legacy event records;
+- [x] presets reuse existing settings rather than creating parallel runtime profiles;
+- [x] per-mode alarm sounds are generated locally without adding media assets or dependencies;
+- [x] Protection Check reports capability readiness instead of inferring runtime success.
 
 ## External physical certification
 - [ ] Pixel matrix PASS;
