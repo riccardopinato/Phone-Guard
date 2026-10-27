@@ -561,7 +561,7 @@ class SecurityRepository(
 
     companion object {
         val PIN_REGEX =
-            Regex("\d{4,6}")
+            Regex("\\d{4,6}")
 
         const val PBKDF2_ITERATIONS =
             210_000
