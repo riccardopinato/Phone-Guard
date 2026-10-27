@@ -32,7 +32,8 @@ internal object ProtectionWakePolicy {
                     capabilities
                 )
 
-            ProtectionMode.CHARGING ->
+            ProtectionMode.CHARGING,
+            ProtectionMode.ACCESSORY ->
                 false
 
             ProtectionMode.JOURNEY ->
