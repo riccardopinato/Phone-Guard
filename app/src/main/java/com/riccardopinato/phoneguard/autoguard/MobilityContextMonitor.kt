@@ -99,13 +99,15 @@ class MobilityContextMonitor(context: Context) {
         )
     }
 
-    fun start(): Boolean {
-        if (subscribed || requestAttempted) return true
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+    private fun hasActivityPermission(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
             ContextCompat.checkSelfPermission(
                 appContext, Manifest.permission.ACTIVITY_RECOGNITION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) return false
+            ) == PackageManager.PERMISSION_GRANTED
+
+    fun start(): Boolean {
+        if (subscribed || requestAttempted) return true
+        if (!hasActivityPermission()) return false
         if (GoogleApiAvailability.getInstance()
                 .isGooglePlayServicesAvailable(appContext) != ConnectionResult.SUCCESS
         ) return false
@@ -139,10 +141,12 @@ class MobilityContextMonitor(context: Context) {
                 .addOnSuccessListener {
                     if (token == generation && MobilityContextStore.enabled) {
                         subscribed = true
-                    } else {
-                        runCatching {
+                    } else if (hasActivityPermission()) {
+                        try {
                             ActivityRecognition.getClient(appContext)
                                 .removeActivityTransitionUpdates(callback)
+                        } catch (_: SecurityException) {
+                            // Permission revoked while the request was pending.
                         }
                     }
                 }
@@ -167,9 +171,12 @@ class MobilityContextMonitor(context: Context) {
         subscribed = false
         if (!requestAttempted) return
         requestAttempted = false
-        runCatching {
+        if (!hasActivityPermission()) return
+        try {
             ActivityRecognition.getClient(appContext)
                 .removeActivityTransitionUpdates(callback)
+        } catch (_: SecurityException) {
+            // Revoked during shutdown; local sensor fallback remains unaffected.
         }
     }
 }
