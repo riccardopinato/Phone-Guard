@@ -7,7 +7,9 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.riccardopinato.phoneguard.model.AlarmDuration
 import com.riccardopinato.phoneguard.model.AlarmOutputProfile
+import com.riccardopinato.phoneguard.model.PreAlarmStyle
 import com.riccardopinato.phoneguard.model.AppSettings
 import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.model.ProtectionPreset
@@ -307,6 +309,44 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
+    suspend fun setCustomSoundUri(
+        mode: ProtectionMode,
+        uri: String?
+    ) {
+        updateAlarmProfile(mode) {
+            copy(
+                customSoundUri =
+                    uri
+                        ?.trim()
+                        ?.takeIf {
+                            it.isNotEmpty()
+                        }
+            )
+        }
+    }
+
+    suspend fun setPreAlarmStyle(
+        mode: ProtectionMode,
+        value: PreAlarmStyle
+    ) {
+        updateAlarmProfile(mode) {
+            copy(
+                preAlarmStyle = value
+            )
+        }
+    }
+
+    suspend fun setAlarmDuration(
+        mode: ProtectionMode,
+        value: AlarmDuration
+    ) {
+        updateAlarmProfile(mode) {
+            copy(
+                alarmDuration = value
+            )
+        }
+    }
+
     suspend fun setBiometricEnabled(enabled: Boolean) {
         context.settingsDataStore.edit {
             it[Keys.biometric] = enabled
@@ -410,7 +450,7 @@ class SettingsRepository(private val context: Context) {
         profile: AlarmOutputProfile
     ): String =
         JSONObject()
-            .put("version", 1)
+            .put("version", 2)
             .put(
                 "sound",
                 profile.soundEnabled
@@ -434,6 +474,23 @@ class SettingsRepository(private val context: Context) {
             .put(
                 "warning",
                 profile.warningScreenEnabled
+            )
+            .apply {
+                profile.customSoundUri
+                    ?.let {
+                        put(
+                            "soundUri",
+                            it
+                        )
+                    }
+            }
+            .put(
+                "preAlarmStyle",
+                profile.preAlarmStyle.name
+            )
+            .put(
+                "alarmDuration",
+                profile.alarmDuration.name
             )
             .toString()
 
@@ -487,6 +544,35 @@ class SettingsRepository(private val context: Context) {
                     json.optBoolean(
                         "warning",
                         true
+                    ),
+                customSoundUri =
+                    json.optString(
+                        "soundUri"
+                    )
+                        .takeIf {
+                            it.isNotBlank()
+                        },
+                preAlarmStyle =
+                    runCatching {
+                        PreAlarmStyle.valueOf(
+                            json.optString(
+                                "preAlarmStyle",
+                                PreAlarmStyle.VIBRATION.name
+                            )
+                        )
+                    }.getOrDefault(
+                        PreAlarmStyle.VIBRATION
+                    ),
+                alarmDuration =
+                    runCatching {
+                        AlarmDuration.valueOf(
+                            json.optString(
+                                "alarmDuration",
+                                AlarmDuration.UNTIL_DISARMED.name
+                            )
+                        )
+                    }.getOrDefault(
+                        AlarmDuration.UNTIL_DISARMED
                     )
             )
         }.getOrNull()
