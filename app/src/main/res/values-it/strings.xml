@@ -393,4 +393,16 @@
     <string name="live_test_instruction_accessory">Lascia collegato un accessorio audio supportato, avvia il test e poi scollegalo.</string>
 
     <string name="alarm_custom_sound_access_failed">Questa sorgente audio non può concedere accesso persistente. Resta selezionata la sirena integrata.</string>
+    <string name="svc_auto_guard_title">Auto Guard in attesa</string>
+    <string name="svc_auto_guard_waiting">In attesa di inattività o trasporto coperto rilevato</string>
+    <string name="auto_guard_title">Adaptive Auto Guard</string>
+    <string name="auto_guard_description">Riarmo automatico dopo inattività o segnali coerenti di telefono in tasca. I sensori vengono controllati localmente e a intervalli; il GPS non viene usato.</string>
+    <string name="auto_guard_toggle">Protezione automatica</string>
+    <string name="auto_guard_consent">Attivazione volontaria con notifica persistente. Puoi disabilitarla in qualsiasi momento; non disarma una protezione già attiva.</string>
+    <string name="auto_guard_delay">Valuta dopo lo spegnimento dello schermo</string>
+    <string name="auto_guard_pocket">Rilevamento tasca</string>
+    <string name="auto_guard_pocket_body">Prossimità, poca luce e movimento devono concordare in più rilevazioni.</string>
+    <string name="auto_guard_table">Rilevamento tavolo</string>
+    <string name="auto_guard_table_body">Richiede telefono stabile e inattività per il tempo impostato.</string>
+    <string name="auto_guard_start_failed">Android ha impedito di avviare il servizio. Auto Guard è stato disabilitato.</string>
 </resources>
