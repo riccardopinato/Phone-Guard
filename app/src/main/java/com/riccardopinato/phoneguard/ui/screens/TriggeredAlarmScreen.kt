@@ -30,9 +30,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.service.AlarmOutputHealth
 import com.riccardopinato.phoneguard.ui.components.UtilityPrimaryAction
 
@@ -129,9 +131,9 @@ fun TriggeredAlarmScreen(
         Text(
             text =
                 if (warningEnabled) {
-                    "WARNING!"
+                    stringResource(R.string.alarm_warning)
                 } else {
-                    "ALLARME ATTIVO"
+                    stringResource(R.string.alarm_active)
                 },
             modifier =
                 if (warningEnabled) {
@@ -186,7 +188,7 @@ fun TriggeredAlarmScreen(
         ) {
             Text(
                 text =
-                    "PROTECTED DEVICE",
+                    stringResource(R.string.alarm_protected_device),
                 style =
                     MaterialTheme
                         .typography
@@ -202,7 +204,14 @@ fun TriggeredAlarmScreen(
                 text =
                     "Movimento non autorizzato rilevato. " +
                         outputSummary(
-                            outputHealth
+                            health = outputHealth,
+                            noOutputs = stringResource(R.string.alarm_no_outputs),
+                            soundActive = stringResource(R.string.alarm_sound_active),
+                            soundUnverified = stringResource(R.string.alarm_sound_unverified),
+                            vibrationActive = stringResource(R.string.alarm_vibration_active),
+                            vibrationUnavailable = stringResource(R.string.alarm_vibration_unavailable),
+                            flashActive = stringResource(R.string.alarm_flash_active),
+                            flashUnavailable = stringResource(R.string.alarm_flash_unavailable)
                         ),
                 style =
                     MaterialTheme
@@ -219,7 +228,7 @@ fun TriggeredAlarmScreen(
 
         UtilityPrimaryAction(
             label =
-                "SBLOCCA E DISATTIVA",
+                stringResource(R.string.alarm_unlock),
             enabled = true,
             destructive = true,
             onClick = onUnlock,
@@ -233,7 +242,14 @@ fun TriggeredAlarmScreen(
 }
 
 private fun outputSummary(
-    health: AlarmOutputHealth
+    health: AlarmOutputHealth,
+    noOutputs: String,
+    soundActive: String,
+    soundUnverified: String,
+    vibrationActive: String,
+    vibrationUnavailable: String,
+    flashActive: String,
+    flashUnavailable: String
 ): String {
     val active =
         buildList {
@@ -244,9 +260,9 @@ private fun outputSummary(
                     if (
                         health.soundActive
                     ) {
-                        "sirena attiva"
+                        soundActive
                     } else {
-                        "sirena non verificata"
+                        soundUnverified
                     }
                 )
             }
@@ -258,9 +274,9 @@ private fun outputSummary(
                     if (
                         health.vibrationActive
                     ) {
-                        "vibrazione attiva"
+                        vibrationActive
                     } else {
-                        "vibrazione non disponibile"
+                        vibrationUnavailable
                     }
                 )
             }
@@ -272,16 +288,16 @@ private fun outputSummary(
                     if (
                         health.flashActive
                     ) {
-                        "flash attivo"
+                        flashActive
                     } else {
-                        "flash non disponibile"
+                        flashUnavailable
                     }
                 )
             }
         }
 
     return if (active.isEmpty()) {
-        "Apri i controlli per disattivare la protezione."
+        noOutputs
     } else {
         active.joinToString(
             separator = " · ",
