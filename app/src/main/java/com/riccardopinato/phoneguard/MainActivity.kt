@@ -113,7 +113,7 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    private companion object {
+    companion object {
         const val ACTION_ARM_LAST_SHORTCUT =
             "com.riccardopinato.phoneguard.action.ARM_LAST_SHORTCUT"
 
