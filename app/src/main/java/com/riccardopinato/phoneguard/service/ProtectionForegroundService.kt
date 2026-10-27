@@ -774,7 +774,7 @@ class ProtectionForegroundService : Service() {
         val currentFingerprints =
             protected
                 .map {
-                    it.stableFingerprint()
+                    it.recoveryIdentity()
                 }
                 .toSet()
 
