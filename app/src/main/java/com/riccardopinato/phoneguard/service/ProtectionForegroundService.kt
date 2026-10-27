@@ -139,6 +139,7 @@ class ProtectionForegroundService : Service() {
     private var adaptiveAutoJob: Job? = null
     private var adaptiveWaitForNewScreenOff = false
     private var adaptiveScreenOffAt = 0L
+    private var pendingAutoArmEvidence: AlarmEventEvidence? = null
 
     private fun isScreenOff(): Boolean =
         !(getSystemService(PowerManager::class.java)?.isInteractive ?: true)
@@ -518,6 +519,9 @@ class ProtectionForegroundService : Service() {
         adaptiveAutoJob = null
         mobilityMonitor.stop()
         AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.OFF)
+        if (source != ActivationSource.AUTO_GUARD) {
+            pendingAutoArmEvidence = null
+        }
         activeMode = mode
         activeActivationSource =
             source
@@ -569,16 +573,19 @@ class ProtectionForegroundService : Service() {
                     "Mode=${mode.name}; countdown=" +
                         "${settings.countdownSeconds}s",
                     evidence =
-                        AlarmEventEvidence(
-                            mode = mode,
-                            source = source.name,
-                            reason = if (source == ActivationSource.AUTO_GUARD) {
-                                "auto_context_confirmed"
-                            } else null,
-                            graceSeconds =
-                                settings
-                                    .gracePeriodSeconds
-                        )
+                        if (source == ActivationSource.AUTO_GUARD &&
+                            pendingAutoArmEvidence != null
+                        ) {
+                            pendingAutoArmEvidence!!.copy(
+                                graceSeconds = settings.gracePeriodSeconds
+                            )
+                        } else {
+                            AlarmEventEvidence(
+                                mode = mode,
+                                source = source.name,
+                                graceSeconds = settings.gracePeriodSeconds
+                            )
+                        }
                 )
 
                 for (
@@ -2200,6 +2207,7 @@ class ProtectionForegroundService : Service() {
         }
 
         container.sessionStateRepository.clear()
+        pendingAutoArmEvidence = null
         activeSettings = null
         activeMode = ProtectionMode.TABLE
         activeGuardMode = null
@@ -2311,6 +2319,18 @@ class ProtectionForegroundService : Service() {
                         adaptiveAutoGuardEnabled && isScreenOff() &&
                         AlarmStateStore.state.value.phase == AlarmPhase.DISARMED
                     ) {
+                        // Aggregate classification evidence only: no location,
+                        // route, raw activity stream or high-rate sensor history.
+                        pendingAutoArmEvidence = AlarmEventEvidence(
+                            mode = mode,
+                            source = ActivationSource.AUTO_GUARD.name,
+                            reason = assessed.reason,
+                            confidenceScore = assessed.evidenceScore,
+                            detectorState = qualified.name,
+                            sensorSummary = "light/proximity/motion sample;" +
+                                " mobility=" +
+                                (observation?.mobility?.name ?: "UNKNOWN")
+                        )
                         beginArming(mode, ActivationSource.AUTO_GUARD)
                         break
                     }
