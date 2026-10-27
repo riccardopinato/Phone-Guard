@@ -123,6 +123,54 @@ class IncidentSessionEngineTest {
     }
 
     @Test
+    fun wallClockRollbackDoesNotSplitLifecycle() {
+        val events =
+            listOf(
+                event(
+                    1,
+                    50_000,
+                    AlarmEventType.ARMING_STARTED
+                ),
+                event(
+                    2,
+                    49_000,
+                    AlarmEventType.ARMED
+                ),
+                event(
+                    3,
+                    48_000,
+                    AlarmEventType.TRIGGERED,
+                    reason = "clock moved"
+                ),
+                event(
+                    4,
+                    47_000,
+                    AlarmEventType.DISARMED
+                )
+            )
+
+        val sessions =
+            IncidentSessionEngine
+                .build(
+                    events
+                )
+
+        assertEquals(
+            1,
+            sessions.size
+        )
+        assertTrue(
+            sessions.single()
+                .triggered
+        )
+        assertEquals(
+            4,
+            sessions.single()
+                .eventCount
+        )
+    }
+
+    @Test
     fun shareReportStatesLocalPrivacyBoundary() {
         val session =
             IncidentSessionEngine
