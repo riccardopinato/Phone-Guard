@@ -414,4 +414,5 @@
     <string name="auto_guard_state_paused">In pausa fino al prossimo spegnimento dello schermo</string>
     <string name="auto_guard_state_unavailable">Standby non disponibile</string>
     <string name="auto_guard_state_protection">Protezione attiva (manuale o automatica)</string>
+    <string name="auto_guard_state_activating">Attivazione o calibrazione della protezione in corso</string>
 </resources>
