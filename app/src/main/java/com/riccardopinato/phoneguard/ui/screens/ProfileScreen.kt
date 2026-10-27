@@ -77,6 +77,12 @@ fun ProfileScreen(
         mutableStateOf<String?>(null)
     }
 
+    val alarmEnvironment =
+        remember {
+            diagnostics
+                .alarmEnvironmentSnapshot()
+        }
+
     val flashPermissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission()
@@ -176,6 +182,33 @@ fun ProfileScreen(
                 HardwareLine("Sensore luce", hardware.hasLight)
                 HardwareLine("Flash", hardware.hasFlash)
                 HardwareLine("Vibrazione", hardware.hasVibrator)
+
+                StatusLine(
+                    label = "Volume allarme",
+                    ready =
+                        alarmEnvironment
+                            .alarmVolumePercent > 0,
+                    readyText =
+                        "${alarmEnvironment.alarmVolumePercent}%",
+                    missingText = "0%"
+                )
+
+                StatusLine(
+                    label = "Non disturbare",
+                    ready =
+                        !alarmEnvironment
+                            .doNotDisturbActive,
+                    readyText = "Non attivo",
+                    missingText =
+                        if (
+                            alarmEnvironment
+                                .notificationPolicyAccess
+                        ) {
+                            "Attivo · accesso policy"
+                        } else {
+                            "Attivo · nessun override"
+                        }
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

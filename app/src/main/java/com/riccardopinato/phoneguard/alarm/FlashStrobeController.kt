@@ -39,8 +39,16 @@ class FlashStrobeController(context: Context) : AutoCloseable {
     private var closed = false
 
     @Synchronized
-    fun startContinuous(frequencyHz: Float) {
-        if (closed || cameraId == null || !hasCameraPermission()) return
+    fun startContinuous(
+        frequencyHz: Float
+    ): Boolean {
+        if (
+            closed ||
+            cameraId == null ||
+            !hasCameraPermission()
+        ) {
+            return false
+        }
 
         val safeHz = frequencyHz.coerceIn(MIN_HZ, MAX_HZ)
         val halfPeriodMs =
@@ -52,7 +60,7 @@ class FlashStrobeController(context: Context) : AutoCloseable {
         val myGeneration = generation.incrementAndGet()
         running.set(true)
 
-        try {
+        return try {
             currentTask = executor.submit {
                 try {
                     while (isCurrent(myGeneration)) {
@@ -70,9 +78,11 @@ class FlashStrobeController(context: Context) : AutoCloseable {
                     }
                 }
             }
+            true
         } catch (_: RejectedExecutionException) {
             running.set(false)
             setTorch(cameraId, false)
+            false
         }
     }
 
@@ -179,8 +189,8 @@ class FlashStrobeController(context: Context) : AutoCloseable {
 
     private companion object {
         const val MIN_HZ = 0.5f
-        const val MAX_HZ = 10f
-        const val MIN_PHASE_MS = 50L
+        const val MAX_HZ = 3f
+        const val MIN_PHASE_MS = 160L
         const val MAX_PHASE_MS = 1_000L
     }
 }

@@ -961,7 +961,7 @@ private fun AlarmOutputOptions(
                     if (
                         hardware.hasFlash
                     ) {
-                        "Strobo configurabile durante l'allarme"
+                        "Strobo configurabile fino a 3 Hz durante l'allarme"
                     } else {
                         "Non disponibile su questo dispositivo"
                     },
@@ -1000,8 +1000,8 @@ private fun AlarmOutputOptions(
                     onValueChangeFinished =
                         onFlashFrequencyCommit,
                     valueRange =
-                        0.5f..10f,
-                    steps = 18,
+                        0.5f..3f,
+                    steps = 4,
                     enabled = editable
                 )
             }

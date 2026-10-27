@@ -3,6 +3,7 @@ package com.riccardopinato.phoneguard.hardware
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.app.NotificationManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.hardware.camera2.CameraCharacteristics
@@ -29,6 +30,12 @@ data class HardwareSnapshot(
     val hasVibrator: Boolean
 )
 
+data class AlarmEnvironmentSnapshot(
+    val alarmVolumePercent: Int,
+    val doNotDisturbActive: Boolean,
+    val notificationPolicyAccess: Boolean
+)
+
 class HardwareDiagnostics(
     private val context: Context
 ) {
@@ -41,6 +48,60 @@ class HardwareDiagnostics(
         context.getSystemService(
             Context.CAMERA_SERVICE
         ) as CameraManager
+
+    fun alarmEnvironmentSnapshot():
+        AlarmEnvironmentSnapshot {
+        val audioManager =
+            context.getSystemService(
+                Context.AUDIO_SERVICE
+            ) as AudioManager
+
+        val notificationManager =
+            context.getSystemService(
+                NotificationManager::class.java
+            )
+
+        val max =
+            audioManager
+                .getStreamMaxVolume(
+                    AudioManager.STREAM_ALARM
+                )
+
+        val current =
+            audioManager
+                .getStreamVolume(
+                    AudioManager.STREAM_ALARM
+                )
+
+        val percent =
+            if (max <= 0) {
+                0
+            } else {
+                (
+                    current.toFloat() /
+                        max.toFloat() *
+                        100f
+                    )
+                    .toInt()
+                    .coerceIn(
+                        0,
+                        100
+                    )
+            }
+
+        return AlarmEnvironmentSnapshot(
+            alarmVolumePercent =
+                percent,
+            doNotDisturbActive =
+                notificationManager
+                    .currentInterruptionFilter !=
+                    NotificationManager
+                        .INTERRUPTION_FILTER_ALL,
+            notificationPolicyAccess =
+                notificationManager
+                    .isNotificationPolicyAccessGranted
+        )
+    }
 
     fun snapshot(): HardwareSnapshot =
         HardwareSnapshot(

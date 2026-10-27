@@ -41,6 +41,7 @@ import com.riccardopinato.phoneguard.auth.BiometricAuthManager
 import com.riccardopinato.phoneguard.data.PinVerificationResult
 import com.riccardopinato.phoneguard.model.AppSettings
 import com.riccardopinato.phoneguard.service.AlarmPhase
+import com.riccardopinato.phoneguard.service.AlarmOutputHealthStore
 import com.riccardopinato.phoneguard.service.AlarmStateStore
 import com.riccardopinato.phoneguard.service.ProtectionForegroundService
 import com.riccardopinato.phoneguard.ui.components.UnlockDialog
@@ -75,6 +76,9 @@ fun PhoneGuardRoot(
 
     val runtime by
         AlarmStateStore.state.collectAsStateWithLifecycle()
+
+    val outputHealth by
+        AlarmOutputHealthStore.state.collectAsStateWithLifecycle()
 
     val settings by
         container.settingsRepository.settings.collectAsStateWithLifecycle(
@@ -123,7 +127,10 @@ fun PhoneGuardRoot(
     when (runtime.phase) {
         AlarmPhase.TRIGGERED -> {
             TriggeredAlarmScreen(
-                pulseEnabled = settings.warningScreenEnabled,
+                warningEnabled =
+                    settings.warningScreenEnabled,
+                outputHealth =
+                    outputHealth,
                 onUnlock = {
                     requestUnlock(UnlockPurpose.DISARM)
                 }

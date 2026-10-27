@@ -69,7 +69,7 @@ class SettingsRepository(private val context: Context) {
                 flashEnabled = prefs[Keys.flash] ?: true,
                 flashFrequencyHz =
                     (prefs[Keys.flashFrequency] ?: 2.5f)
-                        .coerceIn(0.5f, 10f),
+                        .coerceIn(0.5f, 3f),
                 alarmVolumePercent =
                     (prefs[Keys.alarmVolume] ?: 100)
                         .coerceIn(0, 100),
@@ -139,7 +139,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setFlashFrequencyHz(value: Float) {
         context.settingsDataStore.edit {
             it[Keys.flashFrequency] =
-                value.coerceIn(0.5f, 10f)
+                value.coerceIn(0.5f, 3f)
         }
     }
 
