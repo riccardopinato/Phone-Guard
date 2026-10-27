@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
@@ -33,7 +34,6 @@ import com.riccardopinato.phoneguard.ui.theme.OmniHeroText
 import com.riccardopinato.phoneguard.ui.theme.OmniWarning
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 @Composable
 fun AlarmStatusCard(
@@ -183,6 +183,9 @@ private fun ActiveAlarmPanel(
     runtime: AlarmRuntimeState,
     countdownTotal: Int
 ) {
+    val locale =
+        LocalConfiguration.current.locales[0]
+
     val isTriggered =
         runtime.phase == AlarmPhase.TRIGGERED
 
@@ -313,7 +316,7 @@ private fun ActiveAlarmPanel(
                             "Journey fino alle " +
                                 SimpleDateFormat(
                                     "HH:mm",
-                                    Locale.getDefault()
+                                    locale
                                 ).format(
                                     Date(endAt)
                                 ),
