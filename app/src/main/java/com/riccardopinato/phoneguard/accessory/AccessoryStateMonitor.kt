@@ -28,6 +28,7 @@ data class ProtectedAccessory(
         stableFingerprint() +
             "|id=" +
             id
+}
 
 class AccessoryStateMonitor(
     context: Context
