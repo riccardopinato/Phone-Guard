@@ -374,7 +374,7 @@ fun ProfileScreen(
                     ) {
                         listOf(1, 3, 5, 10, 15).forEach { minutes ->
                             UtilityChoice(
-                                label = "$" + "{minutes}m",
+                                label = "${minutes}m",
                                 selected = settings.adaptiveAutoGuardIdleMinutes == minutes,
                                 enabled = !alarmRunning,
                                 onClick = {
