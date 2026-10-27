@@ -41,8 +41,10 @@ import com.riccardopinato.phoneguard.hardware.BatteryDiagnostics
 import com.riccardopinato.phoneguard.hardware.HardwareDiagnostics
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
 import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.service.ProtectionForegroundService
 import com.riccardopinato.phoneguard.ui.components.SetPinDialog
 import com.riccardopinato.phoneguard.ui.components.SettingSwitchRow
+import com.riccardopinato.phoneguard.ui.components.UtilityChoice
 import com.riccardopinato.phoneguard.ui.components.UtilityPanel
 import com.riccardopinato.phoneguard.ui.components.UtilitySecondaryAction
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
@@ -323,6 +325,99 @@ fun ProfileScreen(
                             }
                     }
                 )
+            }
+        }
+
+        UtilityPanel {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SectionTitle(stringResource(R.string.auto_guard_title))
+                Text(
+                    text = stringResource(R.string.auto_guard_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                SettingSwitchRow(
+                    title = stringResource(R.string.auto_guard_toggle),
+                    subtitle = stringResource(R.string.auto_guard_consent),
+                    checked = settings.adaptiveAutoGuardEnabled,
+                    enabled = !alarmRunning &&
+                        (securityHealth == SecurityHealth.READY ||
+                            settings.adaptiveAutoGuardEnabled),
+                    onCheckedChange = { enabled ->
+                        scope.launch {
+                            settingsRepository.setAdaptiveAutoGuardEnabled(enabled)
+                            val started = runCatching {
+                                ProtectionForegroundService.setAdaptiveAutoGuard(
+                                    context, enabled
+                                )
+                            }.isSuccess
+                            if (!started && enabled) {
+                                settingsRepository.setAdaptiveAutoGuardEnabled(false)
+                                statusMessage = resources.getString(
+                                    R.string.auto_guard_start_failed
+                                )
+                            }
+                        }
+                    }
+                )
+                if (settings.adaptiveAutoGuardEnabled) {
+                    Text(
+                        text = stringResource(R.string.auto_guard_delay),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf(1, 3, 5, 10, 15).forEach { minutes ->
+                            UtilityChoice(
+                                label = "$" + "{minutes}m",
+                                selected = settings.adaptiveAutoGuardIdleMinutes == minutes,
+                                enabled = !alarmRunning,
+                                onClick = {
+                                    scope.launch {
+                                        settingsRepository.setAdaptiveAutoGuardIdleMinutes(minutes)
+                                        ProtectionForegroundService.setAdaptiveAutoGuard(
+                                            context, true
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                    SettingSwitchRow(
+                        title = stringResource(R.string.auto_guard_pocket),
+                        subtitle = stringResource(R.string.auto_guard_pocket_body),
+                        checked = settings.adaptiveAutoGuardPocket,
+                        enabled = !alarmRunning,
+                        onCheckedChange = {
+                            scope.launch {
+                                settingsRepository.setAdaptiveAutoGuardPocket(it)
+                                ProtectionForegroundService.setAdaptiveAutoGuard(
+                                    context, true
+                                )
+                            }
+                        }
+                    )
+                    SettingSwitchRow(
+                        title = stringResource(R.string.auto_guard_table),
+                        subtitle = stringResource(R.string.auto_guard_table_body),
+                        checked = settings.adaptiveAutoGuardTable,
+                        enabled = !alarmRunning,
+                        onCheckedChange = {
+                            scope.launch {
+                                settingsRepository.setAdaptiveAutoGuardTable(it)
+                                ProtectionForegroundService.setAdaptiveAutoGuard(
+                                    context, true
+                                )
+                            }
+                        }
+                    )
+                }
             }
         }
 
