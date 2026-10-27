@@ -292,7 +292,13 @@ fun AlarmScreen(
             countdownTotal =
                 settings.countdownSeconds,
             hardware = hardware,
-            selectedMode = selectedMode
+            selectedMode = selectedMode,
+            requiresProximity =
+                selectedMode == ProtectionMode.POCKET ||
+                    (
+                        selectedMode == ProtectionMode.JOURNEY &&
+                            settings.journeyGuardMode == GuardMode.POCKET
+                        )
         )
 
         if (!modeSupported) {

@@ -73,6 +73,7 @@ class PocketProtectionController(
                     )
 
                 calibrationCollector = null
+                calibrationJob = null
                 sensors.stop()
                 onComplete(profile)
             }

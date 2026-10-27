@@ -40,12 +40,14 @@ fun AlarmStatusCard(
     runtime: AlarmRuntimeState,
     countdownTotal: Int,
     hardware: HardwareSnapshot,
-    selectedMode: ProtectionMode
+    selectedMode: ProtectionMode,
+    requiresProximity: Boolean
 ) {
     if (runtime.phase == AlarmPhase.DISARMED) {
         HardwarePanel(
             hardware = hardware,
-            selectedMode = selectedMode
+            selectedMode = selectedMode,
+            requiresProximity = requiresProximity
         )
     } else {
         ActiveAlarmPanel(
@@ -58,7 +60,8 @@ fun AlarmStatusCard(
 @Composable
 private fun HardwarePanel(
     hardware: HardwareSnapshot,
-    selectedMode: ProtectionMode
+    selectedMode: ProtectionMode,
+    requiresProximity: Boolean
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -100,8 +103,7 @@ private fun HardwarePanel(
             HardwareRow(
                 label = "Prossimità",
                 ready = hardware.hasProximity,
-                optional =
-                    selectedMode != ProtectionMode.POCKET
+                optional = !requiresProximity
             )
 
             HardwareRow(
