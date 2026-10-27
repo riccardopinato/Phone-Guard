@@ -1,5 +1,8 @@
 # PHYSICAL_QA_MATRIX.md — Phone Guard
 
+Candidate software line: **0.9.2 / versionCode 4**
+
+
 Status: **UNVERIFIED** until measurements from real devices are recorded.
 
 Minimum device matrix:

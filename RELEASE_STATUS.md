@@ -1,25 +1,33 @@
 # RELEASE_STATUS.md
 
-Current candidate: **0.9.0 / versionCode 2**
+**Version truth: 0.9.2 / versionCode 4**
 
-This file separates implementation truth from release certification.
+This file separates software implementation from certification evidence.
 
-## Implemented
+## Software hardening implemented
 - unified Table/Pocket/Bag/Journey runtime;
-- capability-truth detector gating;
-- hardened Journey expiry contract;
-- persistent volume lease reconciliation;
-- PIN security health + rate limiting;
+- capability-truth gating;
+- live-sample calibration evidence;
+- monotonic Journey expiry within one boot;
+- persistent volume lease applied only at real alarm activation;
+- capability-aware bounded wake-lock policy;
+- PIN security health, serialized verification and persistent rate limiting;
+- malformed PIN attempt throttling;
 - strong biometric owner proof;
 - output health and 3 Hz flash ceiling;
-- multilingual Android resources;
+- EN/IT/ES/FR/PT resource parity;
+- accessibility touch-target cleanup;
+- source/release-truth CI guard;
 - JVM + emulator instrumentation gates;
 - signed INTERNAL workflow with certificate verification.
 
-## Not yet certified
-- signed INTERNAL workflow evidence for the current exact SHA;
-- Google Play manual declarations/enrollment;
-- public privacy-policy URL;
-- physical Pixel/Samsung/Xiaomi matrix.
+## Evidence model
+Software acceptance requires the **exact candidate SHA** to pass Development checks and the signed INTERNAL workflow. GitHub Actions is the canonical execution evidence; this source file intentionally does not embed a run ID that would become stale when the file itself changes.
 
-Release state: **RC CODE — NOT CERTIFIED**.
+## Not physically certified
+Pixel/Samsung/Xiaomi runtime evidence remains UNVERIFIED. This includes false-positive/negative tuning, Doze/OEM behavior and real-device output/recovery behavior.
+
+## Google Play
+Play Console/store work is intentionally deferred until the final publication phase.
+
+Release state: **SOFTWARE RC — NOT PHYSICALLY CERTIFIED — PLAY DEFERRED**.

@@ -1,48 +1,64 @@
 # RELEASE_CHECKLIST.md — Phone Guard
 
-## Automated gate
-- [ ] PR exact-head Development checks PASS.
-- [ ] JVM unit tests PASS.
-- [ ] release lint PASS.
-- [ ] debug APK PASS.
-- [ ] androidTest APK PASS.
-- [ ] release APK PASS.
-- [ ] release AAB PASS.
-- [ ] emulator instrumentation PASS.
+Version truth: 0.9.2 / versionCode 4
+
+## Exact-SHA automated gate
+The release SHA must show all of the following green:
+- [ ] source/release-truth guard;
+- [ ] JVM unit tests;
+- [ ] release lint;
+- [ ] debug APK;
+- [ ] androidTest APK;
+- [ ] release APK;
+- [ ] release AAB;
+- [ ] emulator instrumentation.
 
 ## Signed INTERNAL gate
-- [ ] `Build signed INTERNAL` PASS from the exact release SHA.
-- [ ] APK certificate equals `SIGNING_IDENTITY.md`.
-- [ ] AAB certificate equals `SIGNING_IDENTITY.md`.
-- [ ] `SHA256SUMS.txt` generated.
-- [ ] `BUILD_IDENTITY.txt` records source SHA, workflow run and certificate.
-- [ ] signed artifacts downloaded and smoke-installed on at least one real device.
+For the exact release SHA:
+- [ ] `Build signed INTERNAL` PASS;
+- [ ] APK certificate equals `SIGNING_IDENTITY.md`;
+- [ ] AAB certificate equals `SIGNING_IDENTITY.md`;
+- [ ] `SHA256SUMS.txt` generated;
+- [ ] `BUILD_IDENTITY.txt` records source SHA, workflow run and certificate;
+- [ ] signed APK smoke-installed on at least one real device.
 
-## Security/reliability
-- [x] one foreground-service owner.
-- [x] capability truth blocks unreachable detector modes.
-- [x] Journey expiry cannot disarm OWNER_CHECK/TRIGGERED.
-- [x] PIN rate limiting is persistent.
-- [x] invalid/missing Keystore state blocks new arming.
-- [x] ACTION_USER_PRESENT is not owner authentication.
-- [x] persistent alarm-volume lease with stale recovery.
-- [x] flash ceiling is 3 Hz.
-- [x] alarm outputs expose effective runtime health.
+## Software invariants
+- [x] one foreground-service owner;
+- [x] capability truth blocks unreachable modes;
+- [x] calibration requires live required-sensor evidence;
+- [x] Journey expiry cannot disarm OWNER_CHECK/TRIGGERED;
+- [x] Journey timing is monotonic within a boot;
+- [x] PIN rate limiting is persistent;
+- [x] malformed PIN attempts are throttled;
+- [x] PIN verification is serialized;
+- [x] invalid/missing Keystore state blocks arming;
+- [x] ACTION_USER_PRESENT is not owner authentication;
+- [x] alarm volume is not raised during ordinary monitoring;
+- [x] persistent volume lease has ownership-aware recovery;
+- [x] wake-lock use is capability-aware and bounded;
+- [x] flash ceiling is 3 Hz;
+- [x] alarm outputs expose effective runtime health;
+- [x] EN/IT/ES/FR/PT have complete string-key parity;
+- [x] obsolete donor wake-lock/settings removed;
+- [x] custom primary/secondary choices meet 48dp+ touch targets;
+- [x] small bare-text click targets replaced by Material buttons.
 
-## Product truth
-- [x] donor branding removed from user-facing surfaces.
-- [x] Android resources available for en/it/es/fr/pt.
-- [x] Android locale config declares supported languages.
-- [x] multimode onboarding/privacy.
-- [x] AGENTS / ROADMAP / donor provenance present.
+## External physical certification
+- [ ] Pixel matrix PASS;
+- [ ] Samsung matrix PASS;
+- [ ] Xiaomi/Redmi matrix PASS;
+- [ ] Pocket/Bag false-negative acceptance criteria PASS;
+- [ ] false-positive soak tests PASS;
+- [ ] screen-off/Doze/OEM battery behavior documented;
+- [ ] real alarm outputs/recovery verified.
 
-## Manual release gates
-- [ ] Google Play FGS declaration accepted.
-- [ ] Data Safety submitted.
-- [ ] public privacy-policy URL live.
-- [ ] Play App Signing configured.
-- [ ] Physical OEM matrix PASS.
-- [ ] final versionCode/versionName bumped from RC to production.
-- [ ] production release notes prepared.
+## Google Play — intentionally deferred
+- [ ] FGS declaration;
+- [ ] Data Safety;
+- [ ] public privacy-policy URL;
+- [ ] Play App Signing;
+- [ ] store listing/screenshots/feature graphic;
+- [ ] content rating/target audience;
+- [ ] production release notes.
 
-Phone Guard must not be labelled CERTIFIED until every manual release gate above has evidence.
+Phone Guard must not be labelled fully CERTIFIED until the physical gate is complete. Play publication is a subsequent final phase.

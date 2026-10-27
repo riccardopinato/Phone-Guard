@@ -1,67 +1,81 @@
-# ROADMAP.md — Phone Guard v1 hardening
+# ROADMAP.md — Phone Guard pre-1.0
 
-Baseline branch: `roadmap/v1-hardening`
+Version truth: 0.9.2 / versionCode 4
 
-## Step 1 — Detection Correctness Hardening
-Status: IMPLEMENTED — pending final PR CI.
-- Capability truth aligned with reachable detector states.
-- Pocket: accelerometer + proximity.
-- Bag: accelerometer + light or gyroscope.
-- Evidence score normalized to sensors actually available.
-- Calibration records sensor capability independently from measured noise.
-- Degraded sensor tests added.
+## Step 1 — Detection correctness
+Status: **DONE**
+- capability truth aligned with reachable detector states;
+- Pocket requires accelerometer + proximity;
+- Bag requires accelerometer + light or gyroscope;
+- extraction score normalized to available evidence;
+- degraded paths regression-tested.
 
-## Step 2 — Journey Safety Contract
-Status: IMPLEMENTED — pending final PR CI.
-- Journey expiry cannot disarm OWNER_CHECK or TRIGGERED.
-- Alarm recovery outranks Journey expiry.
-- Owner verification can resume/finish the remaining Journey timer.
+## Step 2 — Journey safety contract
+Status: **DONE**
+- OWNER_CHECK/TRIGGERED outrank Journey expiry;
+- owner verification can resume the remaining Journey;
+- active duration uses monotonic elapsed time within the same boot.
 
-## Step 3 — System Side-Effect Recovery
-Status: IMPLEMENTED — pending final PR CI.
-- Persistent alarm-volume lease.
-- User manual volume changes are not overwritten on release.
-- Startup and boot reconciliation.
-- Stale/no-session recovery restores owned volume.
+## Step 3 — System side-effect recovery
+Status: **DONE**
+- persistent alarm-volume lease;
+- target volume applied only when alarm outputs start;
+- user manual volume changes are not overwritten on release;
+- startup/reboot stale-lease reconciliation.
 
-## Step 4 — Security v2
-Status: IMPLEMENTED — pending final PR CI.
-- SecurityHealth states.
-- Persistent escalating PIN rate limit.
-- Missing/corrupt Keystore verifier blocks arming.
-- ACTION_USER_PRESENT no longer authenticates; it only extends owner-check time.
-- Owner check default grace window: 8 s, subject to physical tuning.
+## Step 4 — Security v2+
+Status: **DONE**
+- SecurityHealth states;
+- PBKDF2 + Keystore HMAC;
+- persistent escalating rate limit;
+- malformed attempts are rate-limited;
+- PIN verification serialized;
+- ACTION_USER_PRESENT is not owner authentication;
+- BIOMETRIC_STRONG optional owner proof.
 
-## Step 5 — Alarm Safety & Truth
-Status: IMPLEMENTED — pending final PR CI.
-- Flash limited to 0.5–3.0 Hz.
-- Alarm output runtime health.
-- DND/volume diagnostics.
-- Warning-screen toggle controls red pulse/brightness truthfully.
+## Step 5 — Alarm safety and truth
+Status: **DONE**
+- single alarm-output owner;
+- sound/vibration/flash runtime health;
+- DND/volume diagnostics;
+- 0.5–3.0 Hz flash ceiling;
+- warning-screen toggle truth.
 
-## Step 6 — Automated Reliability QA
-Status: IMPLEMENTED — pending final PR CI.
-- JVM gate retained.
-- androidTest compilation added.
-- Emulator CI added.
-- Real Keystore, volume lease, FGS manifest, settings clamp and launch smoke tests.
+## Step 6 — Automated reliability QA
+Status: **DONE — exact SHA must remain green**
+- JVM tests;
+- release lint;
+- debug/release APK;
+- androidTest APK;
+- release AAB;
+- emulator instrumentation;
+- source/release-truth CI guard.
 
-## Step 7 — Product/UI Cleanup
-Status: IMPLEMENTED — pending final PR CI.
-- Remove donor branding/comments.
-- Phone Guard theme naming.
-- Multimode onboarding/privacy.
-- Centralized Android resources with en fallback + it/es/fr/pt.
-- AGENTS/ROADMAP/provenance docs.
+## Step 7 — Product/UI/accessibility cleanup
+Status: **DONE for software audit**
+- donor-only settings removed;
+- obsolete donor wake-lock removed;
+- stable Phone Guard theme/branding;
+- 48dp+ custom action targets;
+- bare small text click targets replaced by Material text buttons;
+- EN/IT/ES/FR/PT resource parity.
 
-## Step 8 — Release Engineering & Play Readiness
-Status: IMPLEMENTED — signed INTERNAL evidence and Play Console actions pending.
-- Phone Guard INTERNAL workflow/artifacts.
-- Certificate-verified signed APK/AAB lane.
-- Play App Signing decision documented.
-- FGS/Data Safety/Play release checklist.
-- Release status and physical certification matrix.
+## Step 8 — Release engineering
+Status: **DONE for software lane**
+- signed INTERNAL APK/AAB workflow;
+- certificate verification;
+- artifact hashes;
+- release identity documentation.
 
-## Step 9 — Physical Certification / RC
-Status: BLOCKED ON PHYSICAL DEVICE EVIDENCE.
-Required matrix: Pixel + Samsung + Xiaomi; screen off, process/service kill, Doze, OEM battery restrictions, Pocket/Bag false positives/negatives, Journey expiry boundary, flash, volume lease, DND, owner-check timing, warning UI.
+## Step 9 — Physical OEM certification
+Status: **PENDING EXTERNAL EVIDENCE**
+- Pixel;
+- Samsung;
+- Xiaomi/Redmi;
+- false-positive/false-negative sensor tuning;
+- screen-off/Doze/OEM background behavior;
+- real flash/volume/DND/reboot behavior.
+
+## Step 10 — Google Play
+Status: **DEFERRED BY PRODUCT DECISION**
+Play Console declarations, privacy-policy URL, Data Safety, Play App Signing and store assets will be handled after software/physical readiness.

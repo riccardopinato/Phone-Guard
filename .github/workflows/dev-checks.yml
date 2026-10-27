@@ -35,6 +35,9 @@ jobs:
           gradle-version: '9.3.1'
           cache-provider: basic
 
+      - name: Verify source and release truth
+        run: bash scripts/verify-source-truth.sh
+
       - name: Test, lint and build all release gates
         run: |
           gradle             :app:testDebugUnitTest             :app:lintRelease             :app:assembleDebug             :app:assembleDebugAndroidTest             :app:assembleRelease             :app:bundleRelease             --no-daemon             --stacktrace
