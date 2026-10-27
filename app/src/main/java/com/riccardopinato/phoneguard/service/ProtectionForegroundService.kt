@@ -1542,7 +1542,7 @@ class ProtectionForegroundService : Service() {
                 PendingTriggerOwnerAction
                     .END_CHARGING_SESSION -> {
                     disarm(
-                        addDisarmEvent = false
+                        addDisarmEvent = true
                     )
                     return
                 }
@@ -1550,7 +1550,7 @@ class ProtectionForegroundService : Service() {
                 PendingTriggerOwnerAction
                     .END_ACCESSORY_SESSION -> {
                     disarm(
-                        addDisarmEvent = false
+                        addDisarmEvent = true
                     )
                     return
                 }
