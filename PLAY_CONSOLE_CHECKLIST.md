@@ -1,6 +1,6 @@
 # PLAY_CONSOLE_CHECKLIST.md — Phone Guard
 
-**Version truth: 0.9.2 / versionCode 4**
+**Version truth: 0.9.8 / versionCode 5**
 
 Status: **DEFERRED BY PRODUCT DECISION**. This file preserves the final publication work but it is not part of the current software-hardening gate.
 

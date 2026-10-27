@@ -2026,6 +2026,16 @@ class ProtectionForegroundService : Service() {
             context: Context,
             mode: ProtectionMode
         ) {
+            tryArm(
+                context,
+                mode
+            )
+        }
+
+        fun tryArm(
+            context: Context,
+            mode: ProtectionMode
+        ): Boolean {
             val intent =
                 Intent(
                     context,
@@ -2037,11 +2047,15 @@ class ProtectionForegroundService : Service() {
                         mode.name
                     )
 
-            ContextCompat
-                .startForegroundService(
-                    context,
-                    intent
-                )
+            return runCatching {
+                ContextCompat
+                    .startForegroundService(
+                        context,
+                        intent
+                    )
+
+                true
+            }.getOrDefault(false)
         }
 
         fun disarm(

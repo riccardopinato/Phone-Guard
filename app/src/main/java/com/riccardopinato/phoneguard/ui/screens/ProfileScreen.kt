@@ -41,6 +41,8 @@ import com.riccardopinato.phoneguard.hardware.BatteryDiagnostics
 import com.riccardopinato.phoneguard.hardware.HardwareDiagnostics
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
 import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.power.ChargingGuardController
+import com.riccardopinato.phoneguard.protection.ProtectionReadinessEngine
 import com.riccardopinato.phoneguard.ui.components.SetPinDialog
 import com.riccardopinato.phoneguard.ui.components.SettingSwitchRow
 import com.riccardopinato.phoneguard.ui.components.UtilityPanel
@@ -91,6 +93,30 @@ fun ProfileScreen(
         remember {
             diagnostics
                 .alarmEnvironmentSnapshot()
+        }
+
+    val powerConnected =
+        ChargingGuardController
+            .isPowerConnected(
+                context
+            )
+
+    val readiness =
+        remember(
+            hardware,
+            powerConnected,
+            settings.journeyGuardMode
+        ) {
+            ProtectionReadinessEngine
+                .evaluate(
+                    hardware =
+                        hardware,
+                    powerConnected =
+                        powerConnected,
+                    journeyGuardMode =
+                        settings
+                            .journeyGuardMode
+                )
         }
 
     val flashPermissionLauncher =
@@ -194,6 +220,52 @@ fun ProfileScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
+                SectionTitle(
+                    stringResource(
+                        R.string.protection_check_title
+                    )
+                )
+
+                Text(
+                    text =
+                        stringResource(
+                            R.string
+                                .protection_check_summary,
+                            readiness.count {
+                                it.ready
+                            },
+                            readiness.size
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+
+                readiness.forEach {
+                    item ->
+                    StatusLine(
+                        label =
+                            item.mode.label,
+                        ready =
+                            item.ready,
+                        readyText =
+                            stringResource(
+                                R.string
+                                    .protection_ready
+                            ),
+                        missingText =
+                            stringResource(
+                                R.string
+                                    .protection_check_needed
+                            )
+                    )
+                }
+
                 SectionTitle(stringResource(R.string.diagnostics_title))
 
                 HardwareLine(stringResource(R.string.status_accelerometer), hardware.hasAccelerometer)

@@ -37,6 +37,7 @@ import com.riccardopinato.phoneguard.data.SecurityHealth
 import com.riccardopinato.phoneguard.data.SecurityRepository
 import com.riccardopinato.phoneguard.data.SettingsRepository
 import com.riccardopinato.phoneguard.hardware.HardwareSnapshot
+import com.riccardopinato.phoneguard.model.AlarmSoundProfile
 import com.riccardopinato.phoneguard.model.AppSettings
 import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.model.Sensitivity
@@ -45,6 +46,7 @@ import com.riccardopinato.phoneguard.pocket.model.JourneyDuration
 import com.riccardopinato.phoneguard.pocket.model.PocketSensitivity
 import com.riccardopinato.phoneguard.protection.ProtectionCapabilities
 import com.riccardopinato.phoneguard.protection.ProtectionPolicy
+import com.riccardopinato.phoneguard.protection.ProtectionPreset
 import com.riccardopinato.phoneguard.service.AlarmPhase
 import com.riccardopinato.phoneguard.service.AlarmRuntimeState
 import com.riccardopinato.phoneguard.service.ProtectionForegroundService
@@ -275,7 +277,7 @@ fun AlarmScreen(
         ) {
             listOf(
                 ProtectionMode.BAG,
-                ProtectionMode.JOURNEY
+                ProtectionMode.CHARGING
             ).forEach { mode ->
                 ModeChoice(
                     mode = mode,
@@ -295,6 +297,27 @@ fun AlarmScreen(
             }
         }
 
+        ModeChoice(
+            mode =
+                ProtectionMode.JOURNEY,
+            selected =
+                settings.selectedMode ==
+                    ProtectionMode.JOURNEY,
+            enabled =
+                runtime.phase ==
+                    AlarmPhase.DISARMED,
+            onClick = {
+                scope.launch {
+                    settingsRepository
+                        .setSelectedMode(
+                            ProtectionMode.JOURNEY
+                        )
+                }
+            },
+            modifier =
+                Modifier.fillMaxWidth()
+        )
+
         Text(
             text = modeDescription(selectedMode),
             style =
@@ -306,6 +329,61 @@ fun AlarmScreen(
                     .colorScheme
                     .onSurfaceVariant
         )
+
+        PresetOptions(
+            enabled =
+                runtime.phase ==
+                    AlarmPhase.DISARMED,
+            onPreset = {
+                preset ->
+                scope.launch {
+                    settingsRepository
+                        .applyPreset(
+                            preset
+                        )
+                }
+            }
+        )
+
+        if (
+            selectedMode ==
+            ProtectionMode.CHARGING
+        ) {
+            UtilityPanel {
+                SettingSwitchRow(
+                    title =
+                        stringResource(
+                            R.string
+                                .auto_arm_charge_title
+                        ),
+                    subtitle =
+                        stringResource(
+                            R.string
+                                .auto_arm_charge_subtitle
+                        ),
+                    checked =
+                        settings
+                            .chargeAutoArmEnabled,
+                    enabled =
+                        runtime.phase ==
+                            AlarmPhase.DISARMED,
+                    onCheckedChange = {
+                        enabled ->
+                        scope.launch {
+                            settingsRepository
+                                .setChargeAutoArmEnabled(
+                                    enabled
+                                )
+                        }
+                    },
+                    modifier =
+                        Modifier.padding(
+                            horizontal = 16.dp,
+                            vertical = 8.dp
+                        )
+                )
+            }
+        }
 
         AlarmStatusCard(
             runtime = runtime,
@@ -564,6 +642,23 @@ fun AlarmScreen(
             }
         }
 
+        PreAlarmOptions(
+            seconds =
+                settings.preAlarmSeconds,
+            enabled =
+                runtime.phase ==
+                    AlarmPhase.DISARMED,
+            onChange = {
+                seconds ->
+                scope.launch {
+                    settingsRepository
+                        .setPreAlarmSeconds(
+                            seconds
+                        )
+                }
+            }
+        )
+
         if (
             selectedMode ==
             ProtectionMode.TABLE
@@ -580,7 +675,10 @@ fun AlarmScreen(
                     }
                 }
             )
-        } else {
+        } else if (
+            selectedMode !=
+            ProtectionMode.CHARGING
+        ) {
             PocketSensitivityOptions(
                 settings = settings,
                 enabled =
@@ -594,6 +692,27 @@ fun AlarmScreen(
                 }
             )
         }
+
+        SoundProfileOptions(
+            selected =
+                settings
+                    .soundProfileFor(
+                        selectedMode
+                    ),
+            enabled =
+                runtime.phase ==
+                    AlarmPhase.DISARMED,
+            onChange = {
+                profile ->
+                scope.launch {
+                    settingsRepository
+                        .setAlarmSoundProfile(
+                            selectedMode,
+                            profile
+                        )
+                }
+            }
+        )
 
         AlarmOutputOptions(
             settings = settings,
@@ -716,6 +835,184 @@ private fun ModeChoice(
         onClick = onClick,
         modifier = modifier
     )
+}
+
+@Composable
+private fun PresetOptions(
+    enabled: Boolean,
+    onPreset: (ProtectionPreset) -> Unit
+) {
+    UtilitySectionHeader(
+        title =
+            stringResource(
+                R.string.presets_title
+            )
+    )
+
+    Column(
+        verticalArrangement =
+            Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(
+                ProtectionPreset.CAFE,
+                ProtectionPreset.COMMUTE,
+                ProtectionPreset.BACKPACK
+            ).forEach {
+                preset ->
+                UtilityChoice(
+                    label =
+                        presetLabel(preset),
+                    selected = false,
+                    enabled = enabled,
+                    onClick = {
+                        onPreset(preset)
+                    },
+                    modifier =
+                        Modifier.weight(1f)
+                )
+            }
+        }
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(
+                ProtectionPreset.PUBLIC_CHARGING,
+                ProtectionPreset.TRIP
+            ).forEach {
+                preset ->
+                UtilityChoice(
+                    label =
+                        presetLabel(preset),
+                    selected = false,
+                    enabled = enabled,
+                    onClick = {
+                        onPreset(preset)
+                    },
+                    modifier =
+                        Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreAlarmOptions(
+    seconds: Int,
+    enabled: Boolean,
+    onChange: (Int) -> Unit
+) {
+    UtilitySectionHeader(
+        title =
+            stringResource(
+                R.string.prealarm_title
+            ),
+        trailing =
+            if (seconds == 0) {
+                stringResource(
+                    R.string
+                        .prealarm_immediate
+                )
+            } else {
+                stringResource(
+                    R.string.seconds_format,
+                    seconds
+                )
+            }
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement =
+            Arrangement.spacedBy(8.dp)
+    ) {
+        listOf(
+            0,
+            2,
+            5,
+            8
+        ).forEach {
+            value ->
+            UtilityChoice(
+                label =
+                    if (value == 0) {
+                        stringResource(
+                            R.string
+                                .prealarm_immediate
+                        )
+                    } else {
+                        stringResource(
+                            R.string
+                                .seconds_format,
+                            value
+                        )
+                    },
+                selected =
+                    seconds == value,
+                enabled = enabled,
+                onClick = {
+                    onChange(value)
+                },
+                modifier =
+                    Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SoundProfileOptions(
+    selected: AlarmSoundProfile,
+    enabled: Boolean,
+    onChange: (AlarmSoundProfile) -> Unit
+) {
+    UtilitySectionHeader(
+        title =
+            stringResource(
+                R.string
+                    .sound_profile_title
+            ),
+        trailing =
+            soundProfileLabel(
+                selected
+            )
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement =
+            Arrangement.spacedBy(8.dp)
+    ) {
+        AlarmSoundProfile.entries
+            .forEach {
+                profile ->
+                UtilityChoice(
+                    label =
+                        soundProfileLabel(
+                            profile
+                        ),
+                    selected =
+                        selected ==
+                            profile,
+                    enabled = enabled,
+                    onClick = {
+                        onChange(profile)
+                    },
+                    modifier =
+                        Modifier.weight(1f)
+                )
+            }
+    }
 }
 
 @Composable
@@ -1154,8 +1451,51 @@ private fun modeDescription(
             ProtectionMode.BAG ->
                 R.string.mode_bag_description
 
+            ProtectionMode.CHARGING ->
+                R.string.mode_charging_description
+
             ProtectionMode.JOURNEY ->
                 R.string.mode_journey_description
+        }
+    )
+
+@Composable
+private fun presetLabel(
+    preset: ProtectionPreset
+): String =
+    stringResource(
+        when (preset) {
+            ProtectionPreset.CAFE ->
+                R.string.preset_cafe
+
+            ProtectionPreset.COMMUTE ->
+                R.string.preset_commute
+
+            ProtectionPreset.BACKPACK ->
+                R.string.preset_backpack
+
+            ProtectionPreset.PUBLIC_CHARGING ->
+                R.string.preset_public_charging
+
+            ProtectionPreset.TRIP ->
+                R.string.preset_trip
+        }
+    )
+
+@Composable
+private fun soundProfileLabel(
+    profile: AlarmSoundProfile
+): String =
+    stringResource(
+        when (profile) {
+            AlarmSoundProfile.SIREN ->
+                R.string.sound_profile_siren
+
+            AlarmSoundProfile.WARNING ->
+                R.string.sound_profile_warning
+
+            AlarmSoundProfile.BEEP ->
+                R.string.sound_profile_beep
         }
     )
 

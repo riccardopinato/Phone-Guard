@@ -1,6 +1,6 @@
 # ROADMAP.md — Phone Guard pre-1.0
 
-Version truth: 0.9.2 / versionCode 4
+Version truth: 0.9.8 / versionCode 5
 
 ## Step 1 — Detection correctness
 Status: **DONE**
@@ -79,3 +79,19 @@ Status: **PENDING EXTERNAL EVIDENCE**
 ## Step 10 — Google Play
 Status: **DEFERRED BY PRODUCT DECISION**
 Play Console declarations, privacy-policy URL, Data Safety, Play App Signing and store assets will be handled after software/physical readiness.
+
+
+## Step 8A — Commercial feature expansion
+Status: **IMPLEMENTED — validation pending**
+- Charging Guard;
+- configurable owner grace / pre-alarm;
+- Protection Check mode readiness;
+- structured event evidence;
+- quick presets;
+- per-mode generated sound profiles;
+- Quick Settings tile;
+- launcher shortcut;
+- home-screen widget;
+- charging auto-arm attempt with notification fallback when Android blocks background FGS start.
+
+These additions reuse the existing protection service, security and alarm engines. Physical/OEM certification remains Step 9.
