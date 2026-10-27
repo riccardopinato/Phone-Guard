@@ -172,6 +172,8 @@ fun ProfileScreen(
 
                 HardwareLine("Accelerometro", hardware.hasAccelerometer)
                 HardwareLine("Giroscopio", hardware.hasGyroscope)
+                HardwareLine("Prossimità", hardware.hasProximity)
+                HardwareLine("Sensore luce", hardware.hasLight)
                 HardwareLine("Flash", hardware.hasFlash)
                 HardwareLine("Vibrazione", hardware.hasVibrator)
 
@@ -236,7 +238,7 @@ fun ProfileScreen(
 
                 Text(
                     text =
-                        "Il monitoraggio usa un Foreground Service visibile. " +
+                        "Table, Pocket, Bag e Journey usano un unico Foreground Service visibile. " +
                             "Controlla le impostazioni solo se noti interruzioni.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

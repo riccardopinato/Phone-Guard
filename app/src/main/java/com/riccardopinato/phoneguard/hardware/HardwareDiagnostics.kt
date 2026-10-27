@@ -1,20 +1,19 @@
-// TARGET: app/src/main/java/com/riccardopinato/tabletopalarm/hardware/HardwareDiagnostics.kt
 package com.riccardopinato.phoneguard.hardware
 
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.media.AudioAttributes
-import android.os.VibrationAttributes
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -24,6 +23,8 @@ import kotlinx.coroutines.delay
 data class HardwareSnapshot(
     val hasAccelerometer: Boolean,
     val hasGyroscope: Boolean,
+    val hasProximity: Boolean,
+    val hasLight: Boolean,
     val hasFlash: Boolean,
     val hasVibrator: Boolean
 )
@@ -31,7 +32,6 @@ data class HardwareSnapshot(
 class HardwareDiagnostics(
     private val context: Context
 ) {
-
     private val sensorManager =
         context.getSystemService(
             Context.SENSOR_SERVICE
@@ -42,8 +42,8 @@ class HardwareDiagnostics(
             Context.CAMERA_SERVICE
         ) as CameraManager
 
-    fun snapshot(): HardwareSnapshot {
-        return HardwareSnapshot(
+    fun snapshot(): HardwareSnapshot =
+        HardwareSnapshot(
             hasAccelerometer =
                 sensorManager.getDefaultSensor(
                     Sensor.TYPE_ACCELEROMETER
@@ -52,12 +52,19 @@ class HardwareDiagnostics(
                 sensorManager.getDefaultSensor(
                     Sensor.TYPE_GYROSCOPE
                 ) != null,
+            hasProximity =
+                sensorManager.getDefaultSensor(
+                    Sensor.TYPE_PROXIMITY
+                ) != null,
+            hasLight =
+                sensorManager.getDefaultSensor(
+                    Sensor.TYPE_LIGHT
+                ) != null,
             hasFlash =
                 findFlashCameraId() != null,
             hasVibrator =
                 getVibrator()?.hasVibrator() == true
         )
-    }
 
     fun testSound() {
         val tone =
@@ -67,8 +74,7 @@ class HardwareDiagnostics(
             )
 
         tone.startTone(
-            ToneGenerator
-                .TONE_CDMA_ALERT_CALL_GUARD,
+            ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD,
             750
         )
 
@@ -85,12 +91,56 @@ class HardwareDiagnostics(
     }
 
     fun testVibration(): Boolean {
-        val vibrator = getVibrator() ?: return false
-        if (!vibrator.hasVibrator()) return false
-        val effect = if (vibrator.hasAmplitudeControl()) VibrationEffect.createWaveform(longArrayOf(0,700,150,700), intArrayOf(0,255,0,255), -1) else VibrationEffect.createWaveform(longArrayOf(0,700,150,700), -1)
+        val vibrator =
+            getVibrator()
+                ?: return false
+
+        if (!vibrator.hasVibrator()) {
+            return false
+        }
+
+        val effect =
+            if (vibrator.hasAmplitudeControl()) {
+                VibrationEffect.createWaveform(
+                    longArrayOf(0, 700, 150, 700),
+                    intArrayOf(0, 255, 0, 255),
+                    -1
+                )
+            } else {
+                VibrationEffect.createWaveform(
+                    longArrayOf(0, 700, 150, 700),
+                    -1
+                )
+            }
+
         return runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) vibrator.vibrate(effect, VibrationAttributes.Builder().setUsage(VibrationAttributes.USAGE_ALARM).build())
-            else { @Suppress("DEPRECATION") vibrator.vibrate(effect, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build()) }
+            if (
+                Build.VERSION.SDK_INT >=
+                Build.VERSION_CODES.TIRAMISU
+            ) {
+                vibrator.vibrate(
+                    effect,
+                    VibrationAttributes.Builder()
+                        .setUsage(
+                            VibrationAttributes.USAGE_ALARM
+                        )
+                        .build()
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(
+                    effect,
+                    AudioAttributes.Builder()
+                        .setUsage(
+                            AudioAttributes.USAGE_ALARM
+                        )
+                        .setContentType(
+                            AudioAttributes.CONTENT_TYPE_SONIFICATION
+                        )
+                        .build()
+                )
+            }
+
             true
         }.getOrDefault(false)
     }
@@ -100,8 +150,7 @@ class HardwareDiagnostics(
             ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.CAMERA
-            ) !=
-            PackageManager.PERMISSION_GRANTED
+            ) != PackageManager.PERMISSION_GRANTED
         ) {
             return false
         }
@@ -135,66 +184,52 @@ class HardwareDiagnostics(
         }
     }
 
-    private fun getVibrator(): Vibrator? {
-        return if (
+    private fun getVibrator(): Vibrator? =
+        if (
             Build.VERSION.SDK_INT >=
             Build.VERSION_CODES.S
         ) {
-            context
-                .getSystemService(
-                    VibratorManager::class.java
-                )
-                ?.defaultVibrator
+            context.getSystemService(
+                VibratorManager::class.java
+            )?.defaultVibrator
         } else {
             @Suppress("DEPRECATION")
             context.getSystemService(
                 Context.VIBRATOR_SERVICE
             ) as? Vibrator
         }
-    }
 
     private fun findFlashCameraId():
-        String? {
-
-        return runCatching {
+        String? =
+        runCatching {
             cameraManager
                 .cameraIdList
                 .firstOrNull { id ->
                     val c =
-                        cameraManager
-                            .getCameraCharacteristics(
-                                id
-                            )
+                        cameraManager.getCameraCharacteristics(id)
 
                     val hasFlash =
                         c.get(
-                            CameraCharacteristics
-                                .FLASH_INFO_AVAILABLE
+                            CameraCharacteristics.FLASH_INFO_AVAILABLE
                         ) == true
 
                     val facing =
                         c.get(
-                            CameraCharacteristics
-                                .LENS_FACING
+                            CameraCharacteristics.LENS_FACING
                         )
 
                     hasFlash &&
                         facing ==
-                        CameraCharacteristics
-                            .LENS_FACING_BACK
+                        CameraCharacteristics.LENS_FACING_BACK
                 }
                 ?: cameraManager
                     .cameraIdList
                     .firstOrNull { id ->
                         cameraManager
-                            .getCameraCharacteristics(
-                                id
-                            )
+                            .getCameraCharacteristics(id)
                             .get(
-                                CameraCharacteristics
-                                    .FLASH_INFO_AVAILABLE
+                                CameraCharacteristics.FLASH_INFO_AVAILABLE
                             ) == true
                     }
         }.getOrNull()
-    }
 }

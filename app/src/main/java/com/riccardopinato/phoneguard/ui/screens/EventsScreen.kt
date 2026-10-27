@@ -174,7 +174,9 @@ private fun eventAccent(
     when (type) {
         AlarmEventType.ARMING_STARTED -> OmniWarning
         AlarmEventType.ARMED -> OmniAccent
+        AlarmEventType.OWNER_VERIFIED -> OmniAccent
         AlarmEventType.TRIGGERED -> OmniDanger
+        AlarmEventType.JOURNEY_ENDED -> OmniAccent
         AlarmEventType.DISARMED -> OmniAccent
         AlarmEventType.CANCELED -> OmniWarning
         AlarmEventType.ERROR -> OmniDanger
@@ -183,8 +185,10 @@ private fun eventAccent(
 private fun AlarmEventType.toItalianLabel(): String =
     when (this) {
         AlarmEventType.ARMING_STARTED -> "Armamento avviato"
-        AlarmEventType.ARMED -> "Allarme armato"
-        AlarmEventType.TRIGGERED -> "Movimento rilevato"
+        AlarmEventType.ARMED -> "Protezione armata"
+        AlarmEventType.OWNER_VERIFIED -> "Proprietario verificato"
+        AlarmEventType.TRIGGERED -> "Allarme attivato"
+        AlarmEventType.JOURNEY_ENDED -> "Journey completato"
         AlarmEventType.DISARMED -> "Allarme disattivato"
         AlarmEventType.CANCELED -> "Armamento annullato"
         AlarmEventType.ERROR -> "Errore"
