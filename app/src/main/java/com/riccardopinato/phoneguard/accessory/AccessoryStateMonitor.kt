@@ -6,12 +6,23 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
+import java.util.Locale
 
 data class ProtectedAccessory(
     val id: Int,
     val type: Int,
     val name: String
-)
+) {
+    fun stableFingerprint():
+        String =
+        type.toString() +
+            "|" +
+            name
+                .trim()
+                .lowercase(
+                    Locale.ROOT
+                )
+}
 
 class AccessoryStateMonitor(
     context: Context
