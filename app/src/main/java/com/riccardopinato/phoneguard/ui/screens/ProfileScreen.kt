@@ -117,6 +117,23 @@ fun ProfileScreen(
             }
         }
 
+    val mobilityPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { granted ->
+            scope.launch {
+                settingsRepository.setAdaptiveAutoGuardMobility(granted)
+                if (settings.adaptiveAutoGuardEnabled) {
+                    ProtectionForegroundService.setAdaptiveAutoGuard(context, true)
+                }
+                if (!granted) {
+                    statusMessage = resources.getString(
+                        R.string.auto_guard_mobility_permission_denied
+                    )
+                }
+            }
+        }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -426,6 +443,32 @@ fun ProfileScreen(
                                 ProtectionForegroundService.setAdaptiveAutoGuard(
                                     context, true
                                 )
+                            }
+                        }
+                    )
+                    SettingSwitchRow(
+                        title = stringResource(R.string.auto_guard_mobility),
+                        subtitle = stringResource(R.string.auto_guard_mobility_body),
+                        checked = settings.adaptiveAutoGuardMobility,
+                        enabled = !alarmRunning,
+                        onCheckedChange = { enabled ->
+                            val permissionNeeded =
+                                enabled &&
+                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                                    ContextCompat.checkSelfPermission(
+                                        context, Manifest.permission.ACTIVITY_RECOGNITION
+                                    ) != PackageManager.PERMISSION_GRANTED
+                            if (permissionNeeded) {
+                                mobilityPermissionLauncher.launch(
+                                    Manifest.permission.ACTIVITY_RECOGNITION
+                                )
+                            } else {
+                                scope.launch {
+                                    settingsRepository.setAdaptiveAutoGuardMobility(enabled)
+                                    ProtectionForegroundService.setAdaptiveAutoGuard(
+                                        context, true
+                                    )
+                                }
                             }
                         }
                     )
