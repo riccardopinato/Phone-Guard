@@ -546,7 +546,6 @@ class ProtectionForegroundService : Service() {
                 adaptiveIdleMinutes = settings.adaptiveAutoGuardIdleMinutes
                 adaptivePocketEnabled = settings.adaptiveAutoGuardPocket
                 adaptiveTableEnabled = settings.adaptiveAutoGuardTable
-            adaptiveMobilityEnabled = settings.adaptiveAutoGuardMobility
                 adaptiveMobilityEnabled = settings.adaptiveAutoGuardMobility
 
                 container.eventRepository.add(
@@ -2379,6 +2378,7 @@ class ProtectionForegroundService : Service() {
             adaptiveIdleMinutes = settings.adaptiveAutoGuardIdleMinutes
             adaptivePocketEnabled = settings.adaptiveAutoGuardPocket
             adaptiveTableEnabled = settings.adaptiveAutoGuardTable
+            adaptiveMobilityEnabled = settings.adaptiveAutoGuardMobility
 
             when (
                 SessionRecoveryPolicy
