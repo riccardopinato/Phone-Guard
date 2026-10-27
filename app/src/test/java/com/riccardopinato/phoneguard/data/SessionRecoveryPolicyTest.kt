@@ -149,6 +149,59 @@ class SessionRecoveryPolicyTest {
         )
     }
 
+
+    @Test
+    fun expiredJourneyOwnerCheckStillRestoresAlarm() {
+        val session =
+            PersistedProtectionSession(
+                phase = AlarmPhase.OWNER_CHECK,
+                mode = ProtectionMode.JOURNEY,
+                pocketGuardMode = GuardMode.POCKET,
+                updatedAtWallClock = 1L,
+                journeyEndsAt = 9_000L,
+                previousAlarmVolume = 4,
+                tableCalibration = null,
+                pocketCalibration =
+                    pocketProfile(
+                        GuardMode.POCKET
+                    )
+            )
+
+        assertEquals(
+            RecoveryAction.RESTORE_ALARM,
+            SessionRecoveryPolicy.recoveryAction(
+                session,
+                now = 10_000L
+            )
+        )
+    }
+
+    @Test
+    fun expiredJourneyTriggeredStillRestoresAlarm() {
+        val session =
+            PersistedProtectionSession(
+                phase = AlarmPhase.TRIGGERED,
+                mode = ProtectionMode.JOURNEY,
+                pocketGuardMode = GuardMode.BAG,
+                updatedAtWallClock = 1L,
+                journeyEndsAt = 9_000L,
+                previousAlarmVolume = 4,
+                tableCalibration = null,
+                pocketCalibration =
+                    pocketProfile(
+                        GuardMode.BAG
+                    )
+            )
+
+        assertEquals(
+            RecoveryAction.RESTORE_ALARM,
+            SessionRecoveryPolicy.recoveryAction(
+                session,
+                now = 10_000L
+            )
+        )
+    }
+
     private fun pocketProfile(
         mode: GuardMode
     ): CalibrationProfile =

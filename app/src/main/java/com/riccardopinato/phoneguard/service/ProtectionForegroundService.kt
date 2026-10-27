@@ -628,6 +628,8 @@ class ProtectionForegroundService : Service() {
         decision: DetectionDecision
     ) {
         ownerCheckJob?.cancel()
+        journeyJob?.cancel()
+        journeyJob = null
 
         val deadline =
             System.currentTimeMillis() +
@@ -735,6 +737,12 @@ class ProtectionForegroundService : Service() {
             "${activeMode.label} protetto",
             "Proprietario verificato. Protezione ancora attiva."
         )
+
+        if (activeMode == ProtectionMode.JOURNEY) {
+            scheduleJourneyEnd(
+                activeJourneyEndAt
+            )
+        }
     }
 
     private fun triggerTableAlarm(
@@ -797,6 +805,9 @@ class ProtectionForegroundService : Service() {
         ownerCheckJob?.cancel()
         ownerCheckJob = null
 
+        journeyJob?.cancel()
+        journeyJob = null
+
         AlarmStateStore.update(
             AlarmRuntimeState(
                 phase = AlarmPhase.TRIGGERED,
@@ -857,6 +868,17 @@ class ProtectionForegroundService : Service() {
             return
         }
 
+        val phase =
+            AlarmStateStore.state
+                .value.phase
+
+        if (
+            phase == AlarmPhase.OWNER_CHECK ||
+            phase == AlarmPhase.TRIGGERED
+        ) {
+            return
+        }
+
         activeJourneyEndAt = endAt
         container.sessionStateRepository
             .saveJourneyEnd(endAt)
@@ -882,6 +904,19 @@ class ProtectionForegroundService : Service() {
     }
 
     private fun finishJourney() {
+        journeyJob = null
+
+        val phase =
+            AlarmStateStore.state
+                .value.phase
+
+        if (
+            phase == AlarmPhase.OWNER_CHECK ||
+            phase == AlarmPhase.TRIGGERED
+        ) {
+            return
+        }
+
         container.eventRepository.add(
             AlarmEventType.JOURNEY_ENDED,
             "Journey session completed."
@@ -1051,9 +1086,6 @@ class ProtectionForegroundService : Service() {
                     )
 
                     outputController.start(settings)
-                    scheduleJourneyEnd(
-                        persisted.journeyEndsAt
-                    )
                 }
 
                 RecoveryAction.RESTORE_TABLE -> {

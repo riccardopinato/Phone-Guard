@@ -48,6 +48,13 @@ internal object SessionRecoveryPolicy {
         now: Long
     ): RecoveryAction {
         if (
+            session.phase == AlarmPhase.TRIGGERED ||
+            session.phase == AlarmPhase.OWNER_CHECK
+        ) {
+            return RecoveryAction.RESTORE_ALARM
+        }
+
+        if (
             session.mode == ProtectionMode.JOURNEY &&
             session.journeyEndsAt != null &&
             session.journeyEndsAt <= now
@@ -56,10 +63,6 @@ internal object SessionRecoveryPolicy {
         }
 
         return when (session.phase) {
-            AlarmPhase.TRIGGERED,
-            AlarmPhase.OWNER_CHECK ->
-                RecoveryAction.RESTORE_ALARM
-
             AlarmPhase.ARMED ->
                 when (session.mode) {
                     ProtectionMode.TABLE ->
@@ -82,6 +85,10 @@ internal object SessionRecoveryPolicy {
             AlarmPhase.ARMING,
             AlarmPhase.CALIBRATING ->
                 RecoveryAction.RECALIBRATE
+
+            AlarmPhase.TRIGGERED,
+            AlarmPhase.OWNER_CHECK ->
+                RecoveryAction.RESTORE_ALARM
 
             AlarmPhase.DISARMED,
             AlarmPhase.ERROR ->
