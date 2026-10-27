@@ -8,7 +8,11 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.model.ProtectionMode
 import com.riccardopinato.phoneguard.model.Sensitivity
+import com.riccardopinato.phoneguard.pocket.model.GuardMode
+import com.riccardopinato.phoneguard.pocket.model.JourneyDuration
+import com.riccardopinato.phoneguard.pocket.model.PocketSensitivity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -19,8 +23,12 @@ private val Context.settingsDataStore by preferencesDataStore(
 class SettingsRepository(private val context: Context) {
 
     private object Keys {
+        val selectedMode = stringPreferencesKey("selected_mode")
         val countdown = intPreferencesKey("countdown_seconds")
         val sensitivity = stringPreferencesKey("sensitivity")
+        val pocketSensitivity = stringPreferencesKey("pocket_sensitivity")
+        val journeyDuration = stringPreferencesKey("journey_duration")
+        val journeyGuardMode = stringPreferencesKey("journey_guard_mode")
         val sound = booleanPreferencesKey("sound_enabled")
         val vibration = booleanPreferencesKey("vibration_enabled")
         val flash = booleanPreferencesKey("flash_enabled")
@@ -35,13 +43,27 @@ class SettingsRepository(private val context: Context) {
     val settings: Flow<AppSettings> =
         context.settingsDataStore.data.map { prefs ->
             AppSettings(
+                selectedMode = enumOrDefault(
+                    prefs[Keys.selectedMode],
+                    ProtectionMode.TABLE
+                ),
                 countdownSeconds = prefs[Keys.countdown] ?: 5,
-                sensitivity = runCatching {
-                    Sensitivity.valueOf(
-                        prefs[Keys.sensitivity]
-                            ?: Sensitivity.MEDIUM.name
-                    )
-                }.getOrDefault(Sensitivity.MEDIUM),
+                sensitivity = enumOrDefault(
+                    prefs[Keys.sensitivity],
+                    Sensitivity.MEDIUM
+                ),
+                pocketSensitivity = enumOrDefault(
+                    prefs[Keys.pocketSensitivity],
+                    PocketSensitivity.NORMAL
+                ),
+                journeyDuration = enumOrDefault(
+                    prefs[Keys.journeyDuration],
+                    JourneyDuration.HOUR_1
+                ),
+                journeyGuardMode = enumOrDefault(
+                    prefs[Keys.journeyGuardMode],
+                    GuardMode.POCKET
+                ),
                 soundEnabled = prefs[Keys.sound] ?: true,
                 vibrationEnabled = prefs[Keys.vibration] ?: true,
                 flashEnabled = prefs[Keys.flash] ?: true,
@@ -59,6 +81,12 @@ class SettingsRepository(private val context: Context) {
             )
         }
 
+    suspend fun setSelectedMode(value: ProtectionMode) {
+        context.settingsDataStore.edit {
+            it[Keys.selectedMode] = value.name
+        }
+    }
+
     suspend fun setCountdown(seconds: Int) {
         require(seconds in setOf(3, 5, 10, 15))
         context.settingsDataStore.edit {
@@ -69,6 +97,24 @@ class SettingsRepository(private val context: Context) {
     suspend fun setSensitivity(value: Sensitivity) {
         context.settingsDataStore.edit {
             it[Keys.sensitivity] = value.name
+        }
+    }
+
+    suspend fun setPocketSensitivity(value: PocketSensitivity) {
+        context.settingsDataStore.edit {
+            it[Keys.pocketSensitivity] = value.name
+        }
+    }
+
+    suspend fun setJourneyDuration(value: JourneyDuration) {
+        context.settingsDataStore.edit {
+            it[Keys.journeyDuration] = value.name
+        }
+    }
+
+    suspend fun setJourneyGuardMode(value: GuardMode) {
+        context.settingsDataStore.edit {
+            it[Keys.journeyGuardMode] = value.name
         }
     }
 
@@ -121,4 +167,12 @@ class SettingsRepository(private val context: Context) {
             it[Keys.onboardingCompleted] = completed
         }
     }
+
+    private inline fun <reified T : Enum<T>> enumOrDefault(
+        raw: String?,
+        fallback: T
+    ): T =
+        runCatching {
+            enumValueOf<T>(raw ?: fallback.name)
+        }.getOrDefault(fallback)
 }

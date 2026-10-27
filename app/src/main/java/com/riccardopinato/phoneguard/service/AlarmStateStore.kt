@@ -1,6 +1,6 @@
-// TARGET: app/src/main/java/com/riccardopinato/tabletopalarm/service/AlarmStateStore.kt
 package com.riccardopinato.phoneguard.service
 
+import com.riccardopinato.phoneguard.model.ProtectionMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,15 +10,21 @@ enum class AlarmPhase {
     ARMING,
     CALIBRATING,
     ARMED,
+    OWNER_CHECK,
     TRIGGERED,
     ERROR
 }
 
 data class AlarmRuntimeState(
     val phase: AlarmPhase = AlarmPhase.DISARMED,
+    val mode: ProtectionMode = ProtectionMode.TABLE,
     val countdownSeconds: Int = 0,
     val message: String = "Pronto",
     val lastMotionDelta: Float = 0f,
+    val confidenceScore: Int = 0,
+    val detectorState: String? = null,
+    val ownerCheckDeadline: Long? = null,
+    val journeyEndsAt: Long? = null,
     val triggeredAt: Long? = null
 )
 
