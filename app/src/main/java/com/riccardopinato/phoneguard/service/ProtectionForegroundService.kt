@@ -2271,6 +2271,7 @@ class ProtectionForegroundService : Service() {
                 val qualified = stable.observe(assessed, now)
                 val mode = when (qualified) {
                     AutoGuardCandidate.POCKET -> ProtectionMode.POCKET
+                    AutoGuardCandidate.BAG -> ProtectionMode.BAG
                     AutoGuardCandidate.TABLE ->
                         if (AutoGuardTiming.idleElapsed(
                                 now, adaptiveScreenOffAt, adaptiveIdleMinutes
