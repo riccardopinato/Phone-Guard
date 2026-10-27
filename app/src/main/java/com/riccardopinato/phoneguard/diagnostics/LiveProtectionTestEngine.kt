@@ -122,14 +122,62 @@ class LiveProtectionTestEngine(
 
     private suspend fun testBag():
         LiveGuardTestResult {
-        var storedEvidence =
-            false
+        var storageEvidence:
+            BagStorageEvidence? = null
+
+        var consecutiveStillSamples =
+            0
 
         return sensorTest(
             instruction =
                 "Place the phone in a dark/enclosed position, then remove or move it."
         ) {
             snapshot ->
+            val establishedEvidence =
+                storageEvidence
+
+            if (
+                establishedEvidence !=
+                null
+            ) {
+                val moved =
+                    (
+                        snapshot.gyroscopeObserved &&
+                            snapshot.rotationScore >=
+                                BAG_EXIT_ROTATION
+                        ) ||
+                        (
+                            snapshot.accelerometerObserved &&
+                                snapshot.motionScore >=
+                                    BAG_EXIT_MOTION
+                            )
+
+                val becameBright =
+                    establishedEvidence ==
+                        BagStorageEvidence.DARK &&
+                        snapshot.lightObserved &&
+                        snapshot.lux != null &&
+                        snapshot.lux >=
+                            BAG_EXIT_LUX
+
+                if (
+                    moved ||
+                    becameBright
+                ) {
+                    return@sensorTest
+                        LiveGuardTestResult(
+                            success = true,
+                            detail =
+                                "Bag removal transition detected.",
+                            observedScore =
+                                maxOf(
+                                    snapshot.motionScore,
+                                    snapshot.rotationScore
+                                )
+                        )
+                }
+            }
+
             val dark =
                 snapshot.lightObserved &&
                     snapshot.lux != null &&
@@ -137,52 +185,36 @@ class LiveProtectionTestEngine(
                         BAG_DARK_LUX
 
             if (
-                dark ||
-                (
-                    snapshot.gyroscopeObserved &&
-                        snapshot.rotationScore <=
-                            BAG_STORED_ROTATION
-                    )
+                dark
             ) {
-                storedEvidence =
-                    true
-            }
-
-            val removalEvidence =
-                (
-                    snapshot.lightObserved &&
-                        snapshot.lux != null &&
-                        snapshot.lux >=
-                            BAG_EXIT_LUX
-                    ) ||
-                    (
-                        snapshot.gyroscopeObserved &&
-                            snapshot.rotationScore >=
-                                BAG_EXIT_ROTATION
-                        ) ||
-                    (
-                        snapshot.accelerometerObserved &&
-                            snapshot.motionScore >=
-                                BAG_EXIT_MOTION
-                        )
-
-            if (
-                storedEvidence &&
-                removalEvidence
+                storageEvidence =
+                    BagStorageEvidence.DARK
+                consecutiveStillSamples =
+                    0
+            } else if (
+                snapshot.gyroscopeObserved &&
+                snapshot.rotationScore <=
+                    BAG_STORED_ROTATION &&
+                snapshot.accelerometerObserved &&
+                snapshot.motionScore <
+                    BAG_EXIT_MOTION
             ) {
-                LiveGuardTestResult(
-                    success = true,
-                    detail =
-                        "Bag removal transition detected.",
-                    observedScore =
-                        maxOf(
-                            snapshot.motionScore,
-                            snapshot.rotationScore
-                        )
-                )
+                consecutiveStillSamples +=
+                    1
+
+                if (
+                    consecutiveStillSamples >=
+                    BAG_STILL_SAMPLES
+                ) {
+                    storageEvidence =
+                        BagStorageEvidence.STILL
+                }
             } else {
-                null
+                consecutiveStillSamples =
+                    0
             }
+
+            null
         }
     }
 
@@ -367,6 +399,11 @@ class LiveProtectionTestEngine(
         }
     }
 
+    private enum class BagStorageEvidence {
+        DARK,
+        STILL
+    }
+
     private companion object {
         const val TEST_TIMEOUT_MS =
             12_000L
@@ -388,5 +425,8 @@ class LiveProtectionTestEngine(
 
         const val BAG_EXIT_MOTION =
             0.16f
+
+        const val BAG_STILL_SAMPLES =
+            3
     }
 }
