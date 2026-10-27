@@ -1,6 +1,7 @@
 package com.riccardopinato.phoneguard.autoguard
 
 import android.content.Context
+import android.os.SystemClock
 import com.riccardopinato.phoneguard.pocket.model.SensorSnapshot
 import com.riccardopinato.phoneguard.pocket.sensor.SamplingMode
 import com.riccardopinato.phoneguard.pocket.sensor.SensorController
@@ -38,7 +39,8 @@ class AutoGuardSampler(context: Context) {
                     accelerometerObserved = it.accelerometerObserved,
                     motionScore = peakMotion,
                     gyroscopeObserved = it.gyroscopeObserved,
-                    rotationScore = peakRotation
+                    rotationScore = peakRotation,
+                    mobility = MobilityContextStore.freshType(SystemClock.elapsedRealtime())
                 )
             }
         } finally {
