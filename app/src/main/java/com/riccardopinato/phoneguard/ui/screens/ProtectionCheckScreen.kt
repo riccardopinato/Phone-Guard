@@ -426,24 +426,32 @@ fun ProtectionCheckScreen(
                                 )
 
                         scope.launch {
-                            val result =
-                                liveTestEngine
-                                    .run(
-                                        mode =
-                                            settings
-                                                .selectedMode,
-                                        journeyGuardMode =
-                                            settings
-                                                .journeyGuardMode
-                                    )
+                            try {
+                                val result =
+                                    liveTestEngine
+                                        .run(
+                                            mode =
+                                                settings
+                                                    .selectedMode,
+                                            journeyGuardMode =
+                                                settings
+                                                    .journeyGuardMode
+                                        )
 
-                            statusMessage =
-                                result.detail
+                                statusMessage =
+                                    result.detail
 
-                            busy =
-                                false
-
-                            refresh()
+                                refresh()
+                            } catch (
+                                error: Throwable
+                            ) {
+                                statusMessage =
+                                    error.message
+                                        ?: "Live Guard Test failed."
+                            } finally {
+                                busy =
+                                    false
+                            }
                         }
                     }
                 )
@@ -505,12 +513,20 @@ fun ProtectionCheckScreen(
                             true
 
                         scope.launch {
-                            sensitivityRecommendation =
-                                sensitivityAdvisor
-                                    .analyze()
-
-                            busy =
-                                false
+                            try {
+                                sensitivityRecommendation =
+                                    sensitivityAdvisor
+                                        .analyze()
+                            } catch (
+                                error: Throwable
+                            ) {
+                                statusMessage =
+                                    error.message
+                                        ?: "Sensitivity analysis failed."
+                            } finally {
+                                busy =
+                                    false
+                            }
                         }
                     }
                 )
