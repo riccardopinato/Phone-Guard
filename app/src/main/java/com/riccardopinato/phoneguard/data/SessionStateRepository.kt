@@ -17,7 +17,8 @@ data class PersistedProtectionSession(
     val journeyEndsAt: Long?,
     val tableCalibration: MotionCalibration?,
     val pocketCalibration: CalibrationProfile?,
-    val journeyEndsAtElapsedRealtime: Long? = null
+    val journeyEndsAtElapsedRealtime: Long? = null,
+    val accessoryFingerprints: Set<String> = emptySet()
 )
 
 internal enum class RecoveryAction {
@@ -182,6 +183,15 @@ class SessionStateRepository(
             removePocketCalibration(editor)
         }
 
+        if (
+            mode !=
+            ProtectionMode.ACCESSORY
+        ) {
+            editor.remove(
+                KEY_ACCESSORY_FINGERPRINTS
+            )
+        }
+
         editor.commit()
     }
 
@@ -215,6 +225,21 @@ class SessionStateRepository(
             .putBoolean(KEY_HAS_POCKET_CALIBRATION, true)
             .putLong(KEY_BOOT_MARKER, currentBootMarker())
             .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
+            .commit()
+    }
+
+    fun saveAccessoryFingerprints(
+        fingerprints: Set<String>
+    ) {
+        prefs.edit()
+            .putStringSet(
+                KEY_ACCESSORY_FINGERPRINTS,
+                fingerprints.toSet()
+            )
+            .putLong(
+                KEY_UPDATED_AT,
+                System.currentTimeMillis()
+            )
             .commit()
     }
 
@@ -411,7 +436,14 @@ class SessionStateRepository(
                     ).takeIf { it > 0L }
                 } else {
                     null
-                }
+                },
+            accessoryFingerprints =
+                prefs.getStringSet(
+                    KEY_ACCESSORY_FINGERPRINTS,
+                    emptySet()
+                )
+                    ?.toSet()
+                    ?: emptySet()
         )
     }
 
@@ -462,6 +494,8 @@ class SessionStateRepository(
         const val KEY_JOURNEY_ENDS_AT = "journey_ends_at"
         const val KEY_JOURNEY_ENDS_AT_ELAPSED =
             "journey_ends_at_elapsed"
+        const val KEY_ACCESSORY_FINGERPRINTS =
+            "accessory_fingerprints"
 
         const val KEY_HAS_TABLE_CALIBRATION = "has_table_calibration"
         const val KEY_BASELINE_X = "baseline_x"
