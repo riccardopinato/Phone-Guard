@@ -26,6 +26,7 @@ internal enum class RecoveryAction {
     RESTORE_TABLE,
     RESTORE_POCKET,
     RESTORE_CHARGING,
+    RESTORE_ACCESSORY,
     RESTORE_ALARM
 }
 
@@ -96,6 +97,9 @@ internal object SessionRecoveryPolicy {
 
                     ProtectionMode.CHARGING ->
                         RecoveryAction.RESTORE_CHARGING
+
+                    ProtectionMode.ACCESSORY ->
+                        RecoveryAction.RESTORE_ACCESSORY
                 }
 
             AlarmPhase.ARMING,
