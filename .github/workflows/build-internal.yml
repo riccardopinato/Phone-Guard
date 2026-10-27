@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      EXPECTED_CERT_SHA256: 0ECAF920E114037CDC090E30950A130439A3F2E4FFE66F486EE41739F2BBA654
+      EXPECTED_CERT_SHA256: A782F857EE8805D3D7BAB846E10FC54E564CEBFC8BAD14DF678EA5A258CF5EC6
 
     steps:
       - name: Checkout
@@ -63,12 +63,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .signing
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > .signing/internal.jks
-          chmod 600 .signing/internal.jks
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > .signing/internal.p12
+          chmod 600 .signing/internal.p12
 
       - name: Build and validate
         env:
-          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.signing/internal.jks
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.signing/internal.p12
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
