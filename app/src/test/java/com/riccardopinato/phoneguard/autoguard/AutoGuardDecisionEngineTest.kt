@@ -106,7 +106,7 @@ class AutoGuardDecisionEngineTest {
         assertFalse(AutoGuardTiming.idleElapsed(10L, 100L, 1))
         assertFalse(AutoGuardTiming.idleElapsed(60_099L, 100L, 1))
         assertTrue(AutoGuardTiming.idleElapsed(60_100L, 100L, 1))
-        assertFalse(AutoGuardTiming.idleElapsed(1_000_000L, 100L, 2))
+        assertFalse(AutoGuardTiming.idleElapsed(60_100L, 100L, 3))
     }
 
     @Test fun inputOutsideAllowedIdleOptionsIsRejected() {
