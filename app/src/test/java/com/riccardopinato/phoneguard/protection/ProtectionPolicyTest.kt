@@ -16,11 +16,11 @@ class ProtectionPolicyTest {
         assertTrue(
             ProtectionPolicy.isSupported(
                 mode = ProtectionMode.TABLE,
-                journeyGuardMode = GuardMode.POCKET,
+                journeyGuardMode =
+                    GuardMode.POCKET,
                 capabilities =
-                    ProtectionCapabilities(
-                        hasAccelerometer = true,
-                        hasProximity = false
+                    caps(
+                        accelerometer = true
                     )
             )
         )
@@ -31,11 +31,12 @@ class ProtectionPolicyTest {
         assertFalse(
             ProtectionPolicy.isSupported(
                 mode = ProtectionMode.POCKET,
-                journeyGuardMode = GuardMode.POCKET,
+                journeyGuardMode =
+                    GuardMode.POCKET,
                 capabilities =
-                    ProtectionCapabilities(
-                        hasAccelerometer = true,
-                        hasProximity = false
+                    caps(
+                        accelerometer = true,
+                        proximity = false
                     )
             )
         )
@@ -43,26 +44,59 @@ class ProtectionPolicyTest {
         assertTrue(
             ProtectionPolicy.isSupported(
                 mode = ProtectionMode.POCKET,
-                journeyGuardMode = GuardMode.POCKET,
+                journeyGuardMode =
+                    GuardMode.POCKET,
                 capabilities =
-                    ProtectionCapabilities(
-                        hasAccelerometer = true,
-                        hasProximity = true
+                    caps(
+                        accelerometer = true,
+                        proximity = true
                     )
             )
         )
     }
 
     @Test
-    fun bagCanRunWithoutProximity() {
+    fun bagRejectsAccelerometerOnly() {
+        assertFalse(
+            ProtectionPolicy.isSupported(
+                mode = ProtectionMode.BAG,
+                journeyGuardMode =
+                    GuardMode.POCKET,
+                capabilities =
+                    caps(
+                        accelerometer = true
+                    )
+            )
+        )
+    }
+
+    @Test
+    fun bagSupportsAccelerometerPlusLight() {
         assertTrue(
             ProtectionPolicy.isSupported(
                 mode = ProtectionMode.BAG,
-                journeyGuardMode = GuardMode.POCKET,
+                journeyGuardMode =
+                    GuardMode.POCKET,
                 capabilities =
-                    ProtectionCapabilities(
-                        hasAccelerometer = true,
-                        hasProximity = false
+                    caps(
+                        accelerometer = true,
+                        light = true
+                    )
+            )
+        )
+    }
+
+    @Test
+    fun bagSupportsAccelerometerPlusGyroscope() {
+        assertTrue(
+            ProtectionPolicy.isSupported(
+                mode = ProtectionMode.BAG,
+                journeyGuardMode =
+                    GuardMode.POCKET,
+                capabilities =
+                    caps(
+                        accelerometer = true,
+                        gyroscope = true
                     )
             )
         )
@@ -73,11 +107,13 @@ class ProtectionPolicyTest {
         assertFalse(
             ProtectionPolicy.isSupported(
                 mode = ProtectionMode.JOURNEY,
-                journeyGuardMode = GuardMode.POCKET,
+                journeyGuardMode =
+                    GuardMode.POCKET,
                 capabilities =
-                    ProtectionCapabilities(
-                        hasAccelerometer = true,
-                        hasProximity = false
+                    caps(
+                        accelerometer = true,
+                        proximity = false,
+                        light = true
                     )
             )
         )
@@ -85,11 +121,13 @@ class ProtectionPolicyTest {
         assertTrue(
             ProtectionPolicy.isSupported(
                 mode = ProtectionMode.JOURNEY,
-                journeyGuardMode = GuardMode.BAG,
+                journeyGuardMode =
+                    GuardMode.BAG,
                 capabilities =
-                    ProtectionCapabilities(
-                        hasAccelerometer = true,
-                        hasProximity = false
+                    caps(
+                        accelerometer = true,
+                        proximity = false,
+                        light = true
                     )
             )
         )
@@ -111,17 +149,19 @@ class ProtectionPolicyTest {
 
         assertEquals(
             901_000L,
-            ProtectionPolicy.remainingJourneyMs(
-                endAt = end,
-                now = 900_000L
-            )
+            ProtectionPolicy
+                .remainingJourneyMs(
+                    endAt = end,
+                    now = 900_000L
+                )
         )
 
         assertTrue(
-            ProtectionPolicy.isJourneyExpired(
-                endAt = end,
-                now = 1_801_000L
-            )
+            ProtectionPolicy
+                .isJourneyExpired(
+                    endAt = end,
+                    now = 1_801_000L
+                )
         )
     }
 
@@ -135,4 +175,21 @@ class ProtectionPolicyTest {
             )
         )
     }
+
+    private fun caps(
+        accelerometer: Boolean = false,
+        proximity: Boolean = false,
+        light: Boolean = false,
+        gyroscope: Boolean = false
+    ) =
+        ProtectionCapabilities(
+            hasAccelerometer =
+                accelerometer,
+            hasProximity =
+                proximity,
+            hasLight =
+                light,
+            hasGyroscope =
+                gyroscope
+        )
 }

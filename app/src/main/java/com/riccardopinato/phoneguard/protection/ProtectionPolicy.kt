@@ -6,7 +6,9 @@ import com.riccardopinato.phoneguard.pocket.model.JourneyDuration
 
 data class ProtectionCapabilities(
     val hasAccelerometer: Boolean,
-    val hasProximity: Boolean
+    val hasProximity: Boolean,
+    val hasLight: Boolean,
+    val hasGyroscope: Boolean
 )
 
 object ProtectionPolicy {
@@ -27,30 +29,47 @@ object ProtectionPolicy {
         journeyGuardMode: GuardMode,
         capabilities: ProtectionCapabilities
     ): Boolean =
-        when (effectiveGuardMode(mode, journeyGuardMode)) {
-            null -> capabilities.hasAccelerometer
+        when (
+            effectiveGuardMode(
+                mode,
+                journeyGuardMode
+            )
+        ) {
+            null ->
+                capabilities.hasAccelerometer
+
             GuardMode.POCKET ->
                 capabilities.hasAccelerometer &&
                     capabilities.hasProximity
+
             GuardMode.BAG ->
-                capabilities.hasAccelerometer
+                capabilities.hasAccelerometer &&
+                    (
+                        capabilities.hasLight ||
+                            capabilities.hasGyroscope
+                        )
         }
 
     fun journeyEndAt(
         now: Long,
         duration: JourneyDuration
     ): Long? =
-        duration.durationMs?.let { now + it }
+        duration.durationMs
+            ?.let { now + it }
 
     fun remainingJourneyMs(
         endAt: Long?,
         now: Long
     ): Long? =
-        endAt?.let { (it - now).coerceAtLeast(0L) }
+        endAt?.let {
+            (it - now)
+                .coerceAtLeast(0L)
+        }
 
     fun isJourneyExpired(
         endAt: Long?,
         now: Long
     ): Boolean =
-        endAt != null && endAt <= now
+        endAt != null &&
+            endAt <= now
 }

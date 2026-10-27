@@ -110,7 +110,11 @@ fun AlarmScreen(
                     hasAccelerometer =
                         hardware.hasAccelerometer,
                     hasProximity =
-                        hardware.hasProximity
+                        hardware.hasProximity,
+                    hasLight =
+                        hardware.hasLight,
+                    hasGyroscope =
+                        hardware.hasGyroscope
                 )
         )
 
@@ -985,7 +989,7 @@ private fun unsupportedMessage(
             "Pocket richiede accelerometro e sensore di prossimità."
 
         GuardMode.BAG ->
-            "Bag richiede almeno l'accelerometro."
+            "Bag richiede accelerometro e almeno un sensore tra luce e giroscopio."
     }
 
 private fun PocketSensitivity.label():

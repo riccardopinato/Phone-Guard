@@ -11,11 +11,19 @@ data class SensorCapabilities(
     val gyroscopeWakeUp: Boolean,
     val hasFlash: Boolean
 ) {
-    val canRunPocket: Boolean get() = hasProximity && hasAccelerometer
-    val canRunBag: Boolean get() = hasAccelerometer
+    val canRunPocket: Boolean
+        get() =
+            hasProximity &&
+                hasAccelerometer
 
-    fun canRun(mode: GuardMode): Boolean = when (mode) {
-        GuardMode.POCKET -> canRunPocket
-        GuardMode.BAG -> canRunBag
-    }
+    val canRunBag: Boolean
+        get() =
+            hasAccelerometer &&
+                (hasLight || hasGyroscope)
+
+    fun canRun(mode: GuardMode): Boolean =
+        when (mode) {
+            GuardMode.POCKET -> canRunPocket
+            GuardMode.BAG -> canRunBag
+        }
 }

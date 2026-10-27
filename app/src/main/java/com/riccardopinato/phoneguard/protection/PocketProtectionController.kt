@@ -55,7 +55,13 @@ class PocketProtectionController(
         }
 
         calibrationCollector =
-            CalibrationCollector(mode)
+            CalibrationCollector(
+                mode = mode,
+                hasLightSensor =
+                    capabilities.hasLight,
+                hasGyroscopeSensor =
+                    capabilities.hasGyroscope
+            )
 
         sensors.start(SamplingMode.NORMAL)
 
