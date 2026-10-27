@@ -40,6 +40,9 @@ class PocketProtectionController(
     private var engine:
         SmartProtectionEngine? = null
 
+    private var lastSnapshot:
+        SensorSnapshot? = null
+
     val capabilities: SensorCapabilities
         get() = sensors.capabilities
 
@@ -133,6 +136,10 @@ class PocketProtectionController(
     fun currentState(): GuardState? =
         engine?.currentState()
 
+    fun lastSensorSnapshot():
+        SensorSnapshot? =
+        lastSnapshot
+
     fun ownerVerified(): DetectionDecision? {
         val active = engine ?: return null
 
@@ -178,12 +185,14 @@ class PocketProtectionController(
         calibrationJob = null
         calibrationCollector = null
         engine = null
+        lastSnapshot = null
         sensors.stop()
     }
 
     private fun handleSnapshot(
         snapshot: SensorSnapshot
     ) {
+        lastSnapshot = snapshot
         calibrationCollector?.add(snapshot)
 
         val activeEngine =

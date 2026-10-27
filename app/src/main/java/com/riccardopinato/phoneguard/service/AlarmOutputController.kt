@@ -13,7 +13,9 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import com.riccardopinato.phoneguard.alarm.AlarmVolumeLeaseManager
 import com.riccardopinato.phoneguard.alarm.FlashStrobeController
+import com.riccardopinato.phoneguard.model.AlarmSoundProfile
 import com.riccardopinato.phoneguard.model.AppSettings
+import com.riccardopinato.phoneguard.model.ProtectionMode
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -33,7 +35,8 @@ class AlarmOutputController(
     private var audioFocusRequest: AudioFocusRequest? = null
 
     fun start(
-        settings: AppSettings
+        settings: AppSettings,
+        mode: ProtectionMode
     ): AlarmOutputHealth {
         stopSignals()
 
@@ -49,7 +52,11 @@ class AlarmOutputController(
 
         val soundActive =
             if (settings.soundEnabled) {
-                startSiren()
+                startSound(
+                    settings.soundProfileFor(
+                        mode
+                    )
+                )
             } else {
                 false
             }
@@ -117,8 +124,9 @@ class AlarmOutputController(
     fun effectiveAlarmVolumePercent(): Int =
         volumeLease.currentPercent()
 
-    private fun startSiren():
-        Boolean =
+    private fun startSound(
+        profile: AlarmSoundProfile
+    ): Boolean =
         runCatching {
             val attributes =
                 AudioAttributes.Builder()
@@ -138,7 +146,10 @@ class AlarmOutputController(
             audioFocusRequest = focusRequest
             audioManager.requestAudioFocus(focusRequest)
 
-            val samples = createSirenSamples()
+            val samples =
+                createSoundSamples(
+                    profile
+                )
 
             val track =
                 AudioTrack.Builder()
@@ -186,20 +197,100 @@ class AlarmOutputController(
         audioFocusRequest = null
     }
 
-    private fun createSirenSamples(): ShortArray {
+    private fun createSoundSamples(
+        profile: AlarmSoundProfile
+    ): ShortArray {
         val totalSamples = SAMPLE_RATE
 
-        return ShortArray(totalSamples) { index ->
-            val segment = index / (SAMPLE_RATE / 4)
-            val frequency =
-                if (segment % 2 == 0) 880.0 else 660.0
+        return ShortArray(totalSamples) {
+            index ->
+
             val time =
-                index.toDouble() / SAMPLE_RATE.toDouble()
+                index.toDouble() /
+                    SAMPLE_RATE.toDouble()
+
+            val amplitude =
+                when (profile) {
+                    AlarmSoundProfile.SIREN -> {
+                        val segment =
+                            index /
+                                (
+                                    SAMPLE_RATE /
+                                        4
+                                    )
+
+                        val frequency =
+                            if (
+                                segment % 2 ==
+                                0
+                            ) {
+                                880.0
+                            } else {
+                                660.0
+                            }
+
+                        sin(
+                            2.0 *
+                                PI *
+                                frequency *
+                                time
+                        ) * 0.62
+                    }
+
+                    AlarmSoundProfile.WARNING -> {
+                        val segment =
+                            index /
+                                (
+                                    SAMPLE_RATE /
+                                        8
+                                    )
+
+                        val frequency =
+                            if (
+                                segment % 2 ==
+                                0
+                            ) {
+                                1_020.0
+                            } else {
+                                820.0
+                            }
+
+                        sin(
+                            2.0 *
+                                PI *
+                                frequency *
+                                time
+                        ) * 0.54
+                    }
+
+                    AlarmSoundProfile.BEEP -> {
+                        val withinCycle =
+                            index %
+                                (
+                                    SAMPLE_RATE /
+                                        2
+                                    )
+
+                        if (
+                            withinCycle <
+                            SAMPLE_RATE /
+                                7
+                        ) {
+                            sin(
+                                2.0 *
+                                    PI *
+                                    1_100.0 *
+                                    time
+                            ) * 0.58
+                        } else {
+                            0.0
+                        }
+                    }
+                }
 
             (
-                sin(2.0 * PI * frequency * time) *
-                    Short.MAX_VALUE *
-                    0.62
+                amplitude *
+                    Short.MAX_VALUE
                 )
                 .toInt()
                 .toShort()

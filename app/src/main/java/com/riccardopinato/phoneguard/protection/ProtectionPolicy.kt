@@ -18,7 +18,8 @@ object ProtectionPolicy {
         journeyGuardMode: GuardMode
     ): GuardMode? =
         when (mode) {
-            ProtectionMode.TABLE -> null
+            ProtectionMode.TABLE,
+            ProtectionMode.CHARGING -> null
             ProtectionMode.POCKET -> GuardMode.POCKET
             ProtectionMode.BAG -> GuardMode.BAG
             ProtectionMode.JOURNEY -> journeyGuardMode
@@ -29,25 +30,31 @@ object ProtectionPolicy {
         journeyGuardMode: GuardMode,
         capabilities: ProtectionCapabilities
     ): Boolean =
-        when (
-            effectiveGuardMode(
-                mode,
-                journeyGuardMode
-            )
-        ) {
-            null ->
-                capabilities.hasAccelerometer
+        when (mode) {
+            ProtectionMode.CHARGING ->
+                true
 
-            GuardMode.POCKET ->
-                capabilities.hasAccelerometer &&
-                    capabilities.hasProximity
+            else ->
+                when (
+                    effectiveGuardMode(
+                        mode,
+                        journeyGuardMode
+                    )
+                ) {
+                    null ->
+                        capabilities.hasAccelerometer
 
-            GuardMode.BAG ->
-                capabilities.hasAccelerometer &&
-                    (
-                        capabilities.hasLight ||
-                            capabilities.hasGyroscope
-                        )
+                    GuardMode.POCKET ->
+                        capabilities.hasAccelerometer &&
+                            capabilities.hasProximity
+
+                    GuardMode.BAG ->
+                        capabilities.hasAccelerometer &&
+                            (
+                                capabilities.hasLight ||
+                                    capabilities.hasGyroscope
+                                )
+                }
         }
 
     fun journeyEndAt(

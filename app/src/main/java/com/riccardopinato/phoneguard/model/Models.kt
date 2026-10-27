@@ -10,10 +10,17 @@ enum class Sensitivity {
     HIGH
 }
 
+enum class AlarmSoundProfile {
+    SIREN,
+    WARNING,
+    BEEP
+}
+
 enum class ProtectionMode {
     TABLE,
     POCKET,
     BAG,
+    CHARGING,
     JOURNEY;
 
     val label: String
@@ -21,6 +28,7 @@ enum class ProtectionMode {
             TABLE -> "Table"
             POCKET -> "Pocket"
             BAG -> "Bag"
+            CHARGING -> "Charging"
             JOURNEY -> "Journey"
         }
 }
@@ -28,6 +36,7 @@ enum class ProtectionMode {
 data class AppSettings(
     val selectedMode: ProtectionMode = ProtectionMode.TABLE,
     val countdownSeconds: Int = 5,
+    val preAlarmSeconds: Int = 5,
     val sensitivity: Sensitivity = Sensitivity.MEDIUM,
     val pocketSensitivity: PocketSensitivity = PocketSensitivity.NORMAL,
     val journeyDuration: JourneyDuration = JourneyDuration.HOUR_1,
@@ -39,8 +48,25 @@ data class AppSettings(
     val alarmVolumePercent: Int = 100,
     val warningScreenEnabled: Boolean = true,
     val biometricEnabled: Boolean = false,
+    val chargeAutoArmEnabled: Boolean = false,
+    val tableSoundProfile: AlarmSoundProfile = AlarmSoundProfile.SIREN,
+    val pocketSoundProfile: AlarmSoundProfile = AlarmSoundProfile.SIREN,
+    val bagSoundProfile: AlarmSoundProfile = AlarmSoundProfile.SIREN,
+    val chargingSoundProfile: AlarmSoundProfile = AlarmSoundProfile.SIREN,
+    val journeySoundProfile: AlarmSoundProfile = AlarmSoundProfile.SIREN,
     val onboardingCompleted: Boolean = false
-)
+) {
+    fun soundProfileFor(
+        mode: ProtectionMode
+    ): AlarmSoundProfile =
+        when (mode) {
+            ProtectionMode.TABLE -> tableSoundProfile
+            ProtectionMode.POCKET -> pocketSoundProfile
+            ProtectionMode.BAG -> bagSoundProfile
+            ProtectionMode.CHARGING -> chargingSoundProfile
+            ProtectionMode.JOURNEY -> journeySoundProfile
+        }
+}
 
 enum class AlarmEventType {
     ARMING_STARTED,
@@ -57,5 +83,6 @@ data class AlarmEvent(
     val id: Long,
     val timestamp: Long,
     val type: AlarmEventType,
-    val detail: String
+    val detail: String,
+    val metadata: Map<String, String> = emptyMap()
 )
