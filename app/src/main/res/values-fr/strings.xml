@@ -408,4 +408,5 @@
     <string name="auto_guard_state_paused">En pause jusqu’à la prochaine extinction</string>
     <string name="auto_guard_state_unavailable">Veille indisponible</string>
     <string name="auto_guard_state_protection">Protection active (manuelle ou automatique)</string>
+    <string name="auto_guard_state_activating">Activation ou calibrage de la protection en cours</string>
 </resources>
