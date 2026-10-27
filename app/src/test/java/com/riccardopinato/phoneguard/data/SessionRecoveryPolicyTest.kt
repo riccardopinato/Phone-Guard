@@ -43,6 +43,70 @@ class SessionRecoveryPolicyTest {
     }
 
     @Test
+    fun ownerCheckRecoveryStartsFreshAlarmDeadline() {
+        val session =
+            PersistedProtectionSession(
+                phase =
+                    AlarmPhase.OWNER_CHECK,
+                mode =
+                    ProtectionMode.POCKET,
+                pocketGuardMode =
+                    GuardMode.POCKET,
+                updatedAtWallClock =
+                    1_000L,
+                journeyEndsAt = null,
+                tableCalibration = null,
+                pocketCalibration =
+                    pocketProfile(
+                        GuardMode.POCKET
+                    ),
+                triggeredAtWallClock =
+                    null
+            )
+
+        assertEquals(
+            50_000L,
+            SessionRecoveryPolicy
+                .recoveryTriggeredAt(
+                    session =
+                        session,
+                    now =
+                        50_000L
+                )
+        )
+    }
+
+    @Test
+    fun triggeredRecoveryPreservesOriginalAlarmDeadline() {
+        val session =
+            PersistedProtectionSession(
+                phase =
+                    AlarmPhase.TRIGGERED,
+                mode =
+                    ProtectionMode.TABLE,
+                pocketGuardMode = null,
+                updatedAtWallClock =
+                    20_000L,
+                journeyEndsAt = null,
+                tableCalibration = null,
+                pocketCalibration = null,
+                triggeredAtWallClock =
+                    5_000L
+            )
+
+        assertEquals(
+            5_000L,
+            SessionRecoveryPolicy
+                .recoveryTriggeredAt(
+                    session =
+                        session,
+                    now =
+                        50_000L
+                )
+        )
+    }
+
+    @Test
     fun armedTableWithCalibrationRestoresTable() {
         val session =
             PersistedProtectionSession(
