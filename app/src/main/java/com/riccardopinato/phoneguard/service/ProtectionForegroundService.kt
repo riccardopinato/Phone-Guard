@@ -394,6 +394,20 @@ class ProtectionForegroundService : Service() {
                         stopSelf()
                     }
                 }
+                // On boot both auto-arm preferences may be enabled. Hydrate the
+                // shared owner so charging standby does not mask Auto Guard.
+                if (enabled) {
+                    serviceScope.launch {
+                        val prefs = container.settingsRepository.settings.first()
+                        adaptiveAutoGuardEnabled = prefs.adaptiveAutoGuardEnabled
+                        adaptiveIdleMinutes = prefs.adaptiveAutoGuardIdleMinutes
+                        adaptivePocketEnabled = prefs.adaptiveAutoGuardPocket
+                        adaptiveTableEnabled = prefs.adaptiveAutoGuardTable
+                        if (AlarmStateStore.state.value.phase == AlarmPhase.DISARMED) {
+                            enterAutoArmStandby()
+                        }
+                    }
+                }
             }
 
             ACTION_SET_ADAPTIVE_AUTO -> {
@@ -2364,12 +2378,15 @@ class ProtectionForegroundService : Service() {
                     outputController.stop()
                     container.sessionStateRepository.clear()
                     protectionWakeLock.release()
-                    ServiceCompat.stopForeground(
-                        this@ProtectionForegroundService,
-                        ServiceCompat
-                            .STOP_FOREGROUND_REMOVE
-                    )
-                    stopSelf()
+                    if (autoArmStandbyEnabled || adaptiveAutoGuardEnabled) {
+                        enterAutoArmStandby()
+                    } else {
+                        ServiceCompat.stopForeground(
+                            this@ProtectionForegroundService,
+                            ServiceCompat.STOP_FOREGROUND_REMOVE
+                        )
+                        stopSelf()
+                    }
                 }
 
                 RecoveryAction.RESTORE_ALARM -> {
