@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.resources
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,6 +63,7 @@ fun ProfileScreen(
 ) {
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val resources = resources
 
     val settings by
         settingsRepository.settings.collectAsStateWithLifecycle(
@@ -100,13 +102,13 @@ fun ProfileScreen(
                 scope.launch {
                     statusMessage =
                         if (diagnostics.testFlash()) {
-                            context.getString(R.string.flash_ok)
+                            resources.getString(R.string.flash_ok)
                         } else {
-                            context.getString(R.string.flash_failed)
+                            resources.getString(R.string.flash_failed)
                         }
                 }
             } else {
-                statusMessage = context.getString(R.string.camera_permission_denied)
+                statusMessage = resources.getString(R.string.camera_permission_denied)
             }
         }
 
@@ -238,7 +240,7 @@ fun ProfileScreen(
                         enabled = !alarmRunning,
                         onClick = {
                             diagnostics.testSound()
-                            statusMessage = context.getString(R.string.audio_test_started)
+                            statusMessage = resources.getString(R.string.audio_test_started)
                         },
                         modifier = Modifier.weight(1f)
                     )
@@ -249,9 +251,9 @@ fun ProfileScreen(
                         onClick = {
                             statusMessage =
                                 if (diagnostics.testVibration()) {
-                                    context.getString(R.string.vibration_ok)
+                                    resources.getString(R.string.vibration_ok)
                                 } else {
-                                    context.getString(R.string.vibration_unavailable)
+                                    resources.getString(R.string.vibration_unavailable)
                                 }
                         },
                         modifier = Modifier.weight(1f)
@@ -303,9 +305,9 @@ fun ProfileScreen(
 
                         statusMessage =
                             if (opened) {
-                                context.getString(R.string.battery_settings_opened)
+                                resources.getString(R.string.battery_settings_opened)
                             } else {
-                                context.getString(R.string.battery_settings_failed)
+                                resources.getString(R.string.battery_settings_failed)
                             }
                     }
                 )
@@ -377,7 +379,7 @@ fun ProfileScreen(
                 scope.launch {
                     securityRepository.setPin(pin)
                     showSetPin = false
-                    statusMessage = context.getString(R.string.pin_updated)
+                    statusMessage = resources.getString(R.string.pin_updated)
                 }
             }
         )
