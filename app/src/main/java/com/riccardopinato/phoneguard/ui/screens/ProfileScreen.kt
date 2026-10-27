@@ -387,9 +387,10 @@ fun ProfileScreen(
                     title = stringResource(R.string.auto_guard_toggle),
                     subtitle = stringResource(R.string.auto_guard_consent),
                     checked = settings.adaptiveAutoGuardEnabled,
-                    enabled = !alarmRunning &&
-                        (securityHealth == SecurityHealth.READY ||
-                            settings.adaptiveAutoGuardEnabled),
+                    // Always allow turning standby OFF even while an alarm is armed;
+                    // disabling Auto Guard never disarms the existing protected session.
+                    enabled = settings.adaptiveAutoGuardEnabled ||
+                        (!alarmRunning && securityHealth == SecurityHealth.READY),
                     onCheckedChange = { enabled ->
                         val notificationGranted =
                             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
