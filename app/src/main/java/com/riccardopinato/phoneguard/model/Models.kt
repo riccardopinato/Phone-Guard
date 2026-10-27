@@ -73,6 +73,10 @@ data class AppSettings(
     val onboardingCompleted: Boolean = false,
     val gracePeriodSeconds: Int = 5,
     val autoArmCharging: Boolean = false,
+    val adaptiveAutoGuardEnabled: Boolean = false,
+    val adaptiveAutoGuardIdleMinutes: Int = 3,
+    val adaptiveAutoGuardPocket: Boolean = true,
+    val adaptiveAutoGuardTable: Boolean = true,
     val alarmProfiles:
         Map<ProtectionMode, AlarmOutputProfile> =
         emptyMap()
