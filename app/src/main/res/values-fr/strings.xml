@@ -245,4 +245,5 @@
     <string name="svc_wait_journey_pocket">Journey actif : en attente de la poche.</string>
     <string name="svc_wait_journey_bag">Journey actif : en attente du sac.</string>
     <string name="svc_wait_table">Protection Table active.</string>
+    <string name="svc_calibration_evidence_insufficient">L’étalonnage n’a pas reçu assez de données réelles des capteurs pour %1$s. Réessayez avec le téléphone dans la position à protéger.</string>
 </resources>

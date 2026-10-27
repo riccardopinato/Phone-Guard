@@ -16,7 +16,8 @@ data class PersistedProtectionSession(
     val updatedAtWallClock: Long,
     val journeyEndsAt: Long?,
     val tableCalibration: MotionCalibration?,
-    val pocketCalibration: CalibrationProfile?
+    val pocketCalibration: CalibrationProfile?,
+    val journeyEndsAtElapsedRealtime: Long? = null
 )
 
 internal enum class RecoveryAction {
@@ -44,7 +45,8 @@ internal object SessionRecoveryPolicy {
 
     fun recoveryAction(
         session: PersistedProtectionSession,
-        now: Long
+        now: Long,
+        nowElapsedRealtime: Long? = null
     ): RecoveryAction {
         if (
             session.phase == AlarmPhase.TRIGGERED ||
@@ -53,10 +55,21 @@ internal object SessionRecoveryPolicy {
             return RecoveryAction.RESTORE_ALARM
         }
 
+        val journeyExpired =
+            if (
+                nowElapsedRealtime != null &&
+                session.journeyEndsAtElapsedRealtime != null
+            ) {
+                session.journeyEndsAtElapsedRealtime <=
+                    nowElapsedRealtime
+            } else {
+                session.journeyEndsAt != null &&
+                    session.journeyEndsAt <= now
+            }
+
         if (
             session.mode == ProtectionMode.JOURNEY &&
-            session.journeyEndsAt != null &&
-            session.journeyEndsAt <= now
+            journeyExpired
         ) {
             return RecoveryAction.STOP
         }
@@ -109,7 +122,8 @@ class SessionStateRepository(
         mode: ProtectionMode,
         phase: AlarmPhase,
         pocketGuardMode: GuardMode? = null,
-        journeyEndsAt: Long? = null
+        journeyEndsAt: Long? = null,
+        journeyEndsAtElapsedRealtime: Long? = null
     ) {
         if (
             phase == AlarmPhase.DISARMED ||
@@ -139,6 +153,17 @@ class SessionStateRepository(
             editor.remove(KEY_JOURNEY_ENDS_AT)
         } else {
             editor.putLong(KEY_JOURNEY_ENDS_AT, journeyEndsAt)
+        }
+
+        if (journeyEndsAtElapsedRealtime == null) {
+            editor.remove(
+                KEY_JOURNEY_ENDS_AT_ELAPSED
+            )
+        } else {
+            editor.putLong(
+                KEY_JOURNEY_ENDS_AT_ELAPSED,
+                journeyEndsAtElapsedRealtime
+            )
         }
 
         if (
@@ -185,7 +210,10 @@ class SessionStateRepository(
             .commit()
     }
 
-    fun saveJourneyEnd(endAt: Long?) {
+    fun saveJourneyEnd(
+        endAt: Long?,
+        endAtElapsedRealtime: Long?
+    ) {
         val editor =
             prefs.edit()
                 .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
@@ -194,6 +222,17 @@ class SessionStateRepository(
             editor.remove(KEY_JOURNEY_ENDS_AT)
         } else {
             editor.putLong(KEY_JOURNEY_ENDS_AT, endAt)
+        }
+
+        if (endAtElapsedRealtime == null) {
+            editor.remove(
+                KEY_JOURNEY_ENDS_AT_ELAPSED
+            )
+        } else {
+            editor.putLong(
+                KEY_JOURNEY_ENDS_AT_ELAPSED,
+                endAtElapsedRealtime
+            )
         }
 
         editor.commit()
@@ -351,7 +390,20 @@ class SessionStateRepository(
                     null
                 },
             tableCalibration = tableCalibration,
-            pocketCalibration = pocketCalibration
+            pocketCalibration = pocketCalibration,
+            journeyEndsAtElapsedRealtime =
+                if (
+                    prefs.contains(
+                        KEY_JOURNEY_ENDS_AT_ELAPSED
+                    )
+                ) {
+                    prefs.getLong(
+                        KEY_JOURNEY_ENDS_AT_ELAPSED,
+                        0L
+                    ).takeIf { it > 0L }
+                } else {
+                    null
+                }
         )
     }
 
@@ -400,6 +452,8 @@ class SessionStateRepository(
         const val KEY_UPDATED_AT = "updated_at"
         const val KEY_BOOT_MARKER = "boot_marker"
         const val KEY_JOURNEY_ENDS_AT = "journey_ends_at"
+        const val KEY_JOURNEY_ENDS_AT_ELAPSED =
+            "journey_ends_at_elapsed"
 
         const val KEY_HAS_TABLE_CALIBRATION = "has_table_calibration"
         const val KEY_BASELINE_X = "baseline_x"

@@ -66,6 +66,9 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > .signing/internal.p12
           chmod 600 .signing/internal.p12
 
+      - name: Verify source and release truth
+        run: bash scripts/verify-source-truth.sh
+
       - name: Build and validate
         env:
           ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/.signing/internal.p12

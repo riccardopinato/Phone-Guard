@@ -7,14 +7,7 @@ import com.riccardopinato.phoneguard.pocket.model.PocketSensitivity
 enum class Sensitivity {
     LOW,
     MEDIUM,
-    HIGH;
-
-    val label: String
-        get() = when (this) {
-            LOW -> "Bassa"
-            MEDIUM -> "Media"
-            HIGH -> "Alta"
-        }
+    HIGH
 }
 
 enum class ProtectionMode {
@@ -29,14 +22,6 @@ enum class ProtectionMode {
             POCKET -> "Pocket"
             BAG -> "Bag"
             JOURNEY -> "Journey"
-        }
-
-    val description: String
-        get() = when (this) {
-            TABLE -> "Telefono appoggiato: rileva spostamenti e sollevamenti."
-            POCKET -> "Rileva l'estrazione dalla tasca con sensor fusion."
-            BAG -> "Profilo per borsa/zaino con movimento + luce."
-            JOURNEY -> "Sessione Pocket/Bag temporizzata con recovery rinforzata."
         }
 }
 

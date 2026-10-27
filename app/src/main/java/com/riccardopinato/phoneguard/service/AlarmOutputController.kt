@@ -32,25 +32,20 @@ class AlarmOutputController(
     private var audioTrack: AudioTrack? = null
     private var audioFocusRequest: AudioFocusRequest? = null
 
-    fun prepare(
-        settings: AppSettings
-    ): Boolean =
-        if (settings.soundEnabled) {
-            volumeLease.acquire(
-                settings.alarmVolumePercent
-            )
-        } else {
-            volumeLease.restoreIfOwned()
-            true
-        }
-
     fun start(
         settings: AppSettings
     ): AlarmOutputHealth {
         stopSignals()
 
         val volumeApplied =
-            prepare(settings)
+            if (settings.soundEnabled) {
+                volumeLease.acquire(
+                    settings.alarmVolumePercent
+                )
+            } else {
+                volumeLease.restoreIfOwned()
+                true
+            }
 
         val soundActive =
             if (settings.soundEnabled) {

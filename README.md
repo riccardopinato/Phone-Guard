@@ -1,6 +1,8 @@
 # Phone Guard
 
-Phone Guard is a standalone native Android anti-theft / anti-tampering suite assembled from proven internal donor capabilities while remaining commercially and technically independent from those donor apps.
+Phone Guard is a standalone native Android anti-theft / anti-tampering utility with four protection modes: Table, Pocket, Bag and Journey.
+
+**Version truth: 0.9.2 / versionCode 4**
 
 ## Factory baseline
 
@@ -11,63 +13,79 @@ Phone Guard is a standalone native Android anti-theft / anti-tampering suite ass
 - Pocket Guard / Pockara donor: `riccardopinato/Pocket-Guard@b7b1c74de66e047c32083365b44561e42237b4fc`
 - Luminous Circle: pattern donor for hardened strobe / visual escalation; canonical source commit not available.
 
+Donors are provenance only. Phone Guard has no runtime dependency on donor apps.
+
 ## Protection modes
 
-- **Table** — calibrated motion protection inherited from the mature Tabletop reliability core.
-- **Pocket** — proximity/light/motion/rotation sensor fusion with owner verification.
-- **Bag** — bag/backpack storage and removal profile using the Pocket Guard fusion engine.
-- **Journey** — time-bounded Pocket or Bag session with persistence, recovery and automatic expiry.
+- **Table** — calibrated motion protection for a phone left on a surface.
+- **Pocket** — proximity + accelerometer protection, with optional light/rotation corroboration.
+- **Bag** — accelerometer plus real light or gyroscope evidence.
+- **Journey** — time-bounded Pocket or Bag protection.
 
-All modes run through **one authoritative `ProtectionForegroundService`**. There is no parallel Table-only or Pocket-only foreground service.
+All modes run through one authoritative `ProtectionForegroundService`.
 
 ## Reliability invariants
 
 - local-first / offline-first;
-- no required account or backend;
-- one foreground-service owner for an active protection session;
-- persisted protection mode and recovery state;
-- Table calibration recovery;
-- Pocket/Bag calibration recovery;
-- owner-check recovery fails closed to alarm;
-- expired Journey sessions do not silently re-arm;
-- adaptive Pocket/Bag sensor sampling;
-- capability gating before arming;
-- no UI "Protected" claim without a real active runtime state;
-- Table behavior remains regression-protected.
+- capability support must match a reachable detector path;
+- Pocket/Bag calibration requires live evidence from required sensors;
+- one foreground-service owner;
+- Journey expiry never disarms OWNER_CHECK or TRIGGERED;
+- within one boot, Journey duration is governed by monotonic elapsed time so wall-clock changes cannot alter the session;
+- wake-lock use is capability-aware; when a CPU lease is required it is bounded and renewed rather than acquired indefinitely;
+- no UI may claim protection without a real active runtime state;
+- force-stop, OEM background restrictions and hardware limitations are never represented as guaranteed-survival cases.
 
 ## Alarm escalation
 
-All protection modes share one alarm escalation layer:
+Alarm outputs are owned by one `AlarmOutputController`:
 
 - siren;
 - vibration;
-- configurable LED strobe (0.5–3.0 Hz);
-- configurable alarm-stream target volume with previous-value restore;
-- high-visibility red WARNING screen;
-- temporary screen brightness escalation;
-- PIN and optional strong biometric owner authentication.
+- configurable LED strobe, 0.5–3.0 Hz;
+- alarm-stream target volume;
+- warning screen and temporary brightness.
 
-Android/OEM/DND restrictions are treated as capability/health constraints rather than pretending an absolute override is always possible.
+The alarm-volume lease is acquired **only when alarm outputs actually start**. Merely arming or monitoring protection does not change the user's alarm volume. Restoration is ownership-aware and does not overwrite a manual user volume change.
 
-## Security and data
+## Security
 
-- local PIN verifier uses PBKDF2-HMAC-SHA256 plus an Android Keystore-backed HMAC key;
-- raw PIN is never persisted;
-- security DataStore is excluded from Android backup/device transfer;
-- active protection session state is excluded from backup/device transfer;
-- event history remains local and excluded from backup;
-- non-sensitive Phone Guard settings may use Android backup.
+- PBKDF2-HMAC-SHA256, 210,000 iterations;
+- random 16-byte salt;
+- Android Keystore HMAC key;
+- constant-time verifier comparison;
+- no raw PIN persistence;
+- persistent escalating rate limit;
+- malformed PIN attempts participate in rate limiting;
+- PIN verification is serialized to prevent concurrent-attempt races;
+- BIOMETRIC_STRONG is optional owner proof;
+- ACTION_USER_PRESENT is never authentication.
 
-## Validation
+## Data
 
-The branch is gated by GitHub Actions with:
+No account, proprietary backend, analytics, ads, location collection, audio recording, photo capture or video capture exists in the current source tree. Sensor processing and event history are local.
+
+PIN verifier data, runtime protection state, alarm-volume lease and event history are excluded from Android backup/device transfer.
+
+## Automated validation
+
+The exact source SHA is gated by:
 
 - JVM unit tests;
 - release lint;
-- debug APK and androidTest assembly;
-- release APK and AAB assembly;
-- Android emulator instrumentation.
+- debug APK;
+- androidTest APK;
+- release APK;
+- release AAB;
+- emulator instrumentation;
+- source/release-truth guard.
 
-A separate signed INTERNAL lane verifies APK/AAB certificate identity and artifact hashes. Physical-device/OEM certification remains a separate release gate.
+The signed INTERNAL lane additionally verifies the APK/AAB signing certificate and generates artifact hashes.
 
-Release candidate: **0.9.0 / versionCode 2 — code hardening in progress, not physically certified.**
+## Certification boundary
+
+0.9.2 is the pre-1.0 software-hardening candidate.
+
+Software can be accepted only when the exact candidate SHA passes all automated gates and the signed INTERNAL lane. Physical Pixel/Samsung/Xiaomi certification remains a separate evidence gate. Google Play Console work is intentionally deferred until the product is otherwise ready.
+
+Phone Guard must not be labelled fully CERTIFIED until physical-device evidence is complete.

@@ -12,7 +12,7 @@ import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import android.os.PowerManager
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -29,6 +29,8 @@ import com.riccardopinato.phoneguard.pocket.model.DetectionDecision
 import com.riccardopinato.phoneguard.pocket.model.GuardMode
 import com.riccardopinato.phoneguard.pocket.model.GuardSettings
 import com.riccardopinato.phoneguard.pocket.model.GuardState
+import com.riccardopinato.phoneguard.power.ProtectionWakeLock
+import com.riccardopinato.phoneguard.power.ProtectionWakePolicy
 import com.riccardopinato.phoneguard.protection.PocketProtectionController
 import com.riccardopinato.phoneguard.protection.ProtectionPolicy
 import com.riccardopinato.phoneguard.sensor.MotionCalibration
@@ -73,8 +75,8 @@ class ProtectionForegroundService : Service() {
     private var tableDetector:
         MotionDetector? = null
 
-    private var wakeLock:
-        PowerManager.WakeLock? = null
+    private lateinit var protectionWakeLock:
+        ProtectionWakeLock
 
     private var activeSettings:
         AppSettings? = null
@@ -86,6 +88,9 @@ class ProtectionForegroundService : Service() {
         GuardMode? = null
 
     private var activeJourneyEndAt:
+        Long? = null
+
+    private var activeJourneyEndAtElapsedRealtime:
         Long? = null
 
     private val ownerReceiver =
@@ -125,6 +130,12 @@ class ProtectionForegroundService : Service() {
                 context = applicationContext,
                 scope = serviceScope,
                 onDecision = ::handlePocketDecision
+            )
+
+        protectionWakeLock =
+            ProtectionWakeLock(
+                context = applicationContext,
+                scope = serviceScope
             )
 
         ContextCompat.registerReceiver(
@@ -207,7 +218,7 @@ class ProtectionForegroundService : Service() {
             text = armingInstruction(mode)
         )
 
-        acquireWakeLock()
+        protectionWakeLock.forceRequired()
 
         armingJob?.cancel()
 
@@ -220,10 +231,6 @@ class ProtectionForegroundService : Service() {
                         .first()
 
                 activeSettings = settings
-
-                outputController.prepare(
-                    settings
-                )
 
                 container.eventRepository.add(
                     AlarmEventType.ARMING_STARTED,
@@ -375,6 +382,7 @@ class ProtectionForegroundService : Service() {
                         ProtectionMode.TABLE
                     activeGuardMode = null
                     activeJourneyEndAt = null
+                    activeJourneyEndAtElapsedRealtime = null
 
                     AlarmStateStore.update(
                         AlarmRuntimeState(
@@ -414,6 +422,11 @@ class ProtectionForegroundService : Service() {
                         getString(R.string.svc_table_title),
                         getString(R.string.svc_table_alarm_hint)
                     )
+
+                    updateMonitoringWakeLock(
+                        mode = ProtectionMode.TABLE,
+                        guardMode = null
+                    )
                 },
                 onMovement = {
                     trigger ->
@@ -436,6 +449,7 @@ class ProtectionForegroundService : Service() {
         profile: CalibrationProfile,
         recordArmedEvent: Boolean,
         journeyEndAt: Long?,
+        journeyEndAtElapsedRealtime: Long? = null,
         guardModeOverride: GuardMode? = null
     ) {
         tableDetector?.stop()
@@ -460,22 +474,10 @@ class ProtectionForegroundService : Service() {
         val guardSettings =
             GuardSettings(
                 mode = guardMode,
-                armDelaySeconds = 0,
                 sensitivity =
                     settings.pocketSensitivity,
-                journeyDuration =
-                    settings.journeyDuration,
                 pocketStableMs = 1_200L,
-                removalWindowMs = 1_600L,
-                ownerGraceMs = OWNER_GRACE_MS,
-                soundEnabled = settings.soundEnabled,
-                vibrationEnabled =
-                    settings.vibrationEnabled,
-                flashEnabled = settings.flashEnabled,
-                biometricEnabled =
-                    settings.biometricEnabled,
-                enhancedReliability =
-                    mode == ProtectionMode.JOURNEY
+                removalWindowMs = 1_600L
             )
 
         if (
@@ -490,6 +492,11 @@ class ProtectionForegroundService : Service() {
             return
         }
 
+        updateMonitoringWakeLock(
+            mode = mode,
+            guardMode = guardMode
+        )
+
         val endAt =
             if (mode == ProtectionMode.JOURNEY) {
                 journeyEndAt
@@ -501,7 +508,20 @@ class ProtectionForegroundService : Service() {
                 null
             }
 
+        val endAtElapsedRealtime =
+            if (mode == ProtectionMode.JOURNEY) {
+                journeyEndAtElapsedRealtime
+                    ?: ProtectionPolicy.journeyEndAt(
+                        SystemClock.elapsedRealtime(),
+                        settings.journeyDuration
+                    )
+            } else {
+                null
+            }
+
         activeJourneyEndAt = endAt
+        activeJourneyEndAtElapsedRealtime =
+            endAtElapsedRealtime
 
         AlarmStateStore.update(
             AlarmRuntimeState(
@@ -524,7 +544,9 @@ class ProtectionForegroundService : Service() {
             mode = mode,
             phase = AlarmPhase.ARMED,
             pocketGuardMode = guardMode,
-            journeyEndsAt = endAt
+            journeyEndsAt = endAt,
+            journeyEndsAtElapsedRealtime =
+                endAtElapsedRealtime
         )
 
         container.sessionStateRepository
@@ -549,7 +571,11 @@ class ProtectionForegroundService : Service() {
             )
         )
 
-        scheduleJourneyEnd(endAt)
+        scheduleJourneyEnd(
+            endAt = endAt,
+            endAtElapsedRealtime =
+                endAtElapsedRealtime
+        )
     }
 
     private fun handlePocketDecision(
@@ -626,6 +652,7 @@ class ProtectionForegroundService : Service() {
     private fun beginOwnerCheck(
         decision: DetectionDecision
     ) {
+        protectionWakeLock.forceRequired()
         ownerCheckJob?.cancel()
         journeyJob?.cancel()
         journeyJob = null
@@ -655,7 +682,9 @@ class ProtectionForegroundService : Service() {
             mode = activeMode,
             phase = AlarmPhase.OWNER_CHECK,
             pocketGuardMode = activeGuardMode,
-            journeyEndsAt = activeJourneyEndAt
+            journeyEndsAt = activeJourneyEndAt,
+            journeyEndsAtElapsedRealtime =
+                activeJourneyEndAtElapsedRealtime
         )
 
         startAsForeground(
@@ -780,18 +809,25 @@ class ProtectionForegroundService : Service() {
             mode = activeMode,
             phase = AlarmPhase.ARMED,
             pocketGuardMode = activeGuardMode,
-            journeyEndsAt = activeJourneyEndAt
+            journeyEndsAt = activeJourneyEndAt,
+            journeyEndsAtElapsedRealtime =
+                activeJourneyEndAtElapsedRealtime
         )
 
         updateNotification(
             AlarmPhase.ARMED,
-            "${activeMode.label} protetto",
+            getString(
+                R.string.svc_mode_protected_title,
+                activeMode.label
+            ),
             getString(R.string.svc_owner_verified)
         )
 
         if (activeMode == ProtectionMode.JOURNEY) {
             scheduleJourneyEnd(
-                activeJourneyEndAt
+                endAt = activeJourneyEndAt,
+                endAtElapsedRealtime =
+                    activeJourneyEndAtElapsedRealtime
             )
         }
     }
@@ -850,6 +886,7 @@ class ProtectionForegroundService : Service() {
         lastMotionDelta: Float,
         confidence: Int
     ) {
+        protectionWakeLock.forceRequired()
         val settings =
             activeSettings ?: return
 
@@ -886,7 +923,9 @@ class ProtectionForegroundService : Service() {
             mode = activeMode,
             phase = AlarmPhase.TRIGGERED,
             pocketGuardMode = activeGuardMode,
-            journeyEndsAt = activeJourneyEndAt
+            journeyEndsAt = activeJourneyEndAt,
+            journeyEndsAtElapsedRealtime =
+                activeJourneyEndAtElapsedRealtime
         )
 
         container
@@ -907,7 +946,8 @@ class ProtectionForegroundService : Service() {
     }
 
     private fun scheduleJourneyEnd(
-        endAt: Long?
+        endAt: Long?,
+        endAtElapsedRealtime: Long?
     ) {
         journeyJob?.cancel()
         journeyJob = null
@@ -931,14 +971,26 @@ class ProtectionForegroundService : Service() {
         }
 
         activeJourneyEndAt = endAt
+        activeJourneyEndAtElapsedRealtime =
+            endAtElapsedRealtime
+
         container.sessionStateRepository
-            .saveJourneyEnd(endAt)
+            .saveJourneyEnd(
+                endAt = endAt,
+                endAtElapsedRealtime =
+                    endAtElapsedRealtime
+            )
 
         val remaining =
             ProtectionPolicy
                 .remainingJourneyMs(
-                    endAt,
-                    System.currentTimeMillis()
+                    endAtElapsedRealtime =
+                        endAtElapsedRealtime,
+                    nowElapsedRealtime =
+                        SystemClock.elapsedRealtime(),
+                    endAtWallClock = endAt,
+                    nowWallClock =
+                        System.currentTimeMillis()
                 )
                 ?: return
 
@@ -1000,7 +1052,7 @@ class ProtectionForegroundService : Service() {
         pocketController.stop()
 
         outputController.stop()
-        releaseWakeLock()
+        protectionWakeLock.release()
 
         when {
             previous == AlarmPhase.ARMING ||
@@ -1025,6 +1077,7 @@ class ProtectionForegroundService : Service() {
         activeMode = ProtectionMode.TABLE
         activeGuardMode = null
         activeJourneyEndAt = null
+        activeJourneyEndAtElapsedRealtime = null
         AlarmStateStore.reset()
 
         ServiceCompat.stopForeground(
@@ -1060,6 +1113,8 @@ class ProtectionForegroundService : Service() {
             persisted.pocketGuardMode
         activeJourneyEndAt =
             persisted.journeyEndsAt
+        activeJourneyEndAtElapsedRealtime =
+            persisted.journeyEndsAtElapsedRealtime
 
         startAsForeground(
             phase =
@@ -1079,7 +1134,7 @@ class ProtectionForegroundService : Service() {
                 getString(R.string.svc_restore_body)
         )
 
-        acquireWakeLock()
+        protectionWakeLock.forceRequired()
 
         serviceScope.launch {
             val settings =
@@ -1088,15 +1143,14 @@ class ProtectionForegroundService : Service() {
 
             activeSettings = settings
 
-            outputController.prepare(
-                settings
-            )
-
             when (
                 SessionRecoveryPolicy
                     .recoveryAction(
-                        persisted,
-                        System.currentTimeMillis()
+                        session = persisted,
+                        now =
+                            System.currentTimeMillis(),
+                        nowElapsedRealtime =
+                            SystemClock.elapsedRealtime()
                     )
             ) {
                 RecoveryAction.STOP -> {
@@ -1112,7 +1166,7 @@ class ProtectionForegroundService : Service() {
 
                     outputController.stop()
                     container.sessionStateRepository.clear()
-                    releaseWakeLock()
+                    protectionWakeLock.release()
                     ServiceCompat.stopForeground(
                         this@ProtectionForegroundService,
                         ServiceCompat
@@ -1128,7 +1182,10 @@ class ProtectionForegroundService : Service() {
                         pocketGuardMode =
                             persisted.pocketGuardMode,
                         journeyEndsAt =
-                            persisted.journeyEndsAt
+                            persisted.journeyEndsAt,
+                        journeyEndsAtElapsedRealtime =
+                            persisted
+                                .journeyEndsAtElapsedRealtime
                     )
 
                     AlarmStateStore.update(
@@ -1174,6 +1231,9 @@ class ProtectionForegroundService : Service() {
                             recordArmedEvent = false,
                             journeyEndAt =
                                 persisted.journeyEndsAt,
+                            journeyEndAtElapsedRealtime =
+                                persisted
+                                    .journeyEndsAtElapsedRealtime,
                             guardModeOverride =
                                 persisted.pocketGuardMode
                         )
@@ -1375,39 +1435,18 @@ class ProtectionForegroundService : Service() {
             )
     }
 
-    private fun acquireWakeLock() {
-        if (
-            wakeLock?.isHeld == true
-        ) {
-            return
-        }
-
-        val powerManager =
-            getSystemService(
-                Context.POWER_SERVICE
-            ) as PowerManager
-
-        wakeLock =
-            powerManager.newWakeLock(
-                PowerManager
-                    .PARTIAL_WAKE_LOCK,
-                "PhoneGuard:ProtectionMonitoring"
-            ).apply {
-                setReferenceCounted(false)
-                acquire()
-            }
-    }
-
-    private fun releaseWakeLock() {
-        wakeLock?.let {
-            if (it.isHeld) {
-                runCatching {
-                    it.release()
-                }
-            }
-        }
-
-        wakeLock = null
+    private fun updateMonitoringWakeLock(
+        mode: ProtectionMode,
+        guardMode: GuardMode?
+    ) {
+        protectionWakeLock.setRequired(
+            ProtectionWakePolicy.requiresCpuLease(
+                mode = mode,
+                guardMode = guardMode,
+                capabilities =
+                    pocketController.capabilities
+            )
+        )
     }
 
     private fun armingInstruction(
@@ -1473,7 +1512,7 @@ class ProtectionForegroundService : Service() {
         tableDetector?.stop()
         pocketController.stop()
         outputController.stop()
-        releaseWakeLock()
+        protectionWakeLock.close()
 
         runCatching {
             unregisterReceiver(ownerReceiver)

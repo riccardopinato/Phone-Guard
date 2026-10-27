@@ -87,4 +87,30 @@ class SecurityRepositoryInstrumentedTest {
                     .first()
             )
         }
+    @Test
+    fun malformedPinAttemptsAreRateLimited() =
+        runBlocking {
+            repository.setPin(
+                "4826"
+            )
+
+            repeat(4) {
+                assertTrue(
+                    repository.verifyPin(
+                        "x"
+                    ) is
+                        PinVerificationResult
+                            .Invalid
+                )
+            }
+
+            assertTrue(
+                repository.verifyPin(
+                    "x"
+                ) is
+                    PinVerificationResult
+                        .LockedOut
+            )
+        }
+
 }

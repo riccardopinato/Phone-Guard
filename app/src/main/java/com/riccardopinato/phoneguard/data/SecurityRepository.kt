@@ -21,6 +21,8 @@ import javax.crypto.spec.PBEKeySpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private val Context.securityDataStore by
     preferencesDataStore(
@@ -88,6 +90,8 @@ internal object PinRateLimitPolicy {
 class SecurityRepository(
     private val context: Context
 ) {
+    private val verificationMutex =
+        Mutex()
 
     private object Keys {
         val pinSalt =
@@ -174,20 +178,14 @@ class SecurityRepository(
 
     suspend fun verifyPin(
         pin: String
-    ): PinVerificationResult {
-        if (
-            !pin.matches(
-                PIN_REGEX
-            )
-        ) {
-            return PinVerificationResult
-                .Invalid(
-                    attemptsBeforeLockout =
-                        PinRateLimitPolicy
-                            .FREE_FAILURES
-                )
+    ): PinVerificationResult =
+        verificationMutex.withLock {
+            verifyPinLocked(pin)
         }
 
+    private suspend fun verifyPinLocked(
+        pin: String
+    ): PinVerificationResult {
         val prefs =
             context.securityDataStore
                 .data
@@ -224,6 +222,17 @@ class SecurityRepository(
                         lockoutUntil -
                             now
                 )
+        }
+
+        if (
+            !pin.matches(
+                PIN_REGEX
+            )
+        ) {
+            return recordFailure(
+                prefs = prefs,
+                now = now
+            )
         }
 
         val salt =
@@ -286,6 +295,16 @@ class SecurityRepository(
                 .Success
         }
 
+        return recordFailure(
+            prefs = prefs,
+            now = now
+        )
+    }
+
+    private suspend fun recordFailure(
+        prefs: Preferences,
+        now: Long
+    ): PinVerificationResult {
         val failures =
             (
                 prefs[

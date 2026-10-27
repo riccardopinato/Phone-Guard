@@ -245,4 +245,5 @@
     <string name="svc_wait_journey_pocket">Journey activo: esperando bolsillo.</string>
     <string name="svc_wait_journey_bag">Journey activo: esperando bolso.</string>
     <string name="svc_wait_table">Protección Table activa.</string>
+    <string name="svc_calibration_evidence_insufficient">La calibración no recibió suficientes datos reales de los sensores para %1$s. Inténtalo de nuevo con el teléfono en la posición que quieras proteger.</string>
 </resources>

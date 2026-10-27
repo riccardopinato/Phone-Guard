@@ -1,6 +1,5 @@
 package com.riccardopinato.phoneguard.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,25 +50,21 @@ fun AboutPrivacyScreen(
                 Arrangement
                     .SpaceBetween
         ) {
-            Text(
-                text =
-                    stringResource(
-                        R.string.common_back
-                    ),
-                modifier = Modifier
-                    .clickable(
-                        onClick = onBack
-                    )
-                    .padding(
-                        vertical = 8.dp,
-                        horizontal = 2.dp
-                    ),
-                style =
-                    MaterialTheme
-                        .typography
-                        .labelLarge,
-                color = OmniAccent
-            )
+            TextButton(
+                onClick = onBack
+            ) {
+                Text(
+                    text =
+                        stringResource(
+                            R.string.common_back
+                        ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelLarge,
+                    color = OmniAccent
+                )
+            }
 
             Text(
                 text =

@@ -196,6 +196,36 @@ class SessionRecoveryPolicyTest {
         )
     }
 
+    @Test
+    fun journeyRecoveryUsesMonotonicDeadlineWhenAvailable() {
+        val session =
+            PersistedProtectionSession(
+                phase = AlarmPhase.ARMED,
+                mode = ProtectionMode.JOURNEY,
+                pocketGuardMode = GuardMode.POCKET,
+                updatedAtWallClock = 1L,
+                journeyEndsAt = 1_000_000L,
+                tableCalibration = null,
+                pocketCalibration =
+                    pocketProfile(
+                        GuardMode.POCKET
+                    ),
+                journeyEndsAtElapsedRealtime =
+                    9_000L
+            )
+
+        assertEquals(
+            RecoveryAction.STOP,
+            SessionRecoveryPolicy
+                .recoveryAction(
+                    session = session,
+                    now = 100L,
+                    nowElapsedRealtime =
+                        10_000L
+                )
+        )
+    }
+
     private fun pocketProfile(
         mode: GuardMode
     ): CalibrationProfile =
