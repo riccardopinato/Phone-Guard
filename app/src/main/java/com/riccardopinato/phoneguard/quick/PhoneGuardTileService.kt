@@ -1,5 +1,6 @@
 package com.riccardopinato.phoneguard.quick
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
@@ -148,6 +149,7 @@ class PhoneGuardTileService :
         tile.updateTile()
     }
 
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun openAppSecurely() {
         val intent =
             Intent(
