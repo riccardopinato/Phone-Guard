@@ -58,6 +58,11 @@ class AlarmOutputController(
         0L
 
     private var audioTrack: AudioTrack? = null
+
+    @Volatile
+    private var pendingMediaPlayer:
+        MediaPlayer? = null
+
     private var mediaPlayer: MediaPlayer? = null
     private var preAlarmTone: ToneGenerator? = null
     private var audioFocusRequest: AudioFocusRequest? = null
@@ -276,6 +281,15 @@ class AlarmOutputController(
                 ) {
                     customRequestToken +=
                         1L
+
+                    pendingMediaPlayer
+                        ?.also {
+                            pendingMediaPlayer =
+                                null
+                        }
+                        ?.let(
+                            ::releaseMediaPlayerAsync
+                        )
                 }
             },
             CUSTOM_PREPARE_TIMEOUT_MS
@@ -298,6 +312,8 @@ class AlarmOutputController(
 
                 candidate =
                     player
+                pendingMediaPlayer =
+                    player
 
                 player.setAudioAttributes(
                     attributes
@@ -315,6 +331,14 @@ class AlarmOutputController(
                     token !=
                     customRequestToken
                 ) {
+                    if (
+                        pendingMediaPlayer ===
+                        player
+                    ) {
+                        pendingMediaPlayer =
+                            null
+                    }
+
                     releaseMediaPlayerNow(
                         player
                     )
@@ -324,6 +348,14 @@ class AlarmOutputController(
                 player.setOnPreparedListener {
                     prepared ->
                     mainHandler.post mainPost@{
+                        if (
+                            pendingMediaPlayer ===
+                            prepared
+                        ) {
+                            pendingMediaPlayer =
+                                null
+                        }
+
                         if (
                             token !=
                             customRequestToken
@@ -383,6 +415,14 @@ class AlarmOutputController(
                     _ ->
                     mainHandler.post {
                         if (
+                            pendingMediaPlayer ===
+                            failed
+                        ) {
+                            pendingMediaPlayer =
+                                null
+                        }
+
+                        if (
                             mediaPlayer ===
                             failed
                         ) {
@@ -402,9 +442,19 @@ class AlarmOutputController(
                 _: Exception
             ) {
                 candidate
-                    ?.let(
-                        ::releaseMediaPlayerNow
-                    )
+                    ?.let {
+                        if (
+                            pendingMediaPlayer ===
+                            it
+                        ) {
+                            pendingMediaPlayer =
+                                null
+                        }
+
+                        releaseMediaPlayerNow(
+                            it
+                        )
+                    }
             }
         }
     }
@@ -506,6 +556,15 @@ class AlarmOutputController(
     private fun stopSiren() {
         customRequestToken +=
             1L
+
+        pendingMediaPlayer
+            ?.also {
+                pendingMediaPlayer =
+                    null
+            }
+            ?.let(
+                ::releaseMediaPlayerAsync
+            )
 
         mediaPlayer
             ?.let(
