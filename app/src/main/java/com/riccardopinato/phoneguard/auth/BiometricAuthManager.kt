@@ -1,6 +1,7 @@
 package com.riccardopinato.phoneguard.auth
 
 import androidx.biometric.BiometricManager
+import com.riccardopinato.phoneguard.R
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -66,10 +67,10 @@ class BiometricAuthManager(
                 .PromptInfo
                 .Builder()
                 .setTitle(
-                    "Disattiva Phone Guard"
+                    activity.getString(R.string.biometric_prompt_title)
                 )
                 .setSubtitle(
-                    "Conferma la tua identità"
+                    activity.getString(R.string.biometric_prompt_subtitle)
                 )
                 .setAllowedAuthenticators(
                     BiometricManager
@@ -77,7 +78,7 @@ class BiometricAuthManager(
                         .BIOMETRIC_STRONG
                 )
                 .setNegativeButtonText(
-                    "Usa PIN"
+                    activity.getString(R.string.biometric_prompt_use_pin)
                 )
                 .build()
 
