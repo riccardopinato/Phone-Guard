@@ -405,4 +405,7 @@
     <string name="auto_guard_table">Table detection</string>
     <string name="auto_guard_table_body">Requires a stable device and the selected inactivity delay.</string>
     <string name="auto_guard_start_failed">Android prevented the standby service from starting. Auto Guard was disabled.</string>
+    <string name="auto_guard_mobility">Walking and transport context</string>
+    <string name="auto_guard_mobility_body">Optional activity transitions (walking, running, cycling, vehicle) support sensor decisions. Separate permission required; no GPS.</string>
+    <string name="auto_guard_mobility_permission_denied">Activity permission denied; local sensors still work.</string>
 </resources>
