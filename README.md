@@ -41,7 +41,7 @@ All protection modes share one alarm escalation layer:
 
 - siren;
 - vibration;
-- configurable LED strobe (0.5–10 Hz);
+- configurable LED strobe (0.5–3.0 Hz);
 - configurable alarm-stream target volume with previous-value restore;
 - high-visibility red WARNING screen;
 - temporary screen brightness escalation;
@@ -64,8 +64,10 @@ The branch is gated by GitHub Actions with:
 
 - JVM unit tests;
 - release lint;
-- debug APK assembly;
-- release APK assembly;
-- release AAB assembly.
+- debug APK and androidTest assembly;
+- release APK and AAB assembly;
+- Android emulator instrumentation.
 
-Physical-device/OEM certification remains a separate release gate.
+A separate signed INTERNAL lane verifies APK/AAB certificate identity and artifact hashes. Physical-device/OEM certification remains a separate release gate.
+
+Release candidate: **0.9.0 / versionCode 2 — code hardening in progress, not physically certified.**

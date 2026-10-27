@@ -47,7 +47,7 @@ Status: IMPLEMENTED — pending final PR CI.
 - Real Keystore, volume lease, FGS manifest, settings clamp and launch smoke tests.
 
 ## Step 7 — Product/UI Cleanup
-Status: IN PROGRESS.
+Status: IMPLEMENTED — pending final PR CI.
 - Remove donor branding/comments.
 - Phone Guard theme naming.
 - Multimode onboarding/privacy.
@@ -55,11 +55,12 @@ Status: IN PROGRESS.
 - AGENTS/ROADMAP/provenance docs.
 
 ## Step 8 — Release Engineering & Play Readiness
-Status: TODO.
-- Rename INTERNAL workflow/artifacts.
-- Signed INTERNAL artifact gate.
-- Signing identity decision.
-- Play FGS declaration evidence, Data Safety, release checklist.
+Status: IMPLEMENTED — signed INTERNAL evidence and Play Console actions pending.
+- Phone Guard INTERNAL workflow/artifacts.
+- Certificate-verified signed APK/AAB lane.
+- Play App Signing decision documented.
+- FGS/Data Safety/Play release checklist.
+- Release status and physical certification matrix.
 
 ## Step 9 — Physical Certification / RC
 Status: BLOCKED ON PHYSICAL DEVICE EVIDENCE.
