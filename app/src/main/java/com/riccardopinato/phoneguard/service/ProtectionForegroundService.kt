@@ -30,6 +30,7 @@ import com.riccardopinato.phoneguard.autoguard.AutoGuardDecisionEngine
 import com.riccardopinato.phoneguard.autoguard.AutoGuardSampler
 import com.riccardopinato.phoneguard.autoguard.AutoGuardStability
 import com.riccardopinato.phoneguard.autoguard.AutoGuardTiming
+import com.riccardopinato.phoneguard.autoguard.MobilityContextMonitor
 import com.riccardopinato.phoneguard.charging.ChargingStateMonitor
 import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.RecoveryAction
@@ -94,6 +95,8 @@ class ProtectionForegroundService : Service() {
     private lateinit var accessoryMonitor:
         AccessoryStateMonitor
 
+    private lateinit var mobilityMonitor: MobilityContextMonitor
+
     private val container by lazy {
         (application as PhoneGuardApp)
             .container
@@ -130,6 +133,7 @@ class ProtectionForegroundService : Service() {
     private var adaptiveIdleMinutes = 3
     private var adaptivePocketEnabled = true
     private var adaptiveTableEnabled = true
+    private var adaptiveMobilityEnabled = false
     private var adaptiveAutoJob: Job? = null
     private var adaptiveWaitForNewScreenOff = false
     private var adaptiveScreenOffAt = 0L
@@ -141,6 +145,7 @@ class ProtectionForegroundService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_ON -> {
+                    mobilityMonitor.stop()
                     adaptiveAutoJob?.cancel()
                     adaptiveAutoJob = null
                     // The next screen-off is a NEW candidate cycle after owner disarm.
@@ -294,6 +299,7 @@ class ProtectionForegroundService : Service() {
             AccessoryStateMonitor(
                 applicationContext
             )
+        mobilityMonitor = MobilityContextMonitor(applicationContext)
 
         protectionWakeLock =
             ProtectionWakeLock(
@@ -403,6 +409,7 @@ class ProtectionForegroundService : Service() {
                         adaptiveIdleMinutes = prefs.adaptiveAutoGuardIdleMinutes
                         adaptivePocketEnabled = prefs.adaptiveAutoGuardPocket
                         adaptiveTableEnabled = prefs.adaptiveAutoGuardTable
+                        adaptiveMobilityEnabled = prefs.adaptiveAutoGuardMobility
                         if (AlarmStateStore.state.value.phase == AlarmPhase.DISARMED) {
                             if (container.sessionStateRepository.read() != null) {
                                 restorePersistedSession()
@@ -432,6 +439,7 @@ class ProtectionForegroundService : Service() {
                     adaptiveIdleMinutes = current.adaptiveAutoGuardIdleMinutes
                     adaptivePocketEnabled = current.adaptiveAutoGuardPocket
                     adaptiveTableEnabled = current.adaptiveAutoGuardTable
+                    adaptiveMobilityEnabled = current.adaptiveAutoGuardMobility
                     if (AlarmStateStore.state.value.phase == AlarmPhase.DISARMED) {
                         if (container.sessionStateRepository.read() != null) {
                             restorePersistedSession()
@@ -493,6 +501,7 @@ class ProtectionForegroundService : Service() {
 
         adaptiveAutoJob?.cancel()
         adaptiveAutoJob = null
+        mobilityMonitor.stop()
         activeMode = mode
         activeActivationSource =
             source
@@ -537,6 +546,8 @@ class ProtectionForegroundService : Service() {
                 adaptiveIdleMinutes = settings.adaptiveAutoGuardIdleMinutes
                 adaptivePocketEnabled = settings.adaptiveAutoGuardPocket
                 adaptiveTableEnabled = settings.adaptiveAutoGuardTable
+            adaptiveMobilityEnabled = settings.adaptiveAutoGuardMobility
+                adaptiveMobilityEnabled = settings.adaptiveAutoGuardMobility
 
                 container.eventRepository.add(
                     AlarmEventType.ARMING_STARTED,
@@ -2203,6 +2214,13 @@ class ProtectionForegroundService : Service() {
             autoArmStandbyEnabled && chargingMonitor.isPowerConnected()
 
         if (adaptiveAutoGuardEnabled) {
+            if (adaptiveMobilityEnabled && isScreenOff() &&
+                !adaptiveWaitForNewScreenOff
+            ) {
+                mobilityMonitor.start()
+            } else {
+                mobilityMonitor.stop()
+            }
             startAsForeground(
                 AlarmPhase.DISARMED,
                 getString(R.string.svc_auto_guard_title),
@@ -2210,6 +2228,7 @@ class ProtectionForegroundService : Service() {
             )
             startAdaptiveEvaluation()
         } else {
+            mobilityMonitor.stop()
             adaptiveAutoJob?.cancel()
             adaptiveAutoJob = null
             startAsForeground(
@@ -2304,6 +2323,7 @@ class ProtectionForegroundService : Service() {
                         adaptiveIdleMinutes = settings.adaptiveAutoGuardIdleMinutes
                         adaptivePocketEnabled = settings.adaptiveAutoGuardPocket
                         adaptiveTableEnabled = settings.adaptiveAutoGuardTable
+                        adaptiveMobilityEnabled = settings.adaptiveAutoGuardMobility
 
                         if (autoArmStandbyEnabled || adaptiveAutoGuardEnabled) {
                             enterAutoArmStandby()
@@ -2917,6 +2937,7 @@ class ProtectionForegroundService : Service() {
             )
 
     override fun onDestroy() {
+        mobilityMonitor.stop()
         adaptiveAutoJob?.cancel()
         adaptiveAutoJob = null
         armingJob?.cancel()
