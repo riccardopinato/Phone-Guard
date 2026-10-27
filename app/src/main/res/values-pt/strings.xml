@@ -394,7 +394,7 @@
     <string name="auto_guard_toggle">Proteção automática</string>
     <string name="auto_guard_consent">Ativação voluntária com notificação permanente. Pode desativar sem desarmar a proteção atual.</string>
     <string name="auto_guard_delay">Avaliar após desligar o ecrã</string>
-    <string name="auto_guard_pocket">Deteção de bolso</string>
+    <string name="auto_guard_pocket">Deteção de bolso e mala</string>
     <string name="auto_guard_pocket_body">Proximidade, escuridão e movimento devem coincidir em várias medições.</string>
     <string name="auto_guard_table">Deteção de mesa</string>
     <string name="auto_guard_table_body">Requer telefone estável e o intervalo de inatividade definido.</string>
@@ -402,4 +402,10 @@
     <string name="auto_guard_mobility">Contexto de caminhada e transporte</string>
     <string name="auto_guard_mobility_body">Transições de atividade opcionais (caminhada, corrida, bicicleta, veículo) para auxiliar os sensores. Permissão separada, sem GPS.</string>
     <string name="auto_guard_mobility_permission_denied">Permissão de atividade negada; os sensores locais continuam ativos.</string>
+    <string name="auto_guard_state_off">Desativado</string>
+    <string name="auto_guard_state_waiting">A aguardar inatividade</string>
+    <string name="auto_guard_state_checking">A verificar sensores</string>
+    <string name="auto_guard_state_paused">Pausado até ao próximo ecrã desligado</string>
+    <string name="auto_guard_state_unavailable">Espera indisponível</string>
+    <string name="auto_guard_state_protection">Proteção ativa (manual ou automática)</string>
 </resources>

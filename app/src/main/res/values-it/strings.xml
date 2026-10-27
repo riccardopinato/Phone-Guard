@@ -400,7 +400,7 @@
     <string name="auto_guard_toggle">Protezione automatica</string>
     <string name="auto_guard_consent">Attivazione volontaria con notifica persistente. Puoi disabilitarla in qualsiasi momento; non disarma una protezione già attiva.</string>
     <string name="auto_guard_delay">Valuta dopo lo spegnimento dello schermo</string>
-    <string name="auto_guard_pocket">Rilevamento tasca</string>
+    <string name="auto_guard_pocket">Rilevamento tasca e borsa</string>
     <string name="auto_guard_pocket_body">Prossimità, poca luce e movimento devono concordare in più rilevazioni.</string>
     <string name="auto_guard_table">Rilevamento tavolo</string>
     <string name="auto_guard_table_body">Richiede telefono stabile e inattività per il tempo impostato.</string>
@@ -408,4 +408,10 @@
     <string name="auto_guard_mobility">Contesto camminata e mezzi</string>
     <string name="auto_guard_mobility_body">Transizioni di attività opzionali (camminata, corsa, bici, veicolo) a supporto dei sensori. Richiede permesso separato; nessun GPS.</string>
     <string name="auto_guard_mobility_permission_denied">Permesso attività negato: i sensori locali funzionano comunque.</string>
+    <string name="auto_guard_state_off">Disattivato</string>
+    <string name="auto_guard_state_waiting">In attesa del telefono a riposo</string>
+    <string name="auto_guard_state_checking">Controllo sensori in corso</string>
+    <string name="auto_guard_state_paused">In pausa fino al prossimo spegnimento dello schermo</string>
+    <string name="auto_guard_state_unavailable">Standby non disponibile</string>
+    <string name="auto_guard_state_protection">Protezione attiva (manuale o automatica)</string>
 </resources>

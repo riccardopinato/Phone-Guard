@@ -2,7 +2,7 @@
 
 Phone Guard is a standalone native Android anti-theft / anti-tampering utility with six protection modes: Table, Pocket, Bag, Charging, Accessory and Journey.
 
-**Version truth: 0.9.4 / versionCode 6**
+**Version truth: 0.9.5 / versionCode 7**
 
 ## Factory baseline
 
@@ -43,6 +43,16 @@ All modes run through one authoritative `ProtectionForegroundService`.
 - **pre-alarm signal** per mode: silent, vibration or beep;
 - **alarm output duration** per mode: 30 seconds, 1 minute, 3 minutes or until disarmed; expiry stops outputs only and never authenticates or disarms the incident;
 - **Incident Sessions** derived from the existing local event history, with a local text report that can be shared through Android.
+
+## 0.9.5 Adaptive Auto Guard — software scope
+
+Auto Guard is **OFF by default**. After an explicit user opt-in, the existing single foreground protection service can remain in a visible standby. Following a new screen-off cycle it periodically evaluates local motion, light and proximity without GPS; a high-evidence covered moving phone can propose Pocket or Bag, and a stable visible surface may propose Table only after a user-selected 1/3/5/10/15-minute idle period (default 3). Sampling is bounded and event-driven; no claim of a measured battery percentage or 99% classification accuracy is made.
+
+Optional Activity Recognition (walk/run/bicycle/vehicle/still) supports, but never independently determines, the classification. It requires a separate runtime permission on supported Android versions and Google Play services; if unavailable, sensor-only evaluation remains possible. It does not collect position, routes, or locations.
+
+All automatic candidates still pass the central activation security/capability policy and existing real sensor calibration. Waking the screen aborts a pending automatic activation but never disarms an already armed, owner-check or triggered session. After manual disarm Auto Guard requires a new screen-off cycle. The Profile shows runtime standby status; the service also provides a visible notification. Charging auto-arm continues sharing the same foreground-service owner.
+
+**Software candidate, not physically certified:** real-device accuracy, battery overhead, OEM screen-off/Doze, permissions and reboot survival, Google Play foreground-service policy, and real alarm false positives still require signed exact-artifact tests on Pixel, Samsung and Xiaomi/Redmi.
 
 ## Reliability invariants
 
@@ -95,7 +105,7 @@ The alarm-volume lease is acquired **only when alarm outputs actually start**. M
 
 No account, proprietary backend, analytics, ads, location collection, audio recording, photo capture or video capture exists in the current source tree. Sensor, power and audio-device connection processing plus event history are local. Accessory Guard observes only audio-device presence/removal and never captures audio content.
 
-PIN verifier data, runtime protection state, alarm-volume lease and event history are excluded from Android backup/device transfer. Non-sensitive preferences include presets, grace, per-mode output configuration and the opt-in charging auto-arm preference.
+PIN verifier data, runtime protection state, alarm-volume lease and event history are excluded from Android backup/device transfer. Non-sensitive preferences include presets, grace, per-mode output configuration, charging auto-arm and explicit opt-in Adaptive Auto Guard controls.
 
 ## Automated validation
 
@@ -114,7 +124,7 @@ The signed INTERNAL lane additionally verifies the APK/AAB signing certificate a
 
 ## Certification boundary
 
-0.9.4 is the expanded pre-1.0 software candidate.
+0.9.5 adds Adaptive Auto Guard to the pre-1.0 software candidate. The previous signed 0.9.4 artifact remains unchanged.
 
 Automated gates do not certify physical Charging/Accessory behavior, Smart Arm context quality, Live Guard Test behavior, Tile/widget launcher behavior, OEM background survival, real custom-audio/flash/volume/DND behavior or sensor false-positive/negative behavior. Those remain part of the exact-artifact physical matrix.
 

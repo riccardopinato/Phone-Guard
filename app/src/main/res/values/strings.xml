@@ -400,7 +400,7 @@
     <string name="auto_guard_toggle">Automatic protection</string>
     <string name="auto_guard_consent">Opt-in standby with an ongoing foreground notification. Turn off at any time; does not disarm existing protection.</string>
     <string name="auto_guard_delay">Evaluate after screen-off inactivity</string>
-    <string name="auto_guard_pocket">Pocket detection</string>
+    <string name="auto_guard_pocket">Pocket and bag detection</string>
     <string name="auto_guard_pocket_body">Covered proximity, low light and movement must agree in repeated samples.</string>
     <string name="auto_guard_table">Table detection</string>
     <string name="auto_guard_table_body">Requires a stable device and the selected inactivity delay.</string>
@@ -408,4 +408,10 @@
     <string name="auto_guard_mobility">Walking and transport context</string>
     <string name="auto_guard_mobility_body">Optional activity transitions (walking, running, cycling, vehicle) support sensor decisions. Separate permission required; no GPS.</string>
     <string name="auto_guard_mobility_permission_denied">Activity permission denied; local sensors still work.</string>
+    <string name="auto_guard_state_off">Off</string>
+    <string name="auto_guard_state_waiting">Waiting for screen-off context</string>
+    <string name="auto_guard_state_checking">Checking sensors</string>
+    <string name="auto_guard_state_paused">Paused until next screen-off</string>
+    <string name="auto_guard_state_unavailable">Standby unavailable</string>
+    <string name="auto_guard_state_protection">Protection active (manual or automatic)</string>
 </resources>
