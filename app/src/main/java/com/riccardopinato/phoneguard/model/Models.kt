@@ -1,4 +1,3 @@
-// TARGET: app/src/main/java/com/riccardopinato/tabletopalarm/model/Models.kt
 package com.riccardopinato.phoneguard.model
 
 enum class Sensitivity {
@@ -20,6 +19,9 @@ data class AppSettings(
     val soundEnabled: Boolean = true,
     val vibrationEnabled: Boolean = true,
     val flashEnabled: Boolean = true,
+    val flashFrequencyHz: Float = 2.5f,
+    val alarmVolumePercent: Int = 100,
+    val warningScreenEnabled: Boolean = true,
     val biometricEnabled: Boolean = false,
     val onboardingCompleted: Boolean = false
 )
