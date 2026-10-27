@@ -62,6 +62,13 @@ class AlarmOutputController(
                 false
             }
 
+        if (
+            profile.soundEnabled &&
+            !soundActive
+        ) {
+            volumeLease.restoreIfOwned()
+        }
+
         val vibrationActive =
             if (profile.vibrationEnabled) {
                 startVibration()
@@ -169,10 +176,9 @@ class AlarmOutputController(
                 )
                 .build()
 
-        val focusReady =
-            requestAudioFocus(
-                attributes
-            )
+        requestAudioFocus(
+            attributes
+        )
 
         val customStarted =
             customSoundUri
@@ -196,8 +202,11 @@ class AlarmOutputController(
                 )
             }
 
-        return started &&
-            focusReady
+        if (!started) {
+            stopSiren()
+        }
+
+        return started
     }
 
     private fun requestAudioFocus(
@@ -229,45 +238,58 @@ class AlarmOutputController(
     private fun startCustomSound(
         uriString: String,
         attributes: AudioAttributes
-    ): Boolean =
-        runCatching {
-            val player =
+    ): Boolean {
+        var candidate:
+            MediaPlayer? = null
+
+        return runCatching {
+            candidate =
                 MediaPlayer()
 
-            player.setAudioAttributes(
-                attributes
-            )
-            player.setDataSource(
-                context,
-                Uri.parse(
-                    uriString
+            candidate
+                ?.setAudioAttributes(
+                    attributes
                 )
-            )
-            player.isLooping =
+            candidate
+                ?.setDataSource(
+                    context,
+                    Uri.parse(
+                        uriString
+                    )
+                )
+            candidate
+                ?.isLooping =
                 true
-            player.prepare()
-            player.start()
+            candidate
+                ?.prepare()
+            candidate
+                ?.start()
 
             mediaPlayer =
-                player
-            true
+                candidate
+
+            candidate != null
         }.getOrElse {
             runCatching {
-                mediaPlayer
+                candidate
                     ?.release()
             }
             mediaPlayer = null
             false
         }
+    }
 
     private fun startGeneratedSiren(
         attributes: AudioAttributes
-    ): Boolean =
-        runCatching {
+    ): Boolean {
+        var candidate:
+            AudioTrack? = null
+
+        return runCatching {
             val samples =
                 createSirenSamples()
 
-            val track =
+            candidate =
                 AudioTrack.Builder()
                     .setAudioAttributes(
                         attributes
@@ -293,28 +315,40 @@ class AlarmOutputController(
                     )
                     .build()
 
-            track.write(
-                samples,
-                0,
-                samples.size,
-                AudioTrack.WRITE_BLOCKING
-            )
+            candidate
+                ?.write(
+                    samples,
+                    0,
+                    samples.size,
+                    AudioTrack.WRITE_BLOCKING
+                )
 
-            track.setLoopPoints(
-                0,
-                samples.size,
-                -1
-            )
-            track.setVolume(
-                1.0f
-            )
-            track.play()
+            candidate
+                ?.setLoopPoints(
+                    0,
+                    samples.size,
+                    -1
+                )
+            candidate
+                ?.setVolume(
+                    1.0f
+                )
+            candidate
+                ?.play()
+
             audioTrack =
-                track
-            true
-        }.getOrDefault(
+                candidate
+
+            candidate != null
+        }.getOrElse {
+            runCatching {
+                candidate
+                    ?.release()
+            }
+            audioTrack = null
             false
-        )
+        }
+    }
 
     private fun stopSiren() {
         runCatching {
