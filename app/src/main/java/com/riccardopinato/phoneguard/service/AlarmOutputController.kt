@@ -11,14 +11,17 @@ import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import com.riccardopinato.phoneguard.alarm.AlarmVolumeController
+import com.riccardopinato.phoneguard.alarm.AlarmVolumeLeaseManager
 import com.riccardopinato.phoneguard.alarm.FlashStrobeController
 import com.riccardopinato.phoneguard.model.AppSettings
 import kotlin.math.PI
 import kotlin.math.sin
 
 class AlarmOutputController(
-    private val context: Context
+    private val context: Context,
+    private val volumeLease:
+        AlarmVolumeLeaseManager =
+        AlarmVolumeLeaseManager(context)
 ) {
     private val audioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -26,22 +29,19 @@ class AlarmOutputController(
     private val flashController =
         FlashStrobeController(context)
 
-    private val volumeController =
-        AlarmVolumeController(context)
-
     private var audioTrack: AudioTrack? = null
     private var audioFocusRequest: AudioFocusRequest? = null
 
-    fun prepare(settings: AppSettings): Int? {
-        return if (settings.soundEnabled) {
-            volumeController.applyTarget(settings.alarmVolumePercent)
+    fun prepare(
+        settings: AppSettings
+    ) {
+        if (settings.soundEnabled) {
+            volumeLease.acquire(
+                settings.alarmVolumePercent
+            )
         } else {
-            null
+            volumeLease.restoreIfOwned()
         }
-    }
-
-    fun adoptPreviousAlarmVolume(level: Int?) {
-        volumeController.adoptPreviousVolume(level)
     }
 
     fun start(settings: AppSettings) {
@@ -65,7 +65,7 @@ class AlarmOutputController(
 
     fun stop() {
         stopSignals()
-        volumeController.restore()
+        volumeLease.restoreIfOwned()
     }
 
     private fun stopSignals() {
@@ -75,7 +75,7 @@ class AlarmOutputController(
     }
 
     fun effectiveAlarmVolumePercent(): Int =
-        volumeController.currentPercent()
+        volumeLease.currentPercent()
 
     private fun startSiren() {
         runCatching {

@@ -110,7 +110,11 @@ class ProtectionForegroundService : Service() {
 
         outputController =
             AlarmOutputController(
-                applicationContext
+                context =
+                    applicationContext,
+                volumeLease =
+                    container
+                        .alarmVolumeLeaseManager
             )
 
         notificationManager =
@@ -164,6 +168,7 @@ class ProtectionForegroundService : Service() {
                     "Authenticated in app"
                 )
 
+            ACTION_RESTORE,
             null ->
                 restorePersistedSession()
         }
@@ -218,13 +223,9 @@ class ProtectionForegroundService : Service() {
 
                 activeSettings = settings
 
-                val previousAlarmVolume =
-                    outputController.prepare(settings)
-
-                container.sessionStateRepository
-                    .savePreviousAlarmVolume(
-                        previousAlarmVolume
-                    )
+                outputController.prepare(
+                    settings
+                )
 
                 container.eventRepository.add(
                     AlarmEventType.ARMING_STARTED,
@@ -986,11 +987,20 @@ class ProtectionForegroundService : Service() {
     }
 
     private fun restorePersistedSession() {
+        if (
+            AlarmStateStore.state
+                .value.phase !=
+            AlarmPhase.DISARMED
+        ) {
+            return
+        }
+
         val persisted =
             container
                 .sessionStateRepository
                 .read()
                 ?: run {
+                    outputController.stop()
                     stopSelf()
                     return
                 }
@@ -1028,10 +1038,9 @@ class ProtectionForegroundService : Service() {
 
             activeSettings = settings
 
-            outputController.adoptPreviousAlarmVolume(
-                persisted.previousAlarmVolume
+            outputController.prepare(
+                settings
             )
-            outputController.prepare(settings)
 
             when (
                 SessionRecoveryPolicy
@@ -1051,6 +1060,7 @@ class ProtectionForegroundService : Service() {
                         )
                     }
 
+                    outputController.stop()
                     container.sessionStateRepository.clear()
                     releaseWakeLock()
                     ServiceCompat.stopForeground(
@@ -1446,6 +1456,9 @@ class ProtectionForegroundService : Service() {
         private const val ACTION_OWNER_VERIFIED =
             "com.riccardopinato.phoneguard.action.OWNER_VERIFIED"
 
+        private const val ACTION_RESTORE =
+            "com.riccardopinato.phoneguard.action.RESTORE"
+
         private const val EXTRA_MODE =
             "protection_mode"
 
@@ -1497,6 +1510,24 @@ class ProtectionForegroundService : Service() {
             runCatching {
                 context.startService(intent)
             }
+        }
+
+        fun restore(
+            context: Context
+        ) {
+            val intent =
+                Intent(
+                    context,
+                    ProtectionForegroundService::class.java
+                ).setAction(
+                    ACTION_RESTORE
+                )
+
+            ContextCompat
+                .startForegroundService(
+                    context,
+                    intent
+                )
         }
 
         fun ownerVerified(

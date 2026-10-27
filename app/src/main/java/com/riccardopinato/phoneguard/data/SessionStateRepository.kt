@@ -15,7 +15,6 @@ data class PersistedProtectionSession(
     val pocketGuardMode: GuardMode?,
     val updatedAtWallClock: Long,
     val journeyEndsAt: Long?,
-    val previousAlarmVolume: Int?,
     val tableCalibration: MotionCalibration?,
     val pocketCalibration: CalibrationProfile?
 )
@@ -186,20 +185,6 @@ class SessionStateRepository(
             .commit()
     }
 
-    fun savePreviousAlarmVolume(level: Int?) {
-        val editor =
-            prefs.edit()
-                .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
-
-        if (level == null) {
-            editor.remove(KEY_PREVIOUS_ALARM_VOLUME)
-        } else {
-            editor.putInt(KEY_PREVIOUS_ALARM_VOLUME, level)
-        }
-
-        editor.commit()
-    }
-
     fun saveJourneyEnd(endAt: Long?) {
         val editor =
             prefs.edit()
@@ -365,13 +350,6 @@ class SessionStateRepository(
                 } else {
                     null
                 },
-            previousAlarmVolume =
-                if (prefs.contains(KEY_PREVIOUS_ALARM_VOLUME)) {
-                    prefs.getInt(KEY_PREVIOUS_ALARM_VOLUME, 0)
-                        .takeIf { it >= 0 }
-                } else {
-                    null
-                },
             tableCalibration = tableCalibration,
             pocketCalibration = pocketCalibration
         )
@@ -422,7 +400,6 @@ class SessionStateRepository(
         const val KEY_UPDATED_AT = "updated_at"
         const val KEY_BOOT_MARKER = "boot_marker"
         const val KEY_JOURNEY_ENDS_AT = "journey_ends_at"
-        const val KEY_PREVIOUS_ALARM_VOLUME = "previous_alarm_volume"
 
         const val KEY_HAS_TABLE_CALIBRATION = "has_table_calibration"
         const val KEY_BASELINE_X = "baseline_x"

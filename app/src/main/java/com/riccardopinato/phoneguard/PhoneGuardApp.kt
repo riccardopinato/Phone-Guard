@@ -10,6 +10,19 @@ class PhoneGuardApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer(applicationContext)
+        container =
+            AppContainer(
+                applicationContext
+            )
+
+        if (
+            container
+                .sessionStateRepository
+                .read() == null
+        ) {
+            container
+                .alarmVolumeLeaseManager
+                .restoreIfOwned()
+        }
     }
 }
