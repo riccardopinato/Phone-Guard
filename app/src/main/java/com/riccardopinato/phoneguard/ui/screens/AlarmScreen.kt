@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -35,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.riccardopinato.phoneguard.R
+import com.riccardopinato.phoneguard.autoguard.AutoGuardRuntimePhase
+import com.riccardopinato.phoneguard.autoguard.AutoGuardRuntimeStore
+import com.riccardopinato.phoneguard.activation.SmartArmReason
 import com.riccardopinato.phoneguard.activation.ActivationBlockReason
 import com.riccardopinato.phoneguard.activation.ActivationOutcome
 import com.riccardopinato.phoneguard.activation.ActivationSource
@@ -77,11 +81,14 @@ fun AlarmScreen(
     securityRepository: SecurityRepository,
     hardware: HardwareSnapshot,
     runtime: AlarmRuntimeState,
-    onRequestDisarm: () -> Unit
+    onRequestDisarm: () -> Unit,
+    onOpenAutoGuard: () -> Unit
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
+
+    val autoGuardRuntime by AutoGuardRuntimeStore.state.collectAsStateWithLifecycle()
 
     val settings by
         settingsRepository.settings.collectAsStateWithLifecycle(
@@ -183,9 +190,12 @@ fun AlarmScreen(
         )
 
     var showSetPin by remember { mutableStateOf(false) }
-    var showPermissionInfo by remember { mutableStateOf(false) }
+    var showPermissionInfo by rememberSaveable { mutableStateOf(false) }
     var armMessage by remember { mutableStateOf<String?>(null) }
     var showAdvancedOptions by remember { mutableStateOf(false) }
+    var retrySmartAfterPermission by rememberSaveable { mutableStateOf(false) }
+    var smartPermissionMode by rememberSaveable { mutableStateOf<ProtectionMode?>(null) }
+    var smartDecisionNote by remember { mutableStateOf<String?>(null) }
 
     val selectedMode =
         if (runtime.phase == AlarmPhase.DISARMED) {
@@ -313,58 +323,74 @@ fun AlarmScreen(
         }
     }
 
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            contract =
-                ActivityResultContracts
-                    .RequestMultiplePermissions()
-        ) {
-            grants ->
-            if (
-                grants.values.all {
-                    it
-                }
-            ) {
-                startSelectedMode()
-            } else {
-                armMessage =
-                    permissionRequiredMessage
-            }
+    fun missingPermissionsFor(mode: ProtectionMode): List<String> =
+        buildList {
+            val profile = settings.alarmProfile(mode)
+            if (profile.flashEnabled && hardware.hasFlash &&
+                ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.CAMERA
+                ) != PackageManager.PERMISSION_GRANTED
+            ) add(Manifest.permission.CAMERA)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) add(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-    fun missingPermissions(): List<String> =
-        buildList {
-            if (
-                selectedProfile
-                    .flashEnabled &&
-                hardware.hasFlash &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.CAMERA
-                ) !=
-                PackageManager.PERMISSION_GRANTED
-            ) {
-                add(
-                    Manifest.permission.CAMERA
-                )
-            }
+    fun missingPermissions(): List<String> = missingPermissionsFor(selectedMode)
 
-            if (
-                Build.VERSION.SDK_INT >=
-                Build.VERSION_CODES.TIRAMISU &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) !=
-                PackageManager.PERMISSION_GRANTED
-            ) {
-                add(
-                    Manifest.permission.POST_NOTIFICATIONS
-                )
+    fun explainSmartDecision(
+        outcome: SmartActivationOutcome.Started
+    ): String {
+        val reason = when (outcome.decision.reason) {
+            SmartArmReason.EXTERNAL_POWER -> R.string.home_smart_reason_power
+            SmartArmReason.ACCESSORY_CONNECTED -> R.string.home_smart_reason_accessory
+            SmartArmReason.POCKET_CONTEXT -> R.string.home_smart_reason_pocket
+            SmartArmReason.BAG_CONTEXT -> R.string.home_smart_reason_bag
+            SmartArmReason.STABLE_SURFACE -> R.string.home_smart_reason_table
+            SmartArmReason.FALLBACK -> R.string.home_smart_reason_fallback
+        }
+        return resources.getString(
+            R.string.home_smart_decision, outcome.decision.mode.label,
+            resources.getString(reason)
+        )
+    }
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions()
+        ) { grants ->
+            val retrySmart = retrySmartAfterPermission
+            retrySmartAfterPermission = false
+            smartPermissionMode = null
+            if (grants.values.all { it }) {
+                if (retrySmart) {
+                    scope.launch {
+                        when (val result =
+                            ProtectionActivationCoordinator.requestSmartArm(context)
+                        ) {
+                            is SmartActivationOutcome.Started -> {
+                                armMessage = null
+                                smartDecisionNote = explainSmartDecision(result)
+                            }
+                            is SmartActivationOutcome.Blocked -> {
+                                armMessage = activationMessage(result.reason)
+                            }
+                        }
+                    }
+                } else {
+                    startSelectedMode()
+                }
+            } else {
+                armMessage = permissionRequiredMessage
             }
         }
 
     fun requestArm() {
+        // Manual activation must never inherit a cancelled Smart Arm request.
+        retrySmartAfterPermission = false
+        smartPermissionMode = null
         if (!hasPin) {
             showSetPin = true
             return
@@ -396,52 +422,37 @@ fun AlarmScreen(
     }
 
     fun requestSmartArm() {
-        if (
-            runtime.phase !=
-            AlarmPhase.DISARMED
-        ) {
-            return
-        }
-
+        if (runtime.phase != AlarmPhase.DISARMED) return
         if (!hasPin) {
             showSetPin = true
             return
         }
-
-        if (
-            securityHealth !=
-            SecurityHealth.READY
-        ) {
-            armMessage =
-                securityNotReadyMessage
+        if (securityHealth != SecurityHealth.READY) {
+            armMessage = securityNotReadyMessage
             return
         }
-
         scope.launch {
-            when (
-                val outcome =
-                    ProtectionActivationCoordinator
-                        .requestSmartArm(
-                            context
-                        )
+            when (val result =
+                ProtectionActivationCoordinator.requestSmartArm(context)
             ) {
                 is SmartActivationOutcome.Started -> {
-                    armMessage =
-                        resources.getString(
-                            R.string
-                                .smart_arm_selected,
-                            outcome
-                                .decision
-                                .mode
-                                .label
-                        )
+                    armMessage = null
+                    smartDecisionNote = explainSmartDecision(result)
                 }
-
                 is SmartActivationOutcome.Blocked -> {
-                    armMessage =
-                        activationMessage(
-                            outcome.reason
-                        )
+                    val permissionBlock = result.reason in setOf(
+                        ActivationBlockReason.CAMERA_PERMISSION,
+                        ActivationBlockReason.NOTIFICATION_PERMISSION
+                    )
+                    val chosenMode = result.decision?.mode
+                    if (permissionBlock && chosenMode != null &&
+                        missingPermissionsFor(chosenMode).isNotEmpty()
+                    ) {
+                        smartPermissionMode = chosenMode
+                        showPermissionInfo = true
+                    } else {
+                        armMessage = activationMessage(result.reason)
+                    }
                 }
             }
         }
@@ -484,50 +495,141 @@ fun AlarmScreen(
             )
         }
 
-        if (
-            runtime.phase ==
-            AlarmPhase.DISARMED
-        ) {
-            UtilityPanel {
+        if (runtime.phase == AlarmPhase.DISARMED) {
+            UtilityPanel(containerColor = com.riccardopinato.phoneguard.ui.theme.OmniHero) {
                 Column(
-                    modifier =
-                        Modifier.padding(
-                            14.dp
-                        ),
-                    verticalArrangement =
-                        Arrangement.spacedBy(
-                            8.dp
-                        )
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
                     Text(
-                        text =
-                            stringResource(
-                                R.string
-                                    .smart_arm_body
-                            ),
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodySmall,
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .onSurfaceVariant
+                        text = stringResource(R.string.home_status_unprotected),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = com.riccardopinato.phoneguard.ui.theme.OmniWarning
                     )
-
-                    UtilitySecondaryAction(
-                        label =
-                            stringResource(
-                                R.string
-                                    .smart_arm_action
-                            ),
-                        enabled =
-                            securityHealth ==
-                                SecurityHealth.READY,
-                        onClick =
-                            ::requestSmartArm
+                    Text(
+                        text = stringResource(R.string.home_status_explanation),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = com.riccardopinato.phoneguard.ui.theme.OmniHeroText
                     )
                 }
+            }
+            UtilityPrimaryAction(
+                label = stringResource(R.string.smart_arm_action),
+                enabled = securityHealth in setOf(
+                    SecurityHealth.READY, SecurityHealth.NO_PIN
+                ),
+                onClick = ::requestSmartArm
+            )
+            UtilitySecondaryAction(
+                label = stringResource(R.string.home_manual_arm, selectedMode.label),
+                enabled = modeSupported &&
+                    securityHealth in setOf(SecurityHealth.READY, SecurityHealth.NO_PIN),
+                onClick = ::requestArm,
+                modifier = Modifier.fillMaxWidth()
+            )
+            smartDecisionNote?.let { note ->
+                Text(
+                    text = note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        } else {
+            AlarmStatusCard(
+                runtime = runtime,
+                countdownTotal = settings.countdownSeconds,
+                hardware = hardware,
+                selectedMode = selectedMode,
+                requiresProximity = selectedMode == ProtectionMode.POCKET ||
+                    (selectedMode == ProtectionMode.JOURNEY &&
+                        settings.journeyGuardMode == GuardMode.POCKET)
+            )
+        }
+
+        if (runtime.phase != AlarmPhase.DISARMED) {
+        UtilityPrimaryAction(
+            label =
+                actionLabel(
+                    runtime,
+                    selectedMode
+                ),
+            enabled =
+                if (
+                    runtime.phase ==
+                    AlarmPhase.DISARMED
+                ) {
+                    modeSupported &&
+                        (
+                            securityHealth ==
+                                SecurityHealth.READY ||
+                                securityHealth ==
+                                SecurityHealth.NO_PIN
+                            )
+                } else {
+                    true
+                },
+            destructive =
+                runtime.phase ==
+                    AlarmPhase.TRIGGERED,
+            onClick = {
+                when (runtime.phase) {
+                    AlarmPhase.DISARMED ->
+                        requestArm()
+
+                    AlarmPhase.ARMING,
+                    AlarmPhase.CALIBRATING,
+                    AlarmPhase.ERROR ->
+                        ProtectionForegroundService
+                            .disarm(context)
+
+                    AlarmPhase.ARMED,
+                    AlarmPhase.OWNER_CHECK,
+                    AlarmPhase.TRIGGERED ->
+                        onRequestDisarm()
+                }
+            }
+        )
+
+        }
+
+
+        UtilityPanel {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.auto_guard_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(
+                        when {
+                            runtime.phase in setOf(
+                                AlarmPhase.ARMED, AlarmPhase.OWNER_CHECK, AlarmPhase.TRIGGERED
+                            ) -> R.string.auto_guard_state_protection
+                            runtime.phase != AlarmPhase.DISARMED ->
+                                R.string.auto_guard_state_activating
+                            !settings.adaptiveAutoGuardEnabled -> R.string.auto_guard_state_off
+                            autoGuardRuntime == AutoGuardRuntimePhase.CHECKING ->
+                                R.string.auto_guard_state_checking
+                            autoGuardRuntime == AutoGuardRuntimePhase.WAITING ->
+                                R.string.auto_guard_state_waiting
+                            autoGuardRuntime == AutoGuardRuntimePhase.PAUSED ->
+                                R.string.auto_guard_state_paused
+                            else -> R.string.auto_guard_state_unavailable
+                        }
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                UtilitySecondaryAction(
+                    label = stringResource(R.string.home_open_auto_guard),
+                    onClick = onOpenAutoGuard,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
@@ -652,20 +754,6 @@ fun AlarmScreen(
                 MaterialTheme
                     .colorScheme
                     .onSurfaceVariant
-        )
-
-        AlarmStatusCard(
-            runtime = runtime,
-            countdownTotal =
-                settings.countdownSeconds,
-            hardware = hardware,
-            selectedMode = selectedMode,
-            requiresProximity =
-                selectedMode == ProtectionMode.POCKET ||
-                    (
-                        selectedMode == ProtectionMode.JOURNEY &&
-                            settings.journeyGuardMode == GuardMode.POCKET
-                        )
         )
 
         if (!modeSupported) {
@@ -804,49 +892,6 @@ fun AlarmScreen(
             }
         }
 
-        UtilityPrimaryAction(
-            label =
-                actionLabel(
-                    runtime,
-                    selectedMode
-                ),
-            enabled =
-                if (
-                    runtime.phase ==
-                    AlarmPhase.DISARMED
-                ) {
-                    modeSupported &&
-                        (
-                            securityHealth ==
-                                SecurityHealth.READY ||
-                                securityHealth ==
-                                SecurityHealth.NO_PIN
-                            )
-                } else {
-                    true
-                },
-            destructive =
-                runtime.phase ==
-                    AlarmPhase.TRIGGERED,
-            onClick = {
-                when (runtime.phase) {
-                    AlarmPhase.DISARMED ->
-                        requestArm()
-
-                    AlarmPhase.ARMING,
-                    AlarmPhase.CALIBRATING,
-                    AlarmPhase.ERROR ->
-                        ProtectionForegroundService
-                            .disarm(context)
-
-                    AlarmPhase.ARMED,
-                    AlarmPhase.OWNER_CHECK,
-                    AlarmPhase.TRIGGERED ->
-                        onRequestDisarm()
-                }
-            }
-        )
-
         UtilitySecondaryAction(
             label = stringResource(
                 if (showAdvancedOptions) R.string.home_advanced_hide
@@ -856,6 +901,22 @@ fun AlarmScreen(
             onClick = { showAdvancedOptions = !showAdvancedOptions }
         )
         if (showAdvancedOptions) {
+        if (runtime.phase == AlarmPhase.DISARMED) {
+        AlarmStatusCard(
+            runtime = runtime,
+            countdownTotal =
+                settings.countdownSeconds,
+            hardware = hardware,
+            selectedMode = selectedMode,
+            requiresProximity =
+                selectedMode == ProtectionMode.POCKET ||
+                    (
+                        selectedMode == ProtectionMode.JOURNEY &&
+                            settings.journeyGuardMode == GuardMode.POCKET
+                        )
+        )
+
+        }
         GracePeriodOptions(
             seconds =
                 settings
@@ -1166,8 +1227,7 @@ fun AlarmScreen(
     }
 
     if (showPermissionInfo) {
-        val missing =
-            missingPermissions()
+        val missing = missingPermissionsFor(smartPermissionMode ?: selectedMode)
 
         PermissionInfoDialog(
             needsCamera =
@@ -1184,12 +1244,13 @@ fun AlarmScreen(
                     ),
             onContinue = {
                 showPermissionInfo = false
-                permissionLauncher.launch(
-                    missing.toTypedArray()
-                )
+                retrySmartAfterPermission = smartPermissionMode != null
+                permissionLauncher.launch(missing.toTypedArray())
             },
             onDismiss = {
                 showPermissionInfo = false
+                smartPermissionMode = null
+                retrySmartAfterPermission = false
             }
         )
     }

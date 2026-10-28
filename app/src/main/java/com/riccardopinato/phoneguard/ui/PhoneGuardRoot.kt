@@ -49,6 +49,7 @@ import com.riccardopinato.phoneguard.service.ProtectionForegroundService
 import com.riccardopinato.phoneguard.ui.components.UnlockDialog
 import com.riccardopinato.phoneguard.ui.screens.AboutPrivacyScreen
 import com.riccardopinato.phoneguard.ui.screens.AlarmScreen
+import com.riccardopinato.phoneguard.ui.screens.AutoGuardScreen
 import com.riccardopinato.phoneguard.ui.screens.EventsScreen
 import com.riccardopinato.phoneguard.ui.screens.OnboardingScreen
 import com.riccardopinato.phoneguard.ui.screens.OwnerCheckScreen
@@ -218,6 +219,9 @@ fun PhoneGuardRoot(
                             runtime = runtime,
                             onRequestDisarm = {
                                 requestUnlock(UnlockPurpose.DISARM)
+                            },
+                            onOpenAutoGuard = {
+                                navController.navigate("auto_guard")
                             }
                         )
                     }
@@ -240,6 +244,9 @@ fun PhoneGuardRoot(
                             onOpenProtectionCheck = {
                                 navController.navigate("protection_check")
                             },
+                            onOpenAutoGuard = {
+                                navController.navigate("auto_guard")
+                            },
                             diagnostics = container.hardwareDiagnostics,
                             hardware = hardware,
                             alarmRunning =
@@ -249,6 +256,15 @@ fun PhoneGuardRoot(
                                 AlarmPhase.OWNER_CHECK,
                                 AlarmPhase.TRIGGERED
                             )
+                        )
+                    }
+
+                    composable("auto_guard") {
+                        AutoGuardScreen(
+                            settingsRepository = container.settingsRepository,
+                            securityRepository = container.securityRepository,
+                            runtime = runtime,
+                            onBack = { navController.popBackStack() }
                         )
                     }
 

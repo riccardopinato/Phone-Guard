@@ -60,7 +60,15 @@ object SmartArmDecisionEngine {
 
         if (
             observation != null &&
-            observation.accelerometerObserved
+            observation.accelerometerObserved &&
+            observation.motionScore.isFinite() &&
+            observation.motionScore >= 0f &&
+            (!observation.lightObserved ||
+                (observation.lux != null && observation.lux.isFinite() &&
+                    observation.lux >= 0f)) &&
+            (!observation.gyroscopeObserved ||
+                (observation.rotationScore.isFinite() &&
+                    observation.rotationScore >= 0f))
         ) {
             if (
                 observation.proximityObserved &&
@@ -77,12 +85,12 @@ object SmartArmDecisionEngine {
                 observation.proximityNear != true &&
                 observation.lightObserved &&
                 observation.lux != null &&
-                observation.lux <= BAG_LUX_THRESHOLD &&
+                observation.lux in 0f..BAG_LUX_THRESHOLD &&
                 (
-                    observation.gyroscopeObserved ||
-                        observation.motionScore >=
-                            BAG_MOTION_EVIDENCE
-                    )
+                    (observation.gyroscopeObserved &&
+                        observation.rotationScore >= BAG_ROTATION_EVIDENCE) ||
+                        observation.motionScore >= BAG_MOTION_EVIDENCE
+                )
             ) {
                 return SmartArmDecision(
                     mode = ProtectionMode.BAG,
@@ -91,11 +99,16 @@ object SmartArmDecisionEngine {
                 )
             }
 
-            return SmartArmDecision(
-                mode = ProtectionMode.TABLE,
-                reason = SmartArmReason.STABLE_SURFACE,
-                confidence = 72
-            )
+            if (observation.motionScore <= TABLE_MOTION_MAX &&
+                (!observation.gyroscopeObserved ||
+                    observation.rotationScore <= TABLE_ROTATION_MAX)
+            ) {
+                return SmartArmDecision(
+                    mode = ProtectionMode.TABLE,
+                    reason = SmartArmReason.STABLE_SURFACE,
+                    confidence = 72
+                )
+            }
         }
 
         val safeFallback =
@@ -118,8 +131,10 @@ object SmartArmDecisionEngine {
     private const val BAG_LUX_THRESHOLD =
         8f
 
-    private const val BAG_MOTION_EVIDENCE =
-        0.02f
+    private const val BAG_MOTION_EVIDENCE = 0.02f
+    private const val BAG_ROTATION_EVIDENCE = 0.018f
+    private const val TABLE_MOTION_MAX = 0.035f
+    private const val TABLE_ROTATION_MAX = 0.12f
 }
 
 class SmartArmContextResolver(

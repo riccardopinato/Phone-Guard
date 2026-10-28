@@ -1,6 +1,6 @@
 # PLAY_CONSOLE_CHECKLIST.md — Phone Guard
 
-**Version truth: 0.9.6 / versionCode 8**
+**Version truth: 0.9.7 / versionCode 9**
 
 Status: **DEFERRED BY PRODUCT DECISION**. This file preserves the final publication work but it is not a substitute for current provider-policy verification at release time.
 
@@ -47,3 +47,9 @@ Status: **DEFERRED BY PRODUCT DECISION**. This file preserves the final publicat
 Use Play App Signing with a Google-generated app-signing key unique to Phone Guard. Keep the controlled INTERNAL/upload identity separate.
 
 Official references in `SIGNING_IDENTITY.md` must be re-verified immediately before publication because Play requirements can change.
+
+
+## 0.9.7 provider declaration draft package
+- See PLAY_FGS_REVIEW_DRAFT_0_9_7.md, STORE_LISTING_DRAFT_0_9_7.md and PRIVACY_POLICY_DRAFT_0_9_7.md.
+- These are draft text, not published settings, official reviewer approval or a public privacy-policy URL.
+- Latest official specialUse rules: https://developer.android.com/develop/background-work/services/fgs/service-types; Play Console FGS review: https://support.google.com/googleplay/android-developer/answer/13392821?hl=en

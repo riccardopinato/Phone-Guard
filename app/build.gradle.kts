@@ -11,8 +11,8 @@ android {
         applicationId = "com.riccardopinato.phoneguard"
         minSdk = 26
         targetSdk = 37
-        versionCode = 8
-        versionName = "0.9.6"
+        versionCode = 9
+        versionName = "0.9.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

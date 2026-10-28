@@ -1,6 +1,6 @@
 # ROADMAP.md — Phone Guard pre-1.0
 
-Version truth: 0.9.6 / versionCode 8
+Version truth: 0.9.7 / versionCode 9
 
 ## Foundation inherited from 0.9.2
 
@@ -279,3 +279,26 @@ Status: SOURCE CHANGES IN PR, PHYSICAL QA PENDING.
 - P1: Smart Arm higher on Home, advanced tuning behind disclosure; six-mode localized first-run copy.
 - P2: monolithic service/UI bounded extraction risk documented; no unvalidated service-wide rewrite.
 - OEM physical, eight-hour ON/OFF battery, false alert soak and Play-policy gates remain mandatory.
+
+
+## 0.9.7 — autonomous non-physical roadmap
+1. [in progress] Home visual hierarchy and Smart Arm permission funnel, context reasoning.
+2. [in progress] Dedicated Auto Guard route and localized standby UX.
+3. [planned] Illustration-led onboarding and incident history filters with safer deletion.
+4. [planned] Store ASO/privacy preparation with accurate feature claims and no unapproved billing.
+5. [required] Exact-source JVM, emulator, lint, signed INTERNAL, APK size and UI smoke checks.
+6. [blocked, physical] Pixel/Samsung/Redmi sensor performance, 8h battery and Play specialUse approval.
+
+
+## 0.9.7 final nonphysical software package
+Status: SOURCE IMPLEMENTED ON PR #11; CI AND SIGNED ARTIFACT VALIDATION REQUIRED.
+- [x] Trust-first Home, manual mode fallback and prominent authorized disarm.
+- [x] Smart Arm resolved-mode permission recovery and reason explanation.
+- [x] Auto Guard dedicated settings reached from Home/Profile; single control implementation.
+- [x] Illustration-led onboarding localized in five languages.
+- [x] Incident alarm filter, count, safe deletion confirmation and JVM test fixtures.
+- [x] Harden Smart Arm invalid sensor / bag / table context with unit tests.
+- [x] Play listing, policy, privacy drafts, locale gate.
+- [ ] Exact-head CI / emulator / signing / APK size gate.
+- [ ] Physical OEM certification, battery and false-alarm test matrix (user-run).
+- [ ] Play specialUse approval, public privacy URL and actual store submission.

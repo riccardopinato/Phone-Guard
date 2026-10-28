@@ -64,6 +64,7 @@ fun ProfileScreen(
     batteryDiagnostics: BatteryDiagnostics,
     onOpenAboutPrivacy: () -> Unit,
     onOpenProtectionCheck: () -> Unit,
+    onOpenAutoGuard: () -> Unit,
     diagnostics: HardwareDiagnostics,
     hardware: HardwareSnapshot,
     alarmRunning: Boolean,
@@ -122,23 +123,6 @@ fun ProfileScreen(
                 }
             } else {
                 statusMessage = resources.getString(R.string.camera_permission_denied)
-            }
-        }
-
-    val mobilityPermissionLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission()
-        ) { granted ->
-            scope.launch {
-                settingsRepository.setAdaptiveAutoGuardMobility(granted)
-                if (settings.adaptiveAutoGuardEnabled) {
-                    ProtectionForegroundService.setAdaptiveAutoGuard(context, true)
-                }
-                if (!granted) {
-                    statusMessage = resources.getString(
-                        R.string.auto_guard_mobility_permission_denied
-                    )
-                }
             }
         }
 
@@ -359,7 +343,7 @@ fun ProfileScreen(
         UtilityPanel {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
                 SectionTitle(stringResource(R.string.auto_guard_title))
                 Text(
@@ -377,129 +361,18 @@ fun ProfileScreen(
                             else -> R.string.auto_guard_state_unavailable
                         }
                     ),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = stringResource(R.string.auto_guard_description),
+                    text = stringResource(R.string.auto_guard_standby_disclaimer),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                SettingSwitchRow(
-                    title = stringResource(R.string.auto_guard_toggle),
-                    subtitle = stringResource(R.string.auto_guard_consent),
-                    checked = settings.adaptiveAutoGuardEnabled,
-                    // Always allow turning standby OFF even while an alarm is armed;
-                    // disabling Auto Guard never disarms the existing protected session.
-                    enabled = settings.adaptiveAutoGuardEnabled ||
-                        (!alarmRunning && securityHealth == SecurityHealth.READY),
-                    onCheckedChange = { enabled ->
-                        val notificationGranted =
-                            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                                ContextCompat.checkSelfPermission(
-                                    context, Manifest.permission.POST_NOTIFICATIONS
-                                ) == PackageManager.PERMISSION_GRANTED
-                        if (enabled && !notificationGranted) {
-                            statusMessage = resources.getString(
-                                R.string.activation_block_notifications
-                            )
-                        } else scope.launch {
-                            settingsRepository.setAdaptiveAutoGuardEnabled(enabled)
-                            val started = runCatching {
-                                ProtectionForegroundService.setAdaptiveAutoGuard(
-                                    context, enabled
-                                )
-                            }.isSuccess
-                            if (!started && enabled) {
-                                settingsRepository.setAdaptiveAutoGuardEnabled(false)
-                                statusMessage = resources.getString(
-                                    R.string.auto_guard_start_failed
-                                )
-                            }
-                        }
-                    }
+                UtilitySecondaryAction(
+                    label = stringResource(R.string.home_open_auto_guard),
+                    onClick = onOpenAutoGuard
                 )
-                if (settings.adaptiveAutoGuardEnabled) {
-                    Text(
-                        text = stringResource(R.string.auto_guard_delay),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        listOf(1, 3, 5, 10, 15).forEach { minutes ->
-                            UtilityChoice(
-                                label = "${minutes}m",
-                                selected = settings.adaptiveAutoGuardIdleMinutes == minutes,
-                                enabled = !alarmRunning,
-                                onClick = {
-                                    scope.launch {
-                                        settingsRepository.setAdaptiveAutoGuardIdleMinutes(minutes)
-                                        ProtectionForegroundService.setAdaptiveAutoGuard(
-                                            context, true
-                                        )
-                                    }
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                    SettingSwitchRow(
-                        title = stringResource(R.string.auto_guard_pocket),
-                        subtitle = stringResource(R.string.auto_guard_pocket_body),
-                        checked = settings.adaptiveAutoGuardPocket,
-                        enabled = !alarmRunning,
-                        onCheckedChange = {
-                            scope.launch {
-                                settingsRepository.setAdaptiveAutoGuardPocket(it)
-                                ProtectionForegroundService.setAdaptiveAutoGuard(
-                                    context, true
-                                )
-                            }
-                        }
-                    )
-                    SettingSwitchRow(
-                        title = stringResource(R.string.auto_guard_table),
-                        subtitle = stringResource(R.string.auto_guard_table_body),
-                        checked = settings.adaptiveAutoGuardTable,
-                        enabled = !alarmRunning,
-                        onCheckedChange = {
-                            scope.launch {
-                                settingsRepository.setAdaptiveAutoGuardTable(it)
-                                ProtectionForegroundService.setAdaptiveAutoGuard(
-                                    context, true
-                                )
-                            }
-                        }
-                    )
-                    SettingSwitchRow(
-                        title = stringResource(R.string.auto_guard_mobility),
-                        subtitle = stringResource(R.string.auto_guard_mobility_body),
-                        checked = settings.adaptiveAutoGuardMobility,
-                        enabled = !alarmRunning,
-                        onCheckedChange = { enabled ->
-                            val permissionNeeded =
-                                enabled &&
-                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-                                    ContextCompat.checkSelfPermission(
-                                        context, Manifest.permission.ACTIVITY_RECOGNITION
-                                    ) != PackageManager.PERMISSION_GRANTED
-                            if (permissionNeeded) {
-                                mobilityPermissionLauncher.launch(
-                                    Manifest.permission.ACTIVITY_RECOGNITION
-                                )
-                            } else {
-                                scope.launch {
-                                    settingsRepository.setAdaptiveAutoGuardMobility(enabled)
-                                    ProtectionForegroundService.setAdaptiveAutoGuard(
-                                        context, true
-                                    )
-                                }
-                            }
-                        }
-                    )
-                }
             }
         }
 

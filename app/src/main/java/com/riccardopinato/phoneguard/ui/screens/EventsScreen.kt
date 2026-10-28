@@ -15,11 +15,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,9 +37,11 @@ import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.EventRepository
 import com.riccardopinato.phoneguard.data.IncidentSession
 import com.riccardopinato.phoneguard.data.IncidentSessionEngine
+import com.riccardopinato.phoneguard.data.IncidentViewFilter
 import com.riccardopinato.phoneguard.model.AlarmEvent
 import com.riccardopinato.phoneguard.model.AlarmEventType
 import com.riccardopinato.phoneguard.ui.components.UtilityPanel
+import com.riccardopinato.phoneguard.ui.components.UtilityChoice
 import com.riccardopinato.phoneguard.ui.components.UtilitySectionHeader
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 import com.riccardopinato.phoneguard.ui.theme.OmniDanger
@@ -59,15 +64,12 @@ fun EventsScreen(
         eventRepository.events
             .collectAsStateWithLifecycle()
 
-    val sessions =
-        remember(
-            events
-        ) {
-            IncidentSessionEngine
-                .build(
-                    events
-                )
-        }
+    val sessions = remember(events) { IncidentSessionEngine.build(events) }
+    var onlyAlarms by remember { mutableStateOf(false) }
+    var confirmClear by remember { mutableStateOf(false) }
+    val visibleSessions = IncidentViewFilter.sessions(sessions, onlyAlarms)
+    val visibleEvents = IncidentViewFilter.events(events, onlyAlarms)
+    val alarmCount = IncidentViewFilter.triggerCount(events)
 
     Column(
         modifier =
@@ -134,7 +136,7 @@ fun EventsScreen(
             ) {
                 TextButton(
                     onClick =
-                        eventRepository::clear
+                        { confirmClear = true }
                 ) {
                     Text(
                         text =
@@ -149,6 +151,38 @@ fun EventsScreen(
                         color =
                             OmniDanger
                     )
+                }
+            }
+        }
+
+        if (events.isNotEmpty()) {
+            UtilityPanel {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.events_alarm_summary, alarmCount, events.size
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        UtilityChoice(
+                            label = stringResource(R.string.events_filter_all),
+                            selected = !onlyAlarms,
+                            enabled = true,
+                            onClick = { onlyAlarms = false },
+                            modifier = Modifier.weight(1f)
+                        )
+                        UtilityChoice(
+                            label = stringResource(R.string.events_filter_alarms),
+                            selected = onlyAlarms,
+                            enabled = true,
+                            onClick = { onlyAlarms = true },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
@@ -210,7 +244,7 @@ fun EventsScreen(
                     )
             ) {
                 if (
-                    sessions.isNotEmpty()
+                    visibleSessions.isNotEmpty()
                 ) {
                     item {
                         UtilitySectionHeader(
@@ -220,7 +254,7 @@ fun EventsScreen(
                                         .incident_sessions_title
                                 ),
                             trailing =
-                                sessions
+                                visibleSessions
                                     .size
                                     .toString()
                         )
@@ -228,7 +262,7 @@ fun EventsScreen(
 
                     items(
                         items =
-                            sessions,
+                            visibleSessions,
                         key = {
                             "session_" +
                                 it.id
@@ -269,6 +303,20 @@ fun EventsScreen(
                     }
                 }
 
+                if (onlyAlarms && visibleSessions.isEmpty() &&
+                    visibleEvents.isEmpty()
+                ) {
+                    item {
+                        UtilityPanel {
+                            Text(
+                                text = stringResource(R.string.events_filter_empty),
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+
                 item {
                     UtilitySectionHeader(
                         title =
@@ -277,14 +325,14 @@ fun EventsScreen(
                                     .event_evidence_title
                             ),
                         trailing =
-                            events
+                            visibleEvents
                                 .size
                                 .toString()
                     )
                 }
 
                 items(
-                    items = events,
+                    items = visibleEvents,
                     key = {
                         "event_" +
                             it.id
@@ -297,6 +345,25 @@ fun EventsScreen(
                 }
             }
         }
+    }
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text(stringResource(R.string.events_clear_confirm_title)) },
+            text = { Text(stringResource(R.string.events_clear_confirm_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    eventRepository.clear()
+                    confirmClear = false
+                    onlyAlarms = false
+                }) { Text(stringResource(R.string.events_clear)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClear = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
     }
 }
 
