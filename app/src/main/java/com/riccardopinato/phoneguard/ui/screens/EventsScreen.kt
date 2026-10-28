@@ -37,6 +37,7 @@ import com.riccardopinato.phoneguard.R
 import com.riccardopinato.phoneguard.data.EventRepository
 import com.riccardopinato.phoneguard.data.IncidentSession
 import com.riccardopinato.phoneguard.data.IncidentSessionEngine
+import com.riccardopinato.phoneguard.data.IncidentViewFilter
 import com.riccardopinato.phoneguard.model.AlarmEvent
 import com.riccardopinato.phoneguard.model.AlarmEventType
 import com.riccardopinato.phoneguard.ui.components.UtilityPanel
@@ -66,12 +67,9 @@ fun EventsScreen(
     val sessions = remember(events) { IncidentSessionEngine.build(events) }
     var onlyAlarms by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
-    val visibleSessions = if (onlyAlarms) sessions.filter { it.triggered } else sessions
-    val visibleEvents = if (onlyAlarms) events.filter {
-        it.type == AlarmEventType.TRIGGERED ||
-            it.type == AlarmEventType.PRE_ALARM_STARTED
-    } else events
-    val alarmCount = events.count { it.type == AlarmEventType.TRIGGERED }
+    val visibleSessions = IncidentViewFilter.sessions(sessions, onlyAlarms)
+    val visibleEvents = IncidentViewFilter.events(events, onlyAlarms)
+    val alarmCount = IncidentViewFilter.triggerCount(events)
 
     Column(
         modifier =

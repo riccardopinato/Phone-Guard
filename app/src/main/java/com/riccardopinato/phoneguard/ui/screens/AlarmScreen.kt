@@ -543,6 +543,53 @@ fun AlarmScreen(
             )
         }
 
+        if (runtime.phase != AlarmPhase.DISARMED) {
+        UtilityPrimaryAction(
+            label =
+                actionLabel(
+                    runtime,
+                    selectedMode
+                ),
+            enabled =
+                if (
+                    runtime.phase ==
+                    AlarmPhase.DISARMED
+                ) {
+                    modeSupported &&
+                        (
+                            securityHealth ==
+                                SecurityHealth.READY ||
+                                securityHealth ==
+                                SecurityHealth.NO_PIN
+                            )
+                } else {
+                    true
+                },
+            destructive =
+                runtime.phase ==
+                    AlarmPhase.TRIGGERED,
+            onClick = {
+                when (runtime.phase) {
+                    AlarmPhase.DISARMED ->
+                        requestArm()
+
+                    AlarmPhase.ARMING,
+                    AlarmPhase.CALIBRATING,
+                    AlarmPhase.ERROR ->
+                        ProtectionForegroundService
+                            .disarm(context)
+
+                    AlarmPhase.ARMED,
+                    AlarmPhase.OWNER_CHECK,
+                    AlarmPhase.TRIGGERED ->
+                        onRequestDisarm()
+                }
+            }
+        )
+
+        }
+
+
         UtilityPanel {
             Column(
                 modifier = Modifier.padding(14.dp),
@@ -839,52 +886,6 @@ fun AlarmScreen(
                     )
                 }
             }
-        }
-
-        if (runtime.phase != AlarmPhase.DISARMED) {
-        UtilityPrimaryAction(
-            label =
-                actionLabel(
-                    runtime,
-                    selectedMode
-                ),
-            enabled =
-                if (
-                    runtime.phase ==
-                    AlarmPhase.DISARMED
-                ) {
-                    modeSupported &&
-                        (
-                            securityHealth ==
-                                SecurityHealth.READY ||
-                                securityHealth ==
-                                SecurityHealth.NO_PIN
-                            )
-                } else {
-                    true
-                },
-            destructive =
-                runtime.phase ==
-                    AlarmPhase.TRIGGERED,
-            onClick = {
-                when (runtime.phase) {
-                    AlarmPhase.DISARMED ->
-                        requestArm()
-
-                    AlarmPhase.ARMING,
-                    AlarmPhase.CALIBRATING,
-                    AlarmPhase.ERROR ->
-                        ProtectionForegroundService
-                            .disarm(context)
-
-                    AlarmPhase.ARMED,
-                    AlarmPhase.OWNER_CHECK,
-                    AlarmPhase.TRIGGERED ->
-                        onRequestDisarm()
-                }
-            }
-        )
-
         }
 
         UtilitySecondaryAction(
@@ -1244,6 +1245,8 @@ fun AlarmScreen(
             },
             onDismiss = {
                 showPermissionInfo = false
+                smartPermissionMode = null
+                retrySmartAfterPermission = false
             }
         )
     }
