@@ -144,3 +144,11 @@ Phone Guard must not be labelled fully CERTIFIED until the physical Pixel/Samsun
 - Auto Guard settings accessible from Home with clear foreground-standby-vs-armed distinction and opt-in controls.
 - Existing presets, all modes and advanced settings remain accessible; existing data and engine preserved.
 - Physical Android tests and Play policy review remain required.
+
+
+### 0.9.7 final nonphysical improvements
+- Compose-only illustrated onboarding in all five locales.
+- Home and Profile lead to the same Auto Guard settings, without duplicating consent logic.
+- Alarm-only history filter, count and delete confirmation; JVM view-model/filter tests.
+- Smart Arm refuses malformed readings and more strictly distinguishes dark bag/visible surface evidence.
+- Listing/FGS/privacy draft package is provided for later publication review, not automatically submitted.

@@ -50,7 +50,7 @@ The following remain **NOT VERIFIED** until tested on the exact signed artifact:
 ## Google Play
 Play Console/store work remains intentionally deferred until physical readiness. Foreground-service reviewer evidence and Data Safety must describe Accessory audio-device-state monitoring, Smart Arm, Adaptive Auto Guard standby, and optional activity transitions accurately.
 
-Release state: **0.9.5 SOFTWARE CANDIDATE — PHYSICAL CERTIFICATION PENDING — PLAY DEFERRED**.
+Release state: **0.9.7 SOFTWARE CANDIDATE — PHYSICAL CERTIFICATION PENDING — PLAY DEFERRED**.
 
 ## 0.9.6 audit remediation (source changes, physical QA pending)
 - Fail-closed malformed motion, light, rotation and proximity observations in Auto Guard, with JVM regressions.
@@ -66,3 +66,11 @@ Release state: **0.9.5 SOFTWARE CANDIDATE — PHYSICAL CERTIFICATION PENDING —
 - Smart Arm permission guidance targets the resolved mode and retries after user grant; it never silently bypasses activation policy.
 - Auto Guard dedicated screen with explicit consent and clear standby limitation; Profile settings retained for discoverability.
 - Source candidate only pending exact-SHA CI and signed INTERNAL; OEM physical matrix and Play FGS approval remain outstanding.
+
+## 0.9.7 additional software scope (exact-head gates pending)
+- Pure Compose illustration-led onboarding with shorter five-language copy; no bitmap payload.
+- Incident history: alarms-only filter, local trigger count, empty state and confirmation before permanent deletion.
+- Profile Auto Guard control duplication removed: Home and Profile both link to the same opt-in configuration screen.
+- Smart Arm context classification rejects malformed readings and requires explicit motion/gyro evidence before claiming Bag or stable Table; JVM regression tests.
+- Five-locale safety copy gate included in source-truth check.
+- Store copy, FGS reviewer pack, privacy draft created as DRAFT only. No Play Console changes, billing, photos or extra runtime permissions.

@@ -244,6 +244,9 @@ fun PhoneGuardRoot(
                             onOpenProtectionCheck = {
                                 navController.navigate("protection_check")
                             },
+                            onOpenAutoGuard = {
+                                navController.navigate("auto_guard")
+                            },
                             diagnostics = container.hardwareDiagnostics,
                             hardware = hardware,
                             alarmRunning =

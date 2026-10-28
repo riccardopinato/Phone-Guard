@@ -110,3 +110,14 @@ Phone Guard must not be labelled fully CERTIFIED until the physical gate is comp
 - [ ] Real-device persisted ARMED/OWNER_CHECK/TRIGGERED recovery with charging auto-arm changes.
 - [ ] Physical Pixel/Samsung/Redmi matrix, battery A/B and false alarm soak evidence.
 - [ ] Signed APK size measured vs v0.9.5 reference 2.73 MB (unverified in this session).
+
+
+## 0.9.7 software-only acceptance
+- [ ] Exact-head development checks + emulator instrumentation pass.
+- [ ] Signed INTERNAL artifact from exact same SHA and upload cert verified.
+- [ ] Verify signed APK size and compare with 0.9.6, no unintended >10% increase.
+- [x] Five-locale safety-copy presence regression in verify-source-truth.
+- [x] Read-only incident alarm filter and destructive action confirmation.
+- [x] Auto Guard from Home and Profile shares one settings screen.
+- [x] Store listing and privacy/FGS drafts are truthful and not published.
+- [ ] Real-device screenshots, accessibility and OEM sensor accuracy physical tests.
