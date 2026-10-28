@@ -11,13 +11,13 @@
     <string name="version_format">v%1$s</string>
 
     <string name="onboarding_1_title">Seis modos de proteção</string>
-    <string name="onboarding_1_text">Use Table numa superfície, Pocket para o bolso, Bag para uma mochila, Charging durante o carregamento, Accessory para acessórios áudio ligados e Journey para proteção temporária.</string>
+    <string name="onboarding_1_text">Proteja o telemóvel na mesa, no bolso, na mala ou durante a carga. Escolha ou use o Smart Arm.</string>
     <string name="onboarding_2_title">Proteção adaptada aos sensores</string>
-    <string name="onboarding_2_text">Phone Guard combina os sensores realmente disponíveis e não declara um modo compatível se o detetor não conseguir chegar a uma decisão de alarme fiável.</string>
+    <string name="onboarding_2_text">Verifica os sensores e a compatibilidade antes de ativar. Nem todos os modos funcionam em qualquer dispositivo.</string>
     <string name="onboarding_3_title">Só o proprietário pode parar</string>
-    <string name="onboarding_3_text">Defina um PIN de 4–6 dígitos e, opcionalmente, biometria forte. Desbloquear o telefone por si só não autentica o Phone Guard.</string>
+    <string name="onboarding_3_text">Só o proprietário pode parar um alarme com PIN ou biometria compatível.</string>
     <string name="onboarding_4_title">Dissuasão local</string>
-    <string name="onboarding_4_text">A deteção é processada localmente. Sirene, vibração, flash e ecrã de aviso são saídas best-effort sujeitas aos limites Android e OEM.</string>
+    <string name="onboarding_4_text">Sirene, vibração e flash funcionam localmente quando o Android permite.</string>
 
     <string name="about_title">Informações e privacidade</string>
     <string name="about_brand">PHONE GUARD</string>
@@ -124,6 +124,24 @@
     <string name="home_smart_reason_table">Contexto de superfície</string>
     <string name="home_smart_reason_fallback">Modo alternativo seguro</string>
     <string name="auto_guard_standby_disclaimer">A espera não é proteção ativa. A proteção só começa quando o armamento termina.</string>
+    <string name="onboarding_visual_table">MESA</string>
+    <string name="onboarding_visual_pocket">BOLSO</string>
+    <string name="onboarding_visual_charging">CARGA</string>
+    <string name="onboarding_visual_motion">MOV.</string>
+    <string name="onboarding_visual_light">LUZ</string>
+    <string name="onboarding_visual_near">PERTO</string>
+    <string name="onboarding_visual_pin">PIN</string>
+    <string name="onboarding_visual_biometric">BIO</string>
+    <string name="onboarding_visual_owner">DONO</string>
+    <string name="onboarding_visual_siren">SIRENE</string>
+    <string name="onboarding_visual_vibrate">VIBR.</string>
+    <string name="onboarding_visual_flash">FLASH</string>
+    <string name="events_filter_all">Todos</string>
+    <string name="events_filter_alarms">Só alarmes</string>
+    <string name="events_alarm_summary">%1$d alarmes · %2$d eventos</string>
+    <string name="events_clear_confirm_title">Apagar o histórico?</string>
+    <string name="events_clear_confirm_body">Os incidentes e eventos locais serão apagados definitivamente. A proteção ativa não será desativada.</string>
+    <string name="events_filter_empty">Sem alarmes neste filtro.</string>
     <string name="home_kicker">PROTEÇÃO</string>
     <string name="home_modes">MODOS</string>
     <string name="mode_table_description">Telefone sobre uma superfície: deteta movimentos e levantamentos.</string>

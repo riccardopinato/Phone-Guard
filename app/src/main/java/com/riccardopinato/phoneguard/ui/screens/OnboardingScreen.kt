@@ -1,6 +1,7 @@
 package com.riccardopinato.phoneguard.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +35,7 @@ import com.riccardopinato.phoneguard.ui.components.UtilityPrimaryAction
 import com.riccardopinato.phoneguard.ui.theme.OmniAccent
 import com.riccardopinato.phoneguard.ui.theme.OmniHero
 import com.riccardopinato.phoneguard.ui.theme.OmniHeroMuted
+import com.riccardopinato.phoneguard.ui.theme.OmniHeroSoft
 import com.riccardopinato.phoneguard.ui.theme.OmniHeroText
 
 private data class OnboardingPage(
@@ -170,35 +173,7 @@ fun OnboardingScreen(
                         18.dp
                     )
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(
-                            OmniAccent.copy(
-                                alpha = 0.16f
-                            )
-                        ),
-                    contentAlignment =
-                        Alignment.Center
-                ) {
-                    Text(
-                        text =
-                            (page + 1)
-                                .toString()
-                                .padStart(
-                                    2,
-                                    '0'
-                                ),
-                        style =
-                            MaterialTheme
-                                .typography
-                                .titleLarge,
-                        fontWeight =
-                            FontWeight.Bold,
-                        color = OmniAccent
-                    )
-                }
+                OnboardingIllustration(page)
 
                 Text(
                     text = current.title,
@@ -283,6 +258,86 @@ fun OnboardingScreen(
                             MaterialTheme
                                 .colorScheme
                                 .onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Lightweight Compose illustration: no bitmap assets, network data or runtime
+ * image dependency. Four distinct contexts help users understand activation.
+ */
+@Composable
+private fun OnboardingIllustration(page: Int) {
+    val tokens = when (page) {
+        0 -> listOf("TABLE", "POCKET", "CHARGING")
+        1 -> listOf("MOTION", "LIGHT", "PROXIMITY")
+        2 -> listOf("PIN", "BIOMETRIC", "OWNER")
+        else -> listOf("SIREN", "VIBRATE", "FLASH")
+    }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth().height(172.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier.size(170.dp).clip(CircleShape)
+                    .background(OmniAccent.copy(alpha = 0.09f))
+            )
+            Box(
+                modifier = Modifier.size(135.dp).clip(CircleShape)
+                    .background(OmniAccent.copy(alpha = 0.13f))
+            )
+            Box(
+                modifier = Modifier.width(98.dp).height(157.dp)
+                    .border(2.dp, OmniAccent, RoundedCornerShape(25.dp))
+                    .clip(RoundedCornerShape(25.dp))
+                    .background(OmniHeroSoft),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "PHONE GUARD",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OmniHeroText
+                    )
+                    Text(
+                        text = when (page) {
+                            0 -> "◉"
+                            1 -> "◎"
+                            2 -> "✓"
+                            else -> "!"
+                        },
+                        style = MaterialTheme.typography.displayMedium,
+                        color = OmniAccent,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tokens.forEach { token ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = OmniHeroSoft
+                ) {
+                    Text(
+                        text = token,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OmniHeroText
                     )
                 }
             }
