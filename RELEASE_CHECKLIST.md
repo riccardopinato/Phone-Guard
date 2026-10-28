@@ -1,6 +1,6 @@
 # RELEASE_CHECKLIST.md — Phone Guard
 
-Version truth: 0.9.6 / versionCode 8
+Version truth: 0.9.7 / versionCode 9
 
 ## Exact-SHA automated gate
 The release SHA must show all of the following green:
