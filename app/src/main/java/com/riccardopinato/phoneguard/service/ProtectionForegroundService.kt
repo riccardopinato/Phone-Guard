@@ -390,48 +390,40 @@ class ProtectionForegroundService : Service() {
             }
 
             ACTION_SET_AUTO_ARM -> {
-                val enabled =
-                    intent.getBooleanExtra(
-                        EXTRA_AUTO_ARM,
-                        false
-                    )
-
-                autoArmStandbyEnabled =
-                    enabled
-
-                if (
-                    AlarmStateStore.state
-                        .value.phase ==
-                    AlarmPhase.DISARMED
+                // Enter a truthful preparing state while stored protection is
+                // reconciled; never advertise a new standby first.
+                if (intent.getBooleanExtra(EXTRA_AUTO_ARM, false) &&
+                    AlarmStateStore.state.value.phase == AlarmPhase.DISARMED
                 ) {
-                    if (enabled || adaptiveAutoGuardEnabled) {
-                        enterAutoArmStandby()
-                    } else {
-                        adaptiveAutoJob?.cancel()
-                        adaptiveAutoJob = null
-                        ServiceCompat.stopForeground(
-                            this,
-                            ServiceCompat.STOP_FOREGROUND_REMOVE
-                        )
-                        stopSelf()
-                    }
+                    startAsForeground(
+                        AlarmPhase.DISARMED,
+                        getString(R.string.app_name),
+                        getString(R.string.phase_preparing)
+                    )
                 }
-                // On boot both auto-arm preferences may be enabled. Hydrate the
-                // shared owner so charging standby does not mask Auto Guard.
-                if (enabled) {
-                    serviceScope.launch {
-                        val prefs = container.settingsRepository.settings.first()
-                        adaptiveAutoGuardEnabled = prefs.adaptiveAutoGuardEnabled
-                        adaptiveIdleMinutes = prefs.adaptiveAutoGuardIdleMinutes
-                        adaptivePocketEnabled = prefs.adaptiveAutoGuardPocket
-                        adaptiveTableEnabled = prefs.adaptiveAutoGuardTable
-                        adaptiveMobilityEnabled = prefs.adaptiveAutoGuardMobility
-                        if (AlarmStateStore.state.value.phase == AlarmPhase.DISARMED) {
-                            if (container.sessionStateRepository.read() != null) {
-                                restorePersistedSession()
-                            } else {
-                                enterAutoArmStandby()
-                            }
+                serviceScope.launch {
+                    val prefs = container.settingsRepository.settings.first()
+                    autoArmStandbyEnabled = prefs.autoArmCharging
+                    adaptiveAutoGuardEnabled = prefs.adaptiveAutoGuardEnabled
+                    adaptiveIdleMinutes = prefs.adaptiveAutoGuardIdleMinutes
+                    adaptivePocketEnabled = prefs.adaptiveAutoGuardPocket
+                    adaptiveTableEnabled = prefs.adaptiveAutoGuardTable
+                    adaptiveMobilityEnabled = prefs.adaptiveAutoGuardMobility
+                    if (AlarmStateStore.state.value.phase == AlarmPhase.DISARMED) {
+                        if (container.sessionStateRepository.read() != null) {
+                            restorePersistedSession()
+                        } else if (autoArmStandbyEnabled || adaptiveAutoGuardEnabled) {
+                            enterAutoArmStandby()
+                        } else {
+                            AutoGuardRuntimeStore.update(AutoGuardRuntimePhase.OFF)
+                            mobilityMonitor.stop()
+                            adaptiveAutoJob?.cancel()
+                            adaptiveAutoJob = null
+                            ServiceCompat.stopForeground(
+                                this@ProtectionForegroundService,
+                                ServiceCompat.STOP_FOREGROUND_REMOVE
+                            )
+                            stopSelf()
                         }
                     }
                 }

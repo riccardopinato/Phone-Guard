@@ -10,8 +10,8 @@
     <string name="common_pin">PIN</string>
     <string name="version_format">v%1$s</string>
 
-    <string name="onboarding_1_title">Cinque modalità di protezione</string>
-    <string name="onboarding_1_text">Usa Table per un telefono lasciato su una superficie, Pocket per la tasca, Bag per borsa o zaino, Charging durante la ricarica e Journey per una sessione Pocket o Bag a tempo.</string>
+    <string name="onboarding_1_title">Sei modalità di protezione</string>
+    <string name="onboarding_1_text">Usa Table per il telefono su una superficie, Pocket per la tasca, Bag per borsa o zaino, Charging durante la ricarica, Accessory per gli accessori audio connessi e Journey per la protezione a tempo.</string>
     <string name="onboarding_2_title">Protezione consapevole dei sensori</string>
     <string name="onboarding_2_text">Phone Guard combina i sensori realmente disponibili e non dichiara supportata una modalità se il detector non può raggiungere una decisione di allarme affidabile.</string>
     <string name="onboarding_3_title">Solo il proprietario può fermarlo</string>
@@ -32,7 +32,7 @@
     <string name="about_backup_title">Backup Android</string>
     <string name="about_backup_text">Le preferenze non sensibili possono usare backup Android o trasferimento dispositivo. Verifier PIN, stato di protezione attivo, lease del volume allarme e storico eventi sono esclusi.</string>
     <string name="about_fgs_title">Servizio in primo piano</string>
-    <string name="about_fgs_text">Quando armi la protezione, un solo foreground service visibile monitora i sensori selezionati. Il servizio termina quando disattivi la protezione. Android o il produttore possono comunque limitare l’esecuzione in background in casi eccezionali.</string>
+    <string name="about_fgs_text">Durante la protezione, un unico servizio in primo piano visibile monitora i sensori selezionati. Se abiliti esplicitamente Auto Guard o l’attivazione automatica durante la ricarica, lo stesso servizio può rimanere in attesa anche senza protezione attiva. Android e i produttori possono limitarne l’esecuzione.</string>
     <string name="about_outputs_title">Limiti degli output di allarme</string>
     <string name="about_outputs_text">Sirena, vibrazione, flash, volume allarme e avviso visivo sono output best-effort. Non disturbare, policy OEM, hardware non disponibile, force-stop o spegnimento possono limitarli. L’app mostra la capacità effettiva invece di garantire un override.</string>
     <string name="about_limits_title">Limiti</string>
@@ -89,6 +89,7 @@
     <string name="disable_unlock_title">Disattiva protezione</string>
     <string name="disable_unlock_message">Inserisci il PIN oppure usa la biometria forte.</string>
     <string name="disable_unlock_confirm">Disattiva</string>
+    <string name="status_not_protected">Non protetto — attiva una modalità per iniziare.</string>
     <string name="status_hardware_mode">Hardware · %1$s</string>
     <string name="status_accelerometer">Accelerometro</string>
     <string name="status_gyroscope">Giroscopio</string>
@@ -109,6 +110,8 @@
     <string name="phase_owner_check">Verifica proprietario</string>
     <string name="phase_alarm">ALLARME</string>
     <string name="phase_error">Errore</string>
+    <string name="home_advanced_show">Mostra impostazioni avanzate</string>
+    <string name="home_advanced_hide">Nascondi impostazioni avanzate</string>
     <string name="home_kicker">PROTEZIONE</string>
     <string name="home_modes">MODALITÀ</string>
     <string name="mode_table_description">Telefono appoggiato: rileva spostamenti e sollevamenti.</string>

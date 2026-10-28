@@ -91,6 +91,14 @@ private fun HardwarePanel(
                 color = OmniHeroText
             )
 
+            // Hardware available is not equivalent to protection being armed.
+            Text(
+                text = stringResource(R.string.status_not_protected),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = OmniWarning
+            )
+
             HardwareRow(
                 label =
                     stringResource(

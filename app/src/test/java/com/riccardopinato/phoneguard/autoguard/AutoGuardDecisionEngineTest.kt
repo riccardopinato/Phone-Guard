@@ -151,6 +151,38 @@ class AutoGuardDecisionEngineTest {
             ).candidate)
     }
 
+    @Test fun malformedSensorReadingsNeverQualifyForAutoArm() {
+        val table = sample(lux = 150f, near = false, motion = -1f)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(table, true, true).candidate)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                table.copy(motionScore = 0f, lux = Float.NaN), true, true
+            ).candidate)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                table.copy(motionScore = 0f, lux = -1f), true, true
+            ).candidate)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                table.copy(motionScore = 0f, proximityNear = null), true, true
+            ).candidate)
+        assertEquals(AutoGuardCandidate.NONE,
+            AutoGuardDecisionEngine.assess(
+                table.copy(motionScore = 0f, rotationScore = Float.NaN), true, true
+            ).candidate)
+    }
+
+    @Test fun stabilizerRejectsUntrustedEvidenceAndInvalidTime() {
+        val stable = AutoGuardStability()
+        val valid = AutoGuardAssessment(AutoGuardCandidate.POCKET, "covered", 90)
+        assertEquals(AutoGuardCandidate.NONE, stable.observe(valid, 1000L))
+        assertEquals(AutoGuardCandidate.NONE, stable.observe(valid.copy(evidenceScore = 0), 20_000L))
+        assertEquals(AutoGuardCandidate.NONE, stable.observe(valid, 25_000L))
+        assertEquals(AutoGuardCandidate.NONE, stable.observe(valid, -1L))
+        assertEquals(AutoGuardCandidate.NONE, stable.observe(valid, 40_000L))
+    }
+
     @Test fun inputOutsideAllowedIdleOptionsIsRejected() {
         assertFalse(AutoGuardTiming.idleElapsed(1_000_000L, 0L, 0))
         assertFalse(AutoGuardTiming.idleElapsed(1_000_000L, 0L, 99))

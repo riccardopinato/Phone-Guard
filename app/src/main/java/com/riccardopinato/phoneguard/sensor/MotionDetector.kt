@@ -328,11 +328,9 @@ class MotionDetector(
         val now =
             SystemClock.elapsedRealtime()
 
-        while (
-            hitTimes.isNotEmpty() &&
-            now - hitTimes.peekFirst() >
-                HIT_WINDOW_MS
-        ) {
+        while (hitTimes.isNotEmpty()) {
+            val oldest = hitTimes.peekFirst() ?: break
+            if (now - oldest <= HIT_WINDOW_MS) break
             hitTimes.removeFirst()
         }
 

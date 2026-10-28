@@ -36,6 +36,18 @@ object AutoGuardDecisionEngine {
         ) {
             return AutoGuardAssessment(AutoGuardCandidate.NONE, "missing_motion", 0)
         }
+        // Inconsistent or impossible readings cannot automatically arm a device.
+        if (observation.motionScore < 0f ||
+            (observation.lightObserved &&
+                (observation.lux == null || !observation.lux.isFinite() ||
+                    observation.lux < 0f)) ||
+            (observation.proximityObserved && observation.proximityNear == null) ||
+            (observation.gyroscopeObserved &&
+                (!observation.rotationScore.isFinite() ||
+                    observation.rotationScore < 0f))
+        ) {
+            return AutoGuardAssessment(AutoGuardCandidate.NONE, "invalid_sensor", 0)
+        }
 
         // A covered face-down phone on a desk is not automatically a pocket.
         // Require actual motion evidence in addition to TWO independent sensor types.
@@ -93,7 +105,9 @@ class AutoGuardStability(
     private var seen = 0
 
     fun observe(result: AutoGuardAssessment, nowElapsedMs: Long): AutoGuardCandidate {
-        if (result.candidate == AutoGuardCandidate.NONE) {
+        if (result.candidate == AutoGuardCandidate.NONE ||
+            result.evidenceScore !in 1..100 || nowElapsedMs < 0L
+        ) {
             reset()
             return AutoGuardCandidate.NONE
         }

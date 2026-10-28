@@ -1,6 +1,6 @@
 # RELEASE_STATUS.md
 
-**Version truth: 0.9.5 / versionCode 7**
+**Version truth: 0.9.6 / versionCode 8**
 
 This file separates implemented software from certification evidence.
 
@@ -51,3 +51,11 @@ The following remain **NOT VERIFIED** until tested on the exact signed artifact:
 Play Console/store work remains intentionally deferred until physical readiness. Foreground-service reviewer evidence and Data Safety must describe Accessory audio-device-state monitoring, Smart Arm, Adaptive Auto Guard standby, and optional activity transitions accurately.
 
 Release state: **0.9.5 SOFTWARE CANDIDATE — PHYSICAL CERTIFICATION PENDING — PLAY DEFERRED**.
+
+## 0.9.6 audit remediation (source changes, physical QA pending)
+- Fail-closed malformed motion, light, rotation and proximity observations in Auto Guard, with JVM regressions.
+- Charging auto-arm reconciliation checks persisted protection before presenting shared standby; preparing notification while reconciling.
+- Smart Arm moved ahead of mode selection; advanced controls collapsed by default but remain available, with five-language parity.
+- First-run screen corrected to all six modes, including Accessory.
+- No new runtime SDK, permission, backend or photo capture.
+- OEM/battery accuracy and Play specialUse acceptance remain NOT VERIFIED; no certification claim.
