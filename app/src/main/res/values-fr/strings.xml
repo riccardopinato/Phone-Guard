@@ -32,7 +32,7 @@
     <string name="about_backup_title">Sauvegarde Android</string>
     <string name="about_backup_text">Les préférences non sensibles peuvent utiliser la sauvegarde Android ou le transfert d’appareil. Le vérificateur PIN, l’état de protection actif, le lease de volume d’alarme et l’historique sont exclus.</string>
     <string name="about_fgs_title">Service au premier plan</string>
-    <string name="about_fgs_text">Quand la protection est active, un seul service de premier plan visible surveille les capteurs. Si vous activez Auto Guard ou l'armement automatique pendant la charge, ce service peut rester en veille même sans protection active. Android et le fabricant peuvent limiter son fonctionnement.</string>
+    <string name="about_fgs_text">Quand la protection est active, un seul service de premier plan visible surveille les capteurs. Si vous activez Auto Guard ou l’armement automatique pendant la charge, ce service peut rester en veille même sans protection active. Android et le fabricant peuvent limiter son fonctionnement.</string>
     <string name="about_outputs_title">Limites des sorties d’alarme</string>
     <string name="about_outputs_text">Sirène, vibration, flash, volume d’alarme et avertissement visuel sont des sorties best-effort. Ne pas déranger, les politiques OEM, le matériel indisponible, le force-stop ou l’arrêt du système peuvent les limiter. L’application indique la capacité effective au lieu de garantir un override.</string>
     <string name="about_limits_title">Limites</string>
