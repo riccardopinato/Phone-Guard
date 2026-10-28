@@ -26,3 +26,7 @@ Implemented source != CI GREEN != certified on-device != Play accepted.
 ## P1 product-truth update
 - Disarmed hardware status explicitly says NOT PROTECTED, regardless of sensor presence.
 - Five-locale privacy/foreground-service explanation now discloses opt-in standby after a manual disarm.
+
+## Follow-up hardening
+- Turning Charging Auto Arm OFF no longer starts a new foreground preparing notification; preparing is shown only for explicit enable.
+- MotionDetector hit-window pruning handles nullable deque head safely instead of relying on Java platform-type unboxing.

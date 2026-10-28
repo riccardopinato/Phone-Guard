@@ -392,7 +392,9 @@ class ProtectionForegroundService : Service() {
             ACTION_SET_AUTO_ARM -> {
                 // Enter a truthful preparing state while stored protection is
                 // reconciled; never advertise a new standby first.
-                if (AlarmStateStore.state.value.phase == AlarmPhase.DISARMED) {
+                if (intent.getBooleanExtra(EXTRA_AUTO_ARM, false) &&
+                    AlarmStateStore.state.value.phase == AlarmPhase.DISARMED
+                ) {
                     startAsForeground(
                         AlarmPhase.DISARMED,
                         getString(R.string.app_name),
