@@ -10,8 +10,8 @@
     <string name="common_pin">PIN</string>
     <string name="version_format">v%1$s</string>
 
-    <string name="onboarding_1_title">Cinco modos de proteção</string>
-    <string name="onboarding_1_text">Use Table para um telefone numa superfície, Pocket para o bolso, Bag para mala ou mochila, Charging durante o carregamento e Journey para uma sessão Pocket ou Bag com tempo limitado.</string>
+    <string name="onboarding_1_title">Seis modos de proteção</string>
+    <string name="onboarding_1_text">Use Table numa superfície, Pocket para o bolso, Bag para uma mochila, Charging durante o carregamento, Accessory para acessórios áudio ligados e Journey para proteção temporária.</string>
     <string name="onboarding_2_title">Proteção adaptada aos sensores</string>
     <string name="onboarding_2_text">Phone Guard combina os sensores realmente disponíveis e não declara um modo compatível se o detetor não conseguir chegar a uma decisão de alarme fiável.</string>
     <string name="onboarding_3_title">Só o proprietário pode parar</string>
@@ -109,6 +109,8 @@
     <string name="phase_owner_check">Verificação do proprietário</string>
     <string name="phase_alarm">ALARME</string>
     <string name="phase_error">Erro</string>
+    <string name="home_advanced_show">Mostrar definições avançadas</string>
+    <string name="home_advanced_hide">Ocultar definições avançadas</string>
     <string name="home_kicker">PROTEÇÃO</string>
     <string name="home_modes">MODOS</string>
     <string name="mode_table_description">Telefone sobre uma superfície: deteta movimentos e levantamentos.</string>

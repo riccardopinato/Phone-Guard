@@ -10,8 +10,8 @@
     <string name="common_pin">PIN</string>
     <string name="version_format">v%1$s</string>
 
-    <string name="onboarding_1_title">Five protection modes</string>
-    <string name="onboarding_1_text">Use Table for a device left on a surface, Pocket for your pocket, Bag for a bag or backpack, Charging while connected to external power, and Journey for a time-limited Pocket or Bag session.</string>
+    <string name="onboarding_1_title">Six protection modes</string>
+    <string name="onboarding_1_text">Use Table for a phone on a surface, Pocket for a pocket, Bag for a bag, Charging for external power, Accessory for connected audio devices, and Journey for time-limited Pocket or Bag protection.</string>
     <string name="onboarding_2_title">Sensor-aware protection</string>
     <string name="onboarding_2_text">Phone Guard combines the sensors actually available on the device and will not claim a mode is supported when the detector cannot reach a reliable alarm decision.</string>
     <string name="onboarding_3_title">Only the owner can stop it</string>
@@ -109,6 +109,8 @@
     <string name="phase_owner_check">Owner verification</string>
     <string name="phase_alarm">ALARM</string>
     <string name="phase_error">Error</string>
+    <string name="home_advanced_show">Show advanced mode settings</string>
+    <string name="home_advanced_hide">Hide advanced mode settings</string>
     <string name="home_kicker">PROTECTION</string>
     <string name="home_modes">MODES</string>
     <string name="mode_table_description">Device on a surface: detects movement and lifting.</string>

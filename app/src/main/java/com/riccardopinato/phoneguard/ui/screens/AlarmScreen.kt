@@ -185,6 +185,7 @@ fun AlarmScreen(
     var showSetPin by remember { mutableStateOf(false) }
     var showPermissionInfo by remember { mutableStateOf(false) }
     var armMessage by remember { mutableStateOf<String?>(null) }
+    var showAdvancedOptions by remember { mutableStateOf(false) }
 
     val selectedMode =
         if (runtime.phase == AlarmPhase.DISARMED) {
@@ -483,6 +484,53 @@ fun AlarmScreen(
             )
         }
 
+        if (
+            runtime.phase ==
+            AlarmPhase.DISARMED
+        ) {
+            UtilityPanel {
+                Column(
+                    modifier =
+                        Modifier.padding(
+                            14.dp
+                        ),
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string
+                                    .smart_arm_body
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+
+                    UtilitySecondaryAction(
+                        label =
+                            stringResource(
+                                R.string
+                                    .smart_arm_action
+                            ),
+                        enabled =
+                            securityHealth ==
+                                SecurityHealth.READY,
+                        onClick =
+                            ::requestSmartArm
+                    )
+                }
+            }
+        }
+
         PresetOptions(
             enabled =
                 runtime.phase ==
@@ -756,53 +804,6 @@ fun AlarmScreen(
             }
         }
 
-        if (
-            runtime.phase ==
-            AlarmPhase.DISARMED
-        ) {
-            UtilityPanel {
-                Column(
-                    modifier =
-                        Modifier.padding(
-                            14.dp
-                        ),
-                    verticalArrangement =
-                        Arrangement.spacedBy(
-                            8.dp
-                        )
-                ) {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string
-                                    .smart_arm_body
-                            ),
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodySmall,
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .onSurfaceVariant
-                    )
-
-                    UtilitySecondaryAction(
-                        label =
-                            stringResource(
-                                R.string
-                                    .smart_arm_action
-                            ),
-                        enabled =
-                            securityHealth ==
-                                SecurityHealth.READY,
-                        onClick =
-                            ::requestSmartArm
-                    )
-                }
-            }
-        }
-
         UtilityPrimaryAction(
             label =
                 actionLabel(
@@ -846,6 +847,15 @@ fun AlarmScreen(
             }
         )
 
+        UtilitySecondaryAction(
+            label = stringResource(
+                if (showAdvancedOptions) R.string.home_advanced_hide
+                else R.string.home_advanced_show
+            ),
+            enabled = true,
+            onClick = { showAdvancedOptions = !showAdvancedOptions }
+        )
+        if (showAdvancedOptions) {
         GracePeriodOptions(
             seconds =
                 settings
@@ -1106,6 +1116,8 @@ fun AlarmScreen(
                 }
             }
         )
+
+        }
 
         armMessage?.let {
             message ->

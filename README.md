@@ -2,7 +2,7 @@
 
 Phone Guard is a standalone native Android anti-theft / anti-tampering utility with six protection modes: Table, Pocket, Bag, Charging, Accessory and Journey.
 
-**Version truth: 0.9.5 / versionCode 7**
+**Version truth: 0.9.6 / versionCode 8**
 
 ## Factory baseline
 
@@ -129,3 +129,10 @@ The signed INTERNAL lane additionally verifies the APK/AAB signing certificate a
 Automated gates do not certify physical Charging/Accessory behavior, Smart Arm context quality, Live Guard Test behavior, Tile/widget launcher behavior, OEM background survival, real custom-audio/flash/volume/DND behavior or sensor false-positive/negative behavior. Those remain part of the exact-artifact physical matrix.
 
 Phone Guard must not be labelled fully CERTIFIED until the physical Pixel/Samsung/Xiaomi evidence is complete.
+
+## 0.9.6 stabilization / UX audit
+- Strict fail-closed filtering of malformed Auto Guard readings and stabilizer inputs.
+- Charging-standby start reconciles previously persisted protected sessions before showing standby.
+- Home surfaces Smart Arm earlier and collapses technical sensitivity/output controls behind an explicit advanced action.
+- Six-mode onboarding is accurate in all five locales.
+- No new runtime dependency or permission request. Exact-artifact physical evidence remains mandatory.

@@ -1,6 +1,6 @@
 # RELEASE_CHECKLIST.md — Phone Guard
 
-Version truth: 0.9.5 / versionCode 7
+Version truth: 0.9.6 / versionCode 8
 
 ## Exact-SHA automated gate
 The release SHA must show all of the following green:
@@ -101,3 +101,12 @@ Phone Guard must not be labelled fully CERTIFIED until the physical gate is comp
 - [ ] precision, recall, false alerts, latency and false alarm count measured per OEM;
 - [ ] eight-hour battery drain ON versus OFF per OEM;
 - [ ] foreground specialUse and Play declarations reviewed before publication.
+
+
+## 0.9.6 audit change acceptance
+- [ ] CI exact-head JVM tests, including malformed Auto Guard readings.
+- [ ] CI release lint, emulator instrumentation and signed INTERNAL build.
+- [ ] UI physical screenshot verify Smart Arm ordering and advanced disclosure in five locales.
+- [ ] Real-device persisted ARMED/OWNER_CHECK/TRIGGERED recovery with charging auto-arm changes.
+- [ ] Physical Pixel/Samsung/Redmi matrix, battery A/B and false alarm soak evidence.
+- [ ] Signed APK size measured vs v0.9.5 reference 2.73 MB (unverified in this session).

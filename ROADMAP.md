@@ -1,6 +1,6 @@
 # ROADMAP.md — Phone Guard pre-1.0
 
-Version truth: 0.9.5 / versionCode 7
+Version truth: 0.9.6 / versionCode 8
 
 ## Foundation inherited from 0.9.2
 
@@ -271,3 +271,11 @@ Status: **PENDING EXTERNAL EVIDENCE**
 ## Google Play
 Status: **DEFERRED BY PRODUCT DECISION**
 Play Console declarations, foreground-service reviewer evidence, privacy-policy URL, Data Safety, Play App Signing and store assets remain final publication work.
+
+
+## 0.9.6 — Audit P0/P1/P2 remediation
+Status: SOURCE CHANGES IN PR, PHYSICAL QA PENDING.
+- P0: malformed sensor rejection with tests; saved-session-first charging standby reconciliation.
+- P1: Smart Arm higher on Home, advanced tuning behind disclosure; six-mode localized first-run copy.
+- P2: monolithic service/UI bounded extraction risk documented; no unvalidated service-wide rewrite.
+- OEM physical, eight-hour ON/OFF battery, false alert soak and Play-policy gates remain mandatory.

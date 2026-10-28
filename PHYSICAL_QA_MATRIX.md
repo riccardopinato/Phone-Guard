@@ -1,6 +1,6 @@
 # PHYSICAL_QA_MATRIX.md — Phone Guard
 
-Candidate software line: **0.9.5 / versionCode 7**
+Candidate software line: **0.9.6 / versionCode 8**
 
 
 Status: **UNVERIFIED** until measurements from real devices are recorded.
