@@ -152,4 +152,51 @@ class SmartArmDecisionEngineTest {
             )
         }
     }
+
+    @Test
+    fun noisyUncoveredContextUsesExplicitFallbackNotStableSurface() {
+        val decision = SmartArmDecisionEngine.resolve(
+            externalPowerConnected = false, accessoryConnected = false,
+            observation = SmartArmObservation(
+                lux = 80f, proximityNear = false, motionScore = 0.4f,
+                accelerometerObserved = true, lightObserved = true,
+                proximityObserved = true
+            ),
+            fallbackMode = ProtectionMode.JOURNEY
+        )
+        assertEquals(ProtectionMode.JOURNEY, decision.mode)
+        assertEquals(SmartArmReason.FALLBACK, decision.reason)
+    }
+
+    @Test
+    fun darkStationaryContextDoesNotQualifyAsBagJustBecauseGyroExists() {
+        val decision = SmartArmDecisionEngine.resolve(
+            externalPowerConnected = false, accessoryConnected = false,
+            observation = SmartArmObservation(
+                lux = 1f, proximityNear = false, motionScore = 0f,
+                rotationScore = 0f, accelerometerObserved = true,
+                lightObserved = true, proximityObserved = true, gyroscopeObserved = true
+            ),
+            fallbackMode = ProtectionMode.TABLE
+        )
+        assertEquals(ProtectionMode.TABLE, decision.mode)
+        assertEquals(SmartArmReason.STABLE_SURFACE, decision.reason)
+    }
+
+    @Test
+    fun malformedSensorDataCannotCreateBagOrStableSurfaceEvidence() {
+        for (motion in listOf(Float.NaN, Float.NEGATIVE_INFINITY, -0.1f)) {
+            val decision = SmartArmDecisionEngine.resolve(
+                externalPowerConnected = false, accessoryConnected = false,
+                observation = SmartArmObservation(
+                    lux = 0f, proximityNear = false, motionScore = motion,
+                    accelerometerObserved = true, lightObserved = true
+                ),
+                fallbackMode = ProtectionMode.POCKET
+            )
+            assertEquals(ProtectionMode.POCKET, decision.mode)
+            assertEquals(SmartArmReason.FALLBACK, decision.reason)
+        }
+    }
+
 }

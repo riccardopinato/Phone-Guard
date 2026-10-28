@@ -305,6 +305,20 @@ fun EventsScreen(
                     }
                 }
 
+                if (onlyAlarms && visibleSessions.isEmpty() &&
+                    visibleEvents.isEmpty()
+                ) {
+                    item {
+                        UtilityPanel {
+                            Text(
+                                text = stringResource(R.string.events_filter_empty),
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+
                 item {
                     UtilitySectionHeader(
                         title =

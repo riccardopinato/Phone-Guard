@@ -272,10 +272,26 @@ fun OnboardingScreen(
 @Composable
 private fun OnboardingIllustration(page: Int) {
     val tokens = when (page) {
-        0 -> listOf("TABLE", "POCKET", "CHARGING")
-        1 -> listOf("MOTION", "LIGHT", "PROXIMITY")
-        2 -> listOf("PIN", "BIOMETRIC", "OWNER")
-        else -> listOf("SIREN", "VIBRATE", "FLASH")
+        0 -> listOf(
+            R.string.onboarding_visual_table,
+            R.string.onboarding_visual_pocket,
+            R.string.onboarding_visual_charging
+        )
+        1 -> listOf(
+            R.string.onboarding_visual_motion,
+            R.string.onboarding_visual_light,
+            R.string.onboarding_visual_near
+        )
+        2 -> listOf(
+            R.string.onboarding_visual_pin,
+            R.string.onboarding_visual_biometric,
+            R.string.onboarding_visual_owner
+        )
+        else -> listOf(
+            R.string.onboarding_visual_siren,
+            R.string.onboarding_visual_vibrate,
+            R.string.onboarding_visual_flash
+        )
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -334,7 +350,7 @@ private fun OnboardingIllustration(page: Int) {
                     color = OmniHeroSoft
                 ) {
                     Text(
-                        text = token,
+                        text = stringResource(token),
                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = OmniHeroText
