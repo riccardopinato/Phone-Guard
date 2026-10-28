@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -189,11 +190,11 @@ fun AlarmScreen(
         )
 
     var showSetPin by remember { mutableStateOf(false) }
-    var showPermissionInfo by remember { mutableStateOf(false) }
+    var showPermissionInfo by rememberSaveable { mutableStateOf(false) }
     var armMessage by remember { mutableStateOf<String?>(null) }
     var showAdvancedOptions by remember { mutableStateOf(false) }
-    var retrySmartAfterPermission by remember { mutableStateOf(false) }
-    var smartPermissionMode by remember { mutableStateOf<ProtectionMode?>(null) }
+    var retrySmartAfterPermission by rememberSaveable { mutableStateOf(false) }
+    var smartPermissionMode by rememberSaveable { mutableStateOf<ProtectionMode?>(null) }
     var smartDecisionNote by remember { mutableStateOf<String?>(null) }
 
     val selectedMode =
@@ -387,6 +388,9 @@ fun AlarmScreen(
         }
 
     fun requestArm() {
+        // Manual activation must never inherit a cancelled Smart Arm request.
+        retrySmartAfterPermission = false
+        smartPermissionMode = null
         if (!hasPin) {
             showSetPin = true
             return
