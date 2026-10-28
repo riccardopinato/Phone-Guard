@@ -32,7 +32,7 @@
     <string name="about_backup_title">Copia de seguridad Android</string>
     <string name="about_backup_text">Las preferencias no sensibles pueden usar la copia de seguridad Android o la transferencia de dispositivo. Se excluyen el verificador del PIN, el estado de protección activo, el lease de volumen de alarma y el historial de eventos.</string>
     <string name="about_fgs_title">Servicio en primer plano</string>
-    <string name="about_fgs_text">Al activar la protección, un único servicio visible en primer plano supervisa los sensores seleccionados. El servicio se detiene al desactivar la protección. Android o el fabricante aún pueden limitar la ejecución en segundo plano en casos excepcionales.</string>
+    <string name="about_fgs_text">Durante la protección, un único servicio visible en primer plano vigila los sensores elegidos. Si activas Auto Guard o la activación automática de carga, el mismo servicio puede seguir en espera aunque no haya protección activa. Android y el fabricante pueden restringir su ejecución.</string>
     <string name="about_outputs_title">Límites de las salidas de alarma</string>
     <string name="about_outputs_text">La sirena, vibración, flash, volumen de alarma y aviso visual son salidas best-effort. No molestar, las políticas OEM, hardware no disponible, force-stop o el apagado del sistema pueden limitarlas. La app informa de la capacidad efectiva en lugar de prometer un override.</string>
     <string name="about_limits_title">Límites</string>
@@ -89,6 +89,7 @@
     <string name="disable_unlock_title">Desactivar protección</string>
     <string name="disable_unlock_message">Introduce el PIN o usa biometría fuerte.</string>
     <string name="disable_unlock_confirm">Desactivar</string>
+    <string name="status_not_protected">Sin protección: activa un modo para empezar.</string>
     <string name="status_hardware_mode">Hardware · %1$s</string>
     <string name="status_accelerometer">Acelerómetro</string>
     <string name="status_gyroscope">Giroscopio</string>

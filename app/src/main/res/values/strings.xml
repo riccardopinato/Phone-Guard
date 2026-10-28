@@ -32,7 +32,7 @@
     <string name="about_backup_title">Android backup</string>
     <string name="about_backup_text">Non-sensitive preferences may use Android backup or device transfer. PIN verifier data, active protection state, alarm-volume lease and event history are excluded.</string>
     <string name="about_fgs_title">Foreground service</string>
-    <string name="about_fgs_text">When you arm protection, one visible foreground service monitors the selected sensors. The service stops when protection is disarmed. Android or the device manufacturer can still restrict background execution in exceptional cases.</string>
+    <string name="about_fgs_text">When protection is armed, one visible foreground service monitors the selected sensors. If you explicitly enable Auto Guard or charging auto-arm, the same visible service may also remain in standby while protection is disarmed. Android/OEM policies can limit background execution.</string>
     <string name="about_outputs_title">Alarm output limits</string>
     <string name="about_outputs_text">Siren, vibration, flash, alarm volume and visual warning are best-effort outputs. Do Not Disturb, OEM policy, unavailable hardware, force-stop or system shutdown can limit them. The app reports effective capability instead of guaranteeing an override.</string>
     <string name="about_limits_title">Limits</string>
@@ -89,6 +89,7 @@
     <string name="disable_unlock_title">Disable protection</string>
     <string name="disable_unlock_message">Enter the PIN or use strong biometrics.</string>
     <string name="disable_unlock_confirm">Disable</string>
+    <string name="status_not_protected">Not protected — activate a mode to start monitoring.</string>
     <string name="status_hardware_mode">Hardware · %1$s</string>
     <string name="status_accelerometer">Accelerometer</string>
     <string name="status_gyroscope">Gyroscope</string>

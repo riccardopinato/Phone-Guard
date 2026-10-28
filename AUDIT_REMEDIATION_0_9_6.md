@@ -22,3 +22,7 @@ Audit source: 0.9.5 main @ 0939be0d12bb944863e5dfb5a6913af210a51a93. App Factory
 
 ## Evidence truth
 Implemented source != CI GREEN != certified on-device != Play accepted.
+
+## P1 product-truth update
+- Disarmed hardware status explicitly says NOT PROTECTED, regardless of sensor presence.
+- Five-locale privacy/foreground-service explanation now discloses opt-in standby after a manual disarm.

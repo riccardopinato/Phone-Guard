@@ -32,7 +32,7 @@
     <string name="about_backup_title">Cópia de segurança Android</string>
     <string name="about_backup_text">As preferências não sensíveis podem usar cópia de segurança Android ou transferência de dispositivo. O verificador PIN, estado de proteção ativo, lease de volume do alarme e histórico de eventos são excluídos.</string>
     <string name="about_fgs_title">Serviço em primeiro plano</string>
-    <string name="about_fgs_text">Ao ativar a proteção, um único serviço visível em primeiro plano monitoriza os sensores selecionados. O serviço termina quando a proteção é desativada. Android ou o fabricante ainda podem limitar a execução em segundo plano em casos excecionais.</string>
+    <string name="about_fgs_text">Durante a proteção, um único serviço visível em primeiro plano monitoriza os sensores selecionados. Se ativar Auto Guard ou o armamento automático durante o carregamento, o mesmo serviço pode permanecer em espera sem proteção ativa. O Android e o fabricante podem limitar a execução.</string>
     <string name="about_outputs_title">Limites das saídas de alarme</string>
     <string name="about_outputs_text">Sirene, vibração, flash, volume do alarme e aviso visual são saídas best-effort. Não incomodar, políticas OEM, hardware indisponível, force-stop ou desligamento do sistema podem limitá-las. A app mostra a capacidade efetiva em vez de garantir um override.</string>
     <string name="about_limits_title">Limites</string>
@@ -89,6 +89,7 @@
     <string name="disable_unlock_title">Desativar proteção</string>
     <string name="disable_unlock_message">Introduza o PIN ou use biometria forte.</string>
     <string name="disable_unlock_confirm">Desativar</string>
+    <string name="status_not_protected">Não protegido — ative um modo para começar.</string>
     <string name="status_hardware_mode">Hardware · %1$s</string>
     <string name="status_accelerometer">Acelerómetro</string>
     <string name="status_gyroscope">Giroscópio</string>
