@@ -152,3 +152,8 @@ Phone Guard must not be labelled fully CERTIFIED until the physical Pixel/Samsun
 - Alarm-only history filter, count and delete confirmation; JVM view-model/filter tests.
 - Smart Arm refuses malformed readings and more strictly distinguishes dark bag/visible surface evidence.
 - Listing/FGS/privacy draft package is provided for later publication review, not automatically submitted.
+
+
+## Template Notion — ricerca
+
+[Catalogo per Phone Guard](docs/TEMPLATE_NOTION/README.md), senza nuove funzionalità integrate.
